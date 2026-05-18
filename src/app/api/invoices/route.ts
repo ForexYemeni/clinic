@@ -8,28 +8,55 @@ export async function GET(request: NextRequest) {
     const patientId = searchParams.get('patientId');
     const status = searchParams.get('status');
 
-    let snapshot;
-    if (patientId) {
-      snapshot = await adminDb
-        .collection('invoices')
-        .where('patientId', '==', patientId)
-        .orderBy('createdAt', 'desc')
-        .get();
-    } else if (status) {
-      snapshot = await adminDb
-        .collection('invoices')
-        .where('status', '==', status)
-        .orderBy('createdAt', 'desc')
-        .get();
-    } else {
-      snapshot = await adminDb
-        .collection('invoices')
-        .orderBy('createdAt', 'desc')
-        .get();
+    let docs: FirebaseFirestore.QueryDocumentSnapshot[] = [];
+    try {
+      let snapshot;
+      if (patientId) {
+        snapshot = await adminDb
+          .collection('invoices')
+          .where('patientId', '==', patientId)
+          .orderBy('createdAt', 'desc')
+          .get();
+      } else if (status) {
+        snapshot = await adminDb
+          .collection('invoices')
+          .where('status', '==', status)
+          .orderBy('createdAt', 'desc')
+          .get();
+      } else {
+        snapshot = await adminDb
+          .collection('invoices')
+          .orderBy('createdAt', 'desc')
+          .get();
+      }
+      docs = snapshot.docs;
+    } catch (idxErr) {
+      console.warn('Invoices ordered query failed, fallback:', idxErr);
+      let snapshot;
+      if (patientId) {
+        snapshot = await adminDb
+          .collection('invoices')
+          .where('patientId', '==', patientId)
+          .get();
+      } else if (status) {
+        snapshot = await adminDb
+          .collection('invoices')
+          .where('status', '==', status)
+          .get();
+      } else {
+        snapshot = await adminDb
+          .collection('invoices')
+          .get();
+      }
+      docs = snapshot.docs.sort((a, b) => {
+        const da = a.data()?.createdAt || '';
+        const db = b.data()?.createdAt || '';
+        return db.localeCompare(da);
+      });
     }
 
     const invoices = [];
-    for (const doc of snapshot.docs) {
+    for (const doc of docs) {
       const data = { id: doc.id, ...doc.data() } as any;
       // Recalculate remaining and status if missing
       data.remaining = data.remaining ?? (data.total - (data.paid || 0));
@@ -40,10 +67,14 @@ export async function GET(request: NextRequest) {
       }
       // Enrich with patient name
       if (data.patientId) {
-        const patientDoc = await adminDb.collection('patients').doc(data.patientId).get();
-        if (patientDoc.exists) {
-          data.patientName = patientDoc.data()?.name || '';
-        }
+        try {
+          const patientDoc = await adminDb.collection('patients').doc(data.patientId).get();
+          if (patientDoc.exists) {
+            const pData = patientDoc.data();
+            data.patientName = pData?.name || '';
+            data.patient = { id: patientDoc.id, name: pData?.name || '', phone: pData?.phone || '' };
+          }
+        } catch {}
       }
       invoices.push(data);
     }

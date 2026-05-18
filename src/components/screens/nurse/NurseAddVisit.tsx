@@ -5,6 +5,7 @@ import { ArrowRight, Plus, Search, User as UserIcon, Stethoscope, Check, AlertCi
 import { useAppStore } from '@/lib/store';
 import { formatCurrency, type PatientItem, type ServiceItem } from '@/lib/constants';
 import { toast } from 'sonner';
+import { SuccessCard } from '@/components/shared/SuccessCard';
 
 export function NurseAddVisit() {
   const { setScreen, user, selectedPatientId: preselectedPatientId } = useAppStore();
@@ -20,6 +21,15 @@ export function NurseAddVisit() {
   const [servicesLoading, setServicesLoading] = useState(true);
   const [submitting, setSubmitting] = useState(false);
   const [servicesError, setServicesError] = useState('');
+
+  // Success card state
+  const [showSuccess, setShowSuccess] = useState(false);
+  const [successData, setSuccessData] = useState<{
+    patientName: string;
+    services: { name: string; price: number }[];
+    total: number;
+    invoiceId: string;
+  }>({ patientName: '', services: [], total: 0, invoiceId: '' });
 
   // Visit form
   const [selectedServices, setSelectedServices] = useState<string[]>([]);
@@ -132,8 +142,20 @@ export function NurseAddVisit() {
       });
 
       if (res.ok) {
-        toast.success('تم تسجيل الزيارة وإنشاء الفاتورة تلقائياً');
-        setScreen('nurse-patients');
+        const data = await res.json();
+        // Prepare success card data
+        const visitServices = selectedServices.map(id => {
+          const svc = services.find(s => s.id === id);
+          return { name: svc?.nameAr || 'خدمة', price: svc?.price || 0 };
+        });
+
+        setSuccessData({
+          patientName: selectedPatientName,
+          services: visitServices,
+          total: totalAmount,
+          invoiceId: data.invoice?.id?.slice(-6) || '',
+        });
+        setShowSuccess(true);
       } else {
         const data = await res.json().catch(() => ({}));
         toast.error(data.error || 'خطأ في التسجيل');
@@ -145,8 +167,28 @@ export function NurseAddVisit() {
     }
   };
 
+  const handleSuccessClose = () => {
+    setShowSuccess(false);
+    setScreen('nurse-patients');
+  };
+
   return (
     <div className="p-4 pb-24">
+      {/* Success Card Overlay */}
+      <SuccessCard
+        visible={showSuccess}
+        onClose={handleSuccessClose}
+        type="visit"
+        title="تم تسجيل الزيارة بنجاح"
+        message="تم إنشاء الفاتورة تلقائياً"
+        patientName={successData.patientName}
+        services={successData.services}
+        total={successData.total}
+        paid={0}
+        remaining={successData.total}
+        invoiceId={successData.invoiceId}
+      />
+
       <button
         onClick={() => {
           if (step === 'add-visit' && !preselectedPatientId) {
@@ -270,15 +312,15 @@ export function NurseAddVisit() {
                         onClick={() => toggleService(svc.id)}
                         className={`w-full flex items-center justify-between p-3 rounded-xl border transition-all mb-1.5 ${
                           selectedServices.includes(svc.id)
-                            ? 'border-emerald-500 bg-emerald-50 dark:bg-emerald-900/20'
+                            ? 'border-emerald-500 bg-emerald-50 dark:bg-emerald-900/20 shadow-sm'
                             : 'border-border bg-white dark:bg-gray-800'
                         }`}
                       >
                         <div className="flex items-center gap-2">
-                          <div className={`w-6 h-6 rounded-lg flex items-center justify-center transition-all ${
-                            selectedServices.includes(svc.id) ? 'bg-emerald-500 text-white' : 'bg-gray-100 dark:bg-gray-700'
+                          <div className={`w-7 h-7 rounded-lg flex items-center justify-center transition-all ${
+                            selectedServices.includes(svc.id) ? 'bg-emerald-500 text-white shadow-sm' : 'bg-gray-100 dark:bg-gray-700'
                           }`}>
-                            {selectedServices.includes(svc.id) ? <Check className="w-3.5 h-3.5" /> : <span className="text-[10px]">{services.indexOf(svc) + 1}</span>}
+                            {selectedServices.includes(svc.id) ? <Check className="w-4 h-4" /> : <span className="text-[10px]">{services.indexOf(svc) + 1}</span>}
                           </div>
                           <div className="text-right">
                             <p className="text-sm font-medium">{svc.nameAr}</p>
@@ -296,9 +338,16 @@ export function NurseAddVisit() {
 
           {/* Total */}
           {selectedServices.length > 0 && (
-            <div className="bg-emerald-600 text-white rounded-xl p-3 mb-4 flex items-center justify-between">
-              <span className="text-sm">الإجمالي ({selectedServices.length} خدمات)</span>
-              <span className="text-lg font-bold">{formatCurrency(totalAmount)}</span>
+            <div className="bg-gradient-to-l from-emerald-600 to-teal-600 text-white rounded-2xl p-4 mb-4 shadow-lg shadow-emerald-500/20">
+              <div className="flex items-center justify-between">
+                <div>
+                  <p className="text-xs opacity-80">الإجمالي</p>
+                  <p className="text-xl font-bold">{formatCurrency(totalAmount)}</p>
+                </div>
+                <div className="bg-white/20 rounded-xl px-3 py-1.5 text-sm font-medium backdrop-blur-sm">
+                  {selectedServices.length} خدمات
+                </div>
+              </div>
             </div>
           )}
 
@@ -386,7 +435,7 @@ export function NurseAddVisit() {
           <button
             onClick={handleSubmit}
             disabled={submitting || services.length === 0}
-            className="w-full h-12 bg-gradient-to-l from-emerald-600 to-teal-600 text-white font-bold rounded-xl shadow-lg disabled:opacity-60 active:scale-[0.98] transition-transform"
+            className="w-full h-12 bg-gradient-to-l from-emerald-600 to-teal-600 text-white font-bold rounded-xl shadow-lg shadow-emerald-500/20 disabled:opacity-60 active:scale-[0.98] transition-transform"
           >
             {submitting ? (
               <div className="w-5 h-5 border-2 border-white/30 border-t-white rounded-full animate-spin mx-auto" />

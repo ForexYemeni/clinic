@@ -31,6 +31,8 @@ const NurseEmergencies = dynamic(() => import('@/components/screens/nurse/NurseE
 const NurseReports = dynamic(() => import('@/components/screens/nurse/NurseReports').then(m => ({ default: m.NurseReports })), { ssr: false });
 const NurseAddCase = dynamic(() => import('@/components/screens/nurse/NurseAddCase').then(m => ({ default: m.NurseAddCase })), { ssr: false });
 const NurseChangePassword = dynamic(() => import('@/components/screens/nurse/NurseChangePassword').then(m => ({ default: m.NurseChangePassword })), { ssr: false });
+const NurseFinance = dynamic(() => import('@/components/screens/nurse/NurseFinance').then(m => ({ default: m.NurseFinance })), { ssr: false });
+const NurseMoreMenu = dynamic(() => import('@/components/screens/nurse/NurseMoreMenu').then(m => ({ default: m.NurseMoreMenu })), { ssr: false });
 
 function ScreenFallback() {
   return (
@@ -91,6 +93,8 @@ export default function ClinicApp() {
       case 'nurse-reports': return <NurseReports />;
       case 'nurse-add-emergency': return <NurseAddCase />;
       case 'nurse-change-password': return <NurseChangePassword />;
+      case 'nurse-finance': return <NurseFinance />;
+      case 'nurse-more': return <NurseMoreMenu />;
 
       default: return user?.role === 'admin' ? <AdminDashboard /> : <PatientList role="nurse" />;
     }

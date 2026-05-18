@@ -19,27 +19,58 @@ export async function GET(
 
     const patientData = { id: doc.id, ...doc.data() };
 
-    // Get related visits
-    const visitsSnap = await adminDb
-      .collection('visits')
-      .where('patientId', '==', id)
-      .orderBy('visitDate', 'desc')
-      .get();
+    // Get related visits (resilient to missing indexes)
+    let visits: any[] = [];
+    try {
+      const visitsSnap = await adminDb
+        .collection('visits')
+        .where('patientId', '==', id)
+        .orderBy('visitDate', 'desc')
+        .get();
+      visits = visitsSnap.docs.map((d) => ({ id: d.id, ...d.data() }));
+    } catch (visitErr) {
+      console.warn('Visits query failed, trying without orderBy:', visitErr);
+      try {
+        const visitsSnap = await adminDb
+          .collection('visits')
+          .where('patientId', '==', id)
+          .get();
+        visits = visitsSnap.docs.map((d) => ({ id: d.id, ...d.data() }))
+          .sort((a: any, b: any) => (b.visitDate || '').localeCompare(a.visitDate || ''));
+      } catch (e2) {
+        console.error('Visits query fallback also failed:', e2);
+      }
+    }
 
-    const visits = visitsSnap.docs.map((d) => ({ id: d.id, ...d.data() }));
-
-    // Get related invoices
-    const invoicesSnap = await adminDb
-      .collection('invoices')
-      .where('patientId', '==', id)
-      .orderBy('createdAt', 'desc')
-      .get();
-
-    const invoices = invoicesSnap.docs.map((d) => {
-      const data = { id: d.id, ...d.data() } as any;
-      data.remaining = data.remaining ?? (data.total - (data.paid || 0));
-      return data;
-    });
+    // Get related invoices (resilient to missing indexes)
+    let invoices: any[] = [];
+    try {
+      const invoicesSnap = await adminDb
+        .collection('invoices')
+        .where('patientId', '==', id)
+        .orderBy('createdAt', 'desc')
+        .get();
+      invoices = invoicesSnap.docs.map((d) => {
+        const data = { id: d.id, ...d.data() } as any;
+        data.remaining = data.remaining ?? (data.total - (data.paid || 0));
+        return data;
+      });
+    } catch (invErr) {
+      console.warn('Invoices query failed, trying without orderBy:', invErr);
+      try {
+        const invoicesSnap = await adminDb
+          .collection('invoices')
+          .where('patientId', '==', id)
+          .get();
+        invoices = invoicesSnap.docs.map((d) => {
+          const data = { id: d.id, ...d.data() } as any;
+          data.remaining = data.remaining ?? (data.total - (data.paid || 0));
+          return data;
+        }).sort((a: any, b: any) => (b.createdAt || '').localeCompare(a.createdAt || ''));
+      } catch (e2) {
+        console.error('Invoices query fallback also failed:', e2);
+      }
+    }
 
     // Get unique service IDs from visits
     const serviceIds = new Set<string>();
@@ -52,10 +83,12 @@ export async function GET(
     // Fetch service details for those IDs
     const services: any[] = [];
     for (const serviceId of serviceIds) {
-      const serviceDoc = await adminDb.collection('services').doc(serviceId).get();
-      if (serviceDoc.exists) {
-        services.push({ id: serviceDoc.id, ...serviceDoc.data() });
-      }
+      try {
+        const serviceDoc = await adminDb.collection('services').doc(serviceId).get();
+        if (serviceDoc.exists) {
+          services.push({ id: serviceDoc.id, ...serviceDoc.data() });
+        }
+      } catch {}
     }
 
     return NextResponse.json({

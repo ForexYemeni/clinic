@@ -7,36 +7,62 @@ export async function GET(request: NextRequest) {
     const { searchParams } = new URL(request.url);
     const status = searchParams.get('status');
 
-    let snapshot;
-    if (status) {
-      snapshot = await adminDb
-        .collection('emergencies')
-        .where('status', '==', status)
-        .orderBy('createdAt', 'desc')
-        .get();
-    } else {
-      snapshot = await adminDb
-        .collection('emergencies')
-        .orderBy('createdAt', 'desc')
-        .get();
+    let docs: FirebaseFirestore.QueryDocumentSnapshot[] = [];
+    try {
+      let snapshot;
+      if (status) {
+        snapshot = await adminDb
+          .collection('emergencies')
+          .where('status', '==', status)
+          .orderBy('createdAt', 'desc')
+          .get();
+      } else {
+        snapshot = await adminDb
+          .collection('emergencies')
+          .orderBy('createdAt', 'desc')
+          .get();
+      }
+      docs = snapshot.docs;
+    } catch (idxErr) {
+      console.warn('Emergencies ordered query failed, fallback:', idxErr);
+      let snapshot;
+      if (status) {
+        snapshot = await adminDb
+          .collection('emergencies')
+          .where('status', '==', status)
+          .get();
+      } else {
+        snapshot = await adminDb
+          .collection('emergencies')
+          .get();
+      }
+      docs = snapshot.docs.sort((a, b) => {
+        const da = a.data()?.createdAt || '';
+        const db = b.data()?.createdAt || '';
+        return db.localeCompare(da);
+      });
     }
 
     const emergencies = [];
-    for (const doc of snapshot.docs) {
+    for (const doc of docs) {
       const data = { id: doc.id, ...doc.data() } as any;
       // Enrich with patient data
       if (data.patientId) {
-        const patientDoc = await adminDb.collection('patients').doc(data.patientId).get();
-        if (patientDoc.exists) {
-          data.patient = { id: patientDoc.id, name: patientDoc.data()?.name, phone: patientDoc.data()?.phone };
-        }
+        try {
+          const patientDoc = await adminDb.collection('patients').doc(data.patientId).get();
+          if (patientDoc.exists) {
+            data.patient = { id: patientDoc.id, name: patientDoc.data()?.name, phone: patientDoc.data()?.phone };
+          }
+        } catch {}
       }
       // Enrich with nurse data
       if (data.nurseId) {
-        const nurseDoc = await adminDb.collection('users').doc(data.nurseId).get();
-        if (nurseDoc.exists) {
-          data.nurse = { id: nurseDoc.id, name: nurseDoc.data()?.name };
-        }
+        try {
+          const nurseDoc = await adminDb.collection('users').doc(data.nurseId).get();
+          if (nurseDoc.exists) {
+            data.nurse = { id: nurseDoc.id, name: nurseDoc.data()?.name };
+          }
+        } catch {}
       }
       emergencies.push(data);
     }
@@ -55,7 +81,7 @@ export async function GET(request: NextRequest) {
 export async function POST(request: NextRequest) {
   try {
     const body = await request.json();
-    const { patientId, nurseId, severity, notes } = body;
+    const { patientId, nurseId, severity, notes, actions, procedures } = body;
 
     if (!patientId) {
       return NextResponse.json(
@@ -87,11 +113,11 @@ export async function POST(request: NextRequest) {
       patientName,
       nurseId: nurseId || '',
       nurseName,
-      severity: severity || 'medium',
+      severity: severity || 'moderate',
       status: 'active',
       notes: notes || '',
-      actions: '',
-      procedures: '',
+      actions: actions || '',
+      procedures: procedures || '',
       arrivalTime: new Date().toISOString(),
       createdAt: new Date().toISOString(),
     };

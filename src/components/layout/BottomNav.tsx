@@ -20,6 +20,7 @@ const BottomNav = React.memo(function BottomNav() {
     { id: 'nurse-patients', label: 'المرضى', icon: Users, matchPrefix: 'nurse-patient' },
     { id: 'nurse-emergencies', label: 'الطوارئ', icon: AlertTriangle, matchPrefix: 'nurse-emergenc' },
     { id: 'nurse-reports', label: 'التقارير', icon: FileText, matchPrefix: 'nurse-report' },
+    { id: 'nurse-more', label: 'المزيد', icon: MoreHorizontal, matchPrefix: 'nurse-more' },
   ], []);
 
   const tabs = isAdmin ? adminTabs : nurseTabs;
@@ -27,8 +28,11 @@ const BottomNav = React.memo(function BottomNav() {
   const activeTab = useMemo(() => {
     const screen = currentScreen as string;
     // For nurse, handle special cases
-    if (!isAdmin && (screen === 'nurse-change-password' || screen === 'nurse-add-visit' || screen === 'nurse-add-emergency')) {
+    if (!isAdmin && (screen === 'nurse-add-visit' || screen === 'nurse-add-emergency')) {
       return 'nurse-patients';
+    }
+    if (!isAdmin && (screen === 'nurse-change-password' || screen === 'nurse-finance')) {
+      return 'nurse-more';
     }
     for (const tab of tabs) {
       if (screen.startsWith(tab.matchPrefix)) return tab.id;
@@ -56,19 +60,6 @@ const BottomNav = React.memo(function BottomNav() {
             </button>
           );
         })}
-
-        {/* Nurse: Change Password & Logout */}
-        {!isAdmin && (
-          <button
-            onClick={() => useAppStore.getState().logout()}
-            className="flex flex-col items-center justify-center py-1 px-3 rounded-xl text-red-500"
-          >
-            <div className="p-1.5 rounded-xl">
-              <MoreHorizontal className="w-5 h-5" />
-            </div>
-            <span className="text-[10px] mt-0.5">خروج</span>
-          </button>
-        )}
       </div>
     </nav>
   );
