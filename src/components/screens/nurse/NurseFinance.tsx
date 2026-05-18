@@ -1,36 +1,53 @@
 'use client';
 
-import React, { useEffect, useState } from 'react';
+import React, { useEffect, useState, useCallback } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
-import { DollarSign, TrendingUp, CreditCard, Clock, CheckCircle, AlertCircle, XCircle, Stethoscope, User as UserIcon, Filter, ChevronDown, ChevronUp } from 'lucide-react';
+import { DollarSign, CreditCard, Clock, CheckCircle, AlertCircle, XCircle, Stethoscope, RefreshCw, Banknote } from 'lucide-react';
 import { useAppStore } from '@/lib/store';
 import { formatCurrency, formatDate, statusColors, statusLabels, type InvoiceItem } from '@/lib/constants';
+import { PaymentModal } from '@/components/shared/PaymentModal';
+import { SuccessCard } from '@/components/shared/SuccessCard';
+import { toast } from 'sonner';
 
 export function NurseFinance() {
-  const { user, setSelectedPatientId, setScreen } = useAppStore();
+  const { user } = useAppStore();
   const [invoices, setInvoices] = useState<InvoiceItem[]>([]);
   const [loading, setLoading] = useState(true);
   const [filter, setFilter] = useState<'all' | 'unpaid' | 'partial' | 'paid'>('all');
   const [stats, setStats] = useState({ totalRevenue: 0, paidAmount: 0, remainingAmount: 0, totalInvoices: 0 });
-  const [expandedInvoice, setExpandedInvoice] = useState<string | null>(null);
 
-  useEffect(() => {
-    const fetchData = async () => {
-      try {
-        const invRes = await fetch('/api/invoices');
-        if (invRes.ok) {
-          const invData = await invRes.json();
-          setInvoices(invData);
-          const totalRevenue = invData.reduce((s: number, i: InvoiceItem) => s + i.total, 0);
-          const paidAmount = invData.reduce((s: number, i: InvoiceItem) => s + i.paid, 0);
-          setStats({ totalRevenue, paidAmount, remainingAmount: totalRevenue - paidAmount, totalInvoices: invData.length });
-        }
-      } catch {} finally {
-        setLoading(false);
+  // Payment modal state
+  const [paymentModal, setPaymentModal] = useState<{
+    visible: boolean;
+    invoice: InvoiceItem | null;
+  }>({ visible: false, invoice: null });
+  const [paying, setPaying] = useState(false);
+
+  // Success card state
+  const [showSuccess, setShowSuccess] = useState(false);
+  const [successData, setSuccessData] = useState<{
+    patientName: string;
+    total: number;
+    paid: number;
+    remaining: number;
+  }>({ patientName: '', total: 0, paid: 0, remaining: 0 });
+
+  const fetchInvoices = useCallback(async () => {
+    try {
+      const invRes = await fetch('/api/invoices');
+      if (invRes.ok) {
+        const invData = await invRes.json();
+        setInvoices(invData);
+        const totalRevenue = invData.reduce((s: number, i: InvoiceItem) => s + i.total, 0);
+        const paidAmount = invData.reduce((s: number, i: InvoiceItem) => s + i.paid, 0);
+        setStats({ totalRevenue, paidAmount, remainingAmount: totalRevenue - paidAmount, totalInvoices: invData.length });
       }
-    };
-    fetchData();
+    } catch {} finally {
+      setLoading(false);
+    }
   }, []);
+
+  useEffect(() => { fetchInvoices(); }, [fetchInvoices]);
 
   const filteredInvoices = invoices.filter(i => filter === 'all' || i.status === filter);
 
@@ -49,6 +66,64 @@ export function NurseFinance() {
       case 'unpaid': return 'from-red-500 to-red-600';
       case 'partial': return 'from-yellow-500 to-amber-600';
       default: return 'from-gray-500 to-gray-600';
+    }
+  };
+
+  const handlePayClick = (inv: InvoiceItem) => {
+    setPaymentModal({ visible: true, invoice: inv });
+  };
+
+  const handlePaymentConfirm = async (amount: number, method: string) => {
+    const inv = paymentModal.invoice;
+    if (!inv) return;
+
+    setPaying(true);
+    try {
+      const res = await fetch(`/api/invoices/${inv.id}`, {
+        method: 'PUT',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ paid: amount }),
+      });
+
+      if (res.ok) {
+        const newPaid = inv.paid + amount;
+        const newRemaining = inv.total - newPaid;
+        const newStatus = newRemaining <= 0 ? 'paid' : 'partial';
+
+        // Update local state
+        setInvoices(prev => prev.map(i => {
+          if (i.id === inv.id) {
+            return { ...i, paid: newPaid, remaining: Math.max(0, newRemaining), status: newStatus };
+          }
+          return i;
+        }));
+
+        // Recalculate stats
+        const updatedInvoices = invoices.map(i => {
+          if (i.id === inv.id) return { ...i, paid: newPaid, remaining: Math.max(0, newRemaining), status: newStatus };
+          return i;
+        });
+        const totalRevenue = updatedInvoices.reduce((s, i) => s + i.total, 0);
+        const paidAmount = updatedInvoices.reduce((s, i) => s + i.paid, 0);
+        setStats({ totalRevenue, paidAmount, remainingAmount: totalRevenue - paidAmount, totalInvoices: updatedInvoices.length });
+
+        // Close modal & show success
+        setPaymentModal({ visible: false, invoice: null });
+
+        setSuccessData({
+          patientName: inv.patient?.name || 'مريض',
+          total: inv.total,
+          paid: newPaid,
+          remaining: Math.max(0, newRemaining),
+        });
+        setShowSuccess(true);
+      } else {
+        toast.error('خطأ في تسجيل الدفع');
+      }
+    } catch {
+      toast.error('خطأ في الاتصال');
+    } finally {
+      setPaying(false);
     }
   };
 
@@ -124,7 +199,7 @@ export function NurseFinance() {
                   <div className="flex items-center gap-2">
                     {getStatusIcon(inv.status)}
                     <div>
-                      <p className="font-bold text-sm">{inv.patient?.name || 'مريض'}</p>
+                      <p className="font-bold text-sm">{inv.patient?.name || inv.patientName || 'مريض'}</p>
                       <p className="text-[10px] opacity-80">فاتورة #{inv.id.slice(-6)}</p>
                     </div>
                   </div>
@@ -137,7 +212,7 @@ export function NurseFinance() {
                 </div>
               </div>
 
-              {/* Invoice Items (expandable) */}
+              {/* Invoice Items */}
               <div className="p-3">
                 {inv.items && inv.items.length > 0 && (
                   <div className="space-y-2 mb-3">
@@ -192,6 +267,25 @@ export function NurseFinance() {
                     {inv.total > 0 ? Math.round((inv.paid / inv.total) * 100) : 0}% مدفوع
                   </p>
                 </div>
+
+                {/* Pay Button */}
+                {inv.remaining > 0 && (
+                  <button
+                    onClick={() => handlePayClick(inv)}
+                    className="w-full mt-3 h-10 bg-gradient-to-l from-emerald-600 to-teal-600 text-white font-bold rounded-xl text-sm flex items-center justify-center gap-2 shadow-sm shadow-emerald-500/20 active:scale-[0.98] transition-transform"
+                  >
+                    <Banknote className="w-4 h-4" />
+                    تسديد {formatCurrency(inv.remaining)}
+                  </button>
+                )}
+
+                {/* Paid stamp */}
+                {inv.status === 'paid' && (
+                  <div className="mt-3 flex items-center justify-center gap-2 py-2 bg-green-50 dark:bg-green-900/20 rounded-xl">
+                    <CheckCircle className="w-5 h-5 text-green-600 dark:text-green-400" />
+                    <span className="text-sm font-bold text-green-600 dark:text-green-400">مدفوع بالكامل</span>
+                  </div>
+                )}
               </div>
             </motion.div>
           ))}
@@ -204,6 +298,33 @@ export function NurseFinance() {
           <p className="text-muted-foreground mt-3 text-sm">لا توجد فواتير</p>
         </div>
       )}
+
+      {/* Payment Modal */}
+      {paymentModal.invoice && (
+        <PaymentModal
+          visible={paymentModal.visible}
+          onClose={() => setPaymentModal({ visible: false, invoice: null })}
+          onConfirm={handlePaymentConfirm}
+          invoiceId={paymentModal.invoice.id.slice(-6)}
+          patientName={paymentModal.invoice.patient?.name || paymentModal.invoice.patientName || 'مريض'}
+          total={paymentModal.invoice.total}
+          currentPaid={paymentModal.invoice.paid}
+          remaining={paymentModal.invoice.remaining}
+          loading={paying}
+        />
+      )}
+
+      {/* Payment Success Card */}
+      <SuccessCard
+        visible={showSuccess}
+        onClose={() => setShowSuccess(false)}
+        type="payment"
+        title="تم تسجيل الدفع بنجاح"
+        patientName={successData.patientName}
+        total={successData.total}
+        paid={successData.paid}
+        remaining={successData.remaining}
+      />
     </div>
   );
 }
