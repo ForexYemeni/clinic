@@ -1,21 +1,25 @@
 'use client';
 
 import React, { useEffect, useState } from 'react';
-import { ArrowRight, Plus, Search, User as UserIcon, Phone, Stethoscope, Check, X } from 'lucide-react';
+import { ArrowRight, Plus, Search, User as UserIcon, Stethoscope, Check, AlertCircle } from 'lucide-react';
 import { useAppStore } from '@/lib/store';
 import { formatCurrency, type PatientItem, type ServiceItem } from '@/lib/constants';
 import { toast } from 'sonner';
 
 export function NurseAddVisit() {
-  const { setScreen, user } = useAppStore();
-  const [step, setStep] = useState<'select-patient' | 'add-visit'>('select-patient');
+  const { setScreen, user, selectedPatientId: preselectedPatientId } = useAppStore();
+  const [step, setStep] = useState<'select-patient' | 'add-visit'>(
+    preselectedPatientId ? 'add-visit' : 'select-patient'
+  );
   const [patients, setPatients] = useState<PatientItem[]>([]);
   const [services, setServices] = useState<ServiceItem[]>([]);
   const [search, setSearch] = useState('');
-  const [selectedPatientId, setSelectedPatientId] = useState('');
+  const [activePatientId, setActivePatientId] = useState(preselectedPatientId || '');
   const [selectedPatientName, setSelectedPatientName] = useState('');
   const [loading, setLoading] = useState(true);
+  const [servicesLoading, setServicesLoading] = useState(true);
   const [submitting, setSubmitting] = useState(false);
+  const [servicesError, setServicesError] = useState('');
 
   // Visit form
   const [selectedServices, setSelectedServices] = useState<string[]>([]);
@@ -34,18 +38,53 @@ export function NurseAddVisit() {
   useEffect(() => {
     const fetchData = async () => {
       try {
-        const [pRes, sRes] = await Promise.all([fetch('/api/patients'), fetch('/api/services')]);
-        if (pRes.ok) setPatients(await pRes.json());
+        const pRes = await fetch('/api/patients');
+        if (pRes.ok) {
+          const pData = await pRes.json();
+          setPatients(pData);
+          // If we have a pre-selected patient, get its name
+          if (preselectedPatientId || activePatientId) {
+            const pid = activePatientId || preselectedPatientId;
+            const found = pData.find((p: PatientItem) => p.id === pid);
+            if (found) setSelectedPatientName(found.name);
+          }
+        }
+      } catch {
+        toast.error('خطأ في تحميل المرضى');
+      } finally {
+        setLoading(false);
+      }
+    };
+
+    const fetchServices = async () => {
+      try {
+        setServicesError('');
+        const sRes = await fetch('/api/services');
         if (sRes.ok) {
           const sData = await sRes.json();
-          setServices(sData.filter((s: ServiceItem) => s.status === 'active'));
+          const activeServices = sData.filter((s: any) => s.status === 'active' || s.active === true);
+          setServices(activeServices);
+          if (activeServices.length === 0) {
+            setServicesError('لا توجد خدمات نشطة. يجب على الإدارة إضافة خدمات أولاً.');
+          }
+        } else {
+          const errData = await sRes.json().catch(() => ({}));
+          setServicesError('خطأ في تحميل الخدمات: ' + (errData.error || 'خطأ غير معروف'));
         }
-      } catch {} finally { setLoading(false); }
+      } catch {
+        setServicesError('خطأ في الاتصال بالخادم لتحميل الخدمات');
+      } finally {
+        setServicesLoading(false);
+      }
     };
-    fetchData();
-  }, []);
 
-  const filteredPatients = patients.filter(p => p.name.includes(search) || (p.phone && p.phone.includes(search)));
+    fetchData();
+    fetchServices();
+  }, [preselectedPatientId, activePatientId]);
+
+  const filteredPatients = patients.filter(p =>
+    p.name.includes(search) || (p.phone && p.phone.includes(search))
+  );
 
   const totalAmount = selectedServices.reduce((sum, id) => {
     const svc = services.find(s => s.id === id);
@@ -58,8 +97,14 @@ export function NurseAddVisit() {
     );
   };
 
+  const handleSelectPatient = (id: string, name: string) => {
+    setActivePatientId(id);
+    setSelectedPatientName(name);
+    setStep('add-visit');
+  };
+
   const handleSubmit = async () => {
-    if (!selectedPatientId) { toast.error('اختر المريض'); return; }
+    if (!activePatientId) { toast.error('اختر المريض'); return; }
     if (selectedServices.length === 0) { toast.error('اختر خدمة واحدة على الأقل'); return; }
 
     setSubmitting(true);
@@ -68,7 +113,7 @@ export function NurseAddVisit() {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({
-          patientId: selectedPatientId,
+          patientId: activePatientId || preselectedPatientId,
           nurseId: user?.id,
           nurseName: user?.name,
           reason: visitForm.reason || 'زيارة عامة',
@@ -87,11 +132,10 @@ export function NurseAddVisit() {
       });
 
       if (res.ok) {
-        const data = await res.json();
         toast.success('تم تسجيل الزيارة وإنشاء الفاتورة تلقائياً');
         setScreen('nurse-patients');
       } else {
-        const data = await res.json();
+        const data = await res.json().catch(() => ({}));
         toast.error(data.error || 'خطأ في التسجيل');
       }
     } catch {
@@ -103,7 +147,16 @@ export function NurseAddVisit() {
 
   return (
     <div className="p-4 pb-24">
-      <button onClick={() => step === 'add-visit' ? setStep('select-patient') : setScreen('nurse-patients')} className="flex items-center gap-1 text-sm text-muted-foreground mb-4">
+      <button
+        onClick={() => {
+          if (step === 'add-visit' && !preselectedPatientId) {
+            setStep('select-patient');
+          } else {
+            setScreen('nurse-patients');
+          }
+        }}
+        className="flex items-center gap-1 text-sm text-muted-foreground mb-4"
+      >
         <ArrowRight className="w-4 h-4" /> رجوع
       </button>
 
@@ -125,37 +178,40 @@ export function NurseAddVisit() {
 
           {loading ? (
             <div className="space-y-3">{[1,2,3].map(i => <div key={i} className="h-16 bg-gray-100 dark:bg-gray-800 rounded-xl animate-pulse" />)}</div>
+          ) : filteredPatients.length === 0 ? (
+            <div className="text-center py-8">
+              <UserIcon className="w-12 h-12 mx-auto text-muted-foreground/30 mb-3" />
+              <p className="text-muted-foreground text-sm">لا يوجد مرضى</p>
+              <button
+                onClick={() => setScreen('admin-add-patient')}
+                className="mt-3 text-emerald-600 text-sm font-medium"
+              >
+                إضافة مريض جديد
+              </button>
+            </div>
           ) : (
             <div className="space-y-2">
               {filteredPatients.map(patient => (
                 <button
                   key={patient.id}
-                  onClick={() => {
-                    setSelectedPatientId(patient.id);
-                    setSelectedPatientName(patient.name);
-                    setStep('add-visit');
-                  }}
-                  className="w-full bg-white dark:bg-gray-800 rounded-xl p-3 border border-border text-right active:scale-[0.98] transition-transform flex items-center justify-between"
+                  onClick={() => handleSelectPatient(patient.id, patient.name)}
+                  className="w-full bg-white dark:bg-gray-800 rounded-xl p-3 border border-border text-right active:scale-[0.98] transition-transform flex items-center gap-3"
                 >
-                  <div className="flex items-center gap-3">
-                    <div className="w-10 h-10 bg-emerald-100 dark:bg-emerald-900/30 rounded-xl flex items-center justify-center">
-                      <UserIcon className="w-5 h-5 text-emerald-600" />
-                    </div>
-                    <div>
-                      <p className="font-medium text-sm">{patient.name}</p>
-                      <p className="text-xs text-muted-foreground">{patient.age} سنة</p>
-                    </div>
+                  <div className="w-10 h-10 bg-emerald-100 dark:bg-emerald-900/30 rounded-xl flex items-center justify-center">
+                    <UserIcon className="w-5 h-5 text-emerald-600" />
+                  </div>
+                  <div>
+                    <p className="font-medium text-sm">{patient.name}</p>
+                    <p className="text-xs text-muted-foreground">{patient.age} سنة - {patient.gender === 'male' ? 'ذكر' : 'أنثى'}</p>
                   </div>
                 </button>
               ))}
             </div>
           )}
 
-          {/* Or create new patient inline */}
+          {/* Add new patient */}
           <button
-            onClick={() => {
-              setScreen('admin-add-patient');
-            }}
+            onClick={() => setScreen('admin-add-patient')}
             className="w-full mt-4 flex items-center justify-center gap-2 h-12 border-2 border-dashed border-emerald-300 dark:border-emerald-700 rounded-xl text-emerald-600 text-sm font-medium active:scale-[0.98] transition-transform"
           >
             <Plus className="w-4 h-4" />
@@ -165,9 +221,21 @@ export function NurseAddVisit() {
       ) : (
         <>
           <h2 className="text-lg font-bold mb-2">تسجيل زيارة</h2>
-          <div className="bg-emerald-50 dark:bg-emerald-900/20 rounded-xl p-3 mb-4 flex items-center gap-2">
-            <UserIcon className="w-5 h-5 text-emerald-600" />
-            <span className="text-sm font-medium text-emerald-800 dark:text-emerald-300">{selectedPatientName}</span>
+
+          {/* Selected Patient */}
+          <div className="bg-emerald-50 dark:bg-emerald-900/20 rounded-xl p-3 mb-4 flex items-center justify-between">
+            <div className="flex items-center gap-2">
+              <UserIcon className="w-5 h-5 text-emerald-600" />
+              <span className="text-sm font-medium text-emerald-800 dark:text-emerald-300">{selectedPatientName}</span>
+            </div>
+            {!preselectedPatientId && (
+              <button
+                onClick={() => setStep('select-patient')}
+                className="text-xs text-emerald-600 font-medium"
+              >
+                تغيير
+              </button>
+            )}
           </div>
 
           {/* Services Selection */}
@@ -176,32 +244,54 @@ export function NurseAddVisit() {
               <Stethoscope className="w-4 h-4 text-emerald-500" />
               الخدمات المقدمة *
             </h3>
-            <div className="space-y-2">
-              {services.map(svc => (
-                <button
-                  key={svc.id}
-                  onClick={() => toggleService(svc.id)}
-                  className={`w-full flex items-center justify-between p-3 rounded-xl border transition-all ${
-                    selectedServices.includes(svc.id)
-                      ? 'border-emerald-500 bg-emerald-50 dark:bg-emerald-900/20'
-                      : 'border-border bg-white dark:bg-gray-800'
-                  }`}
-                >
-                  <div className="flex items-center gap-2">
-                    <div className={`w-6 h-6 rounded-lg flex items-center justify-center ${
-                      selectedServices.includes(svc.id) ? 'bg-emerald-500 text-white' : 'bg-gray-100 dark:bg-gray-700'
-                    }`}>
-                      {selectedServices.includes(svc.id) ? <Check className="w-3.5 h-3.5" /> : <span className="text-xs">{services.indexOf(svc) + 1}</span>}
-                    </div>
-                    <div className="text-right">
-                      <p className="text-sm font-medium">{svc.nameAr}</p>
-                      <p className="text-[10px] text-muted-foreground">{svc.category} - {svc.duration} دقيقة</p>
-                    </div>
+
+            {servicesLoading ? (
+              <div className="space-y-2">{[1,2,3,4].map(i => <div key={i} className="h-14 bg-gray-100 dark:bg-gray-800 rounded-xl animate-pulse" />)}</div>
+            ) : servicesError ? (
+              <div className="bg-red-50 dark:bg-red-900/20 rounded-xl p-4 text-center">
+                <AlertCircle className="w-8 h-8 mx-auto text-red-400 mb-2" />
+                <p className="text-sm text-red-600 dark:text-red-400">{servicesError}</p>
+              </div>
+            ) : services.length === 0 ? (
+              <div className="bg-yellow-50 dark:bg-yellow-900/20 rounded-xl p-4 text-center">
+                <Stethoscope className="w-8 h-8 mx-auto text-yellow-400 mb-2" />
+                <p className="text-sm text-yellow-700 dark:text-yellow-400">لا توجد خدمات متاحة</p>
+                <p className="text-xs text-muted-foreground mt-1">يجب على الإدارة إضافة خدمات أولاً</p>
+              </div>
+            ) : (
+              <div className="space-y-2">
+                {/* Group by category */}
+                {Array.from(new Set(services.map(s => s.category || 'أخرى'))).map(category => (
+                  <div key={category}>
+                    <p className="text-xs font-medium text-muted-foreground mb-1.5 mt-2">{category}</p>
+                    {services.filter(s => (s.category || 'أخرى') === category).map(svc => (
+                      <button
+                        key={svc.id}
+                        onClick={() => toggleService(svc.id)}
+                        className={`w-full flex items-center justify-between p-3 rounded-xl border transition-all mb-1.5 ${
+                          selectedServices.includes(svc.id)
+                            ? 'border-emerald-500 bg-emerald-50 dark:bg-emerald-900/20'
+                            : 'border-border bg-white dark:bg-gray-800'
+                        }`}
+                      >
+                        <div className="flex items-center gap-2">
+                          <div className={`w-6 h-6 rounded-lg flex items-center justify-center transition-all ${
+                            selectedServices.includes(svc.id) ? 'bg-emerald-500 text-white' : 'bg-gray-100 dark:bg-gray-700'
+                          }`}>
+                            {selectedServices.includes(svc.id) ? <Check className="w-3.5 h-3.5" /> : <span className="text-[10px]">{services.indexOf(svc) + 1}</span>}
+                          </div>
+                          <div className="text-right">
+                            <p className="text-sm font-medium">{svc.nameAr}</p>
+                            <p className="text-[10px] text-muted-foreground">{svc.duration} دقيقة</p>
+                          </div>
+                        </div>
+                        <span className="text-sm font-bold text-emerald-600 dark:text-emerald-400">{formatCurrency(svc.price)}</span>
+                      </button>
+                    ))}
                   </div>
-                  <span className="text-sm font-bold text-emerald-600">{formatCurrency(svc.price)}</span>
-                </button>
-              ))}
-            </div>
+                ))}
+              </div>
+            )}
           </div>
 
           {/* Total */}
@@ -295,10 +385,16 @@ export function NurseAddVisit() {
 
           <button
             onClick={handleSubmit}
-            disabled={submitting}
+            disabled={submitting || services.length === 0}
             className="w-full h-12 bg-gradient-to-l from-emerald-600 to-teal-600 text-white font-bold rounded-xl shadow-lg disabled:opacity-60 active:scale-[0.98] transition-transform"
           >
-            {submitting ? <div className="w-5 h-5 border-2 border-white/30 border-t-white rounded-full animate-spin mx-auto" /> : `تسجيل الزيارة - ${formatCurrency(totalAmount)}`}
+            {submitting ? (
+              <div className="w-5 h-5 border-2 border-white/30 border-t-white rounded-full animate-spin mx-auto" />
+            ) : selectedServices.length > 0 ? (
+              `تسجيل الزيارة - ${formatCurrency(totalAmount)}`
+            ) : (
+              'اختر الخدمات أولاً'
+            )}
           </button>
         </>
       )}

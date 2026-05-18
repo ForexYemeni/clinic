@@ -2,7 +2,7 @@
 
 import React, { useEffect, useState } from 'react';
 import { motion } from 'framer-motion';
-import { ArrowRight, Phone, User as UserIcon, Droplets, Calendar, FileText, CreditCard, ClipboardList, Stethoscope, Activity } from 'lucide-react';
+import { ArrowRight, Phone, User as UserIcon, Droplets, Calendar, FileText, CreditCard, ClipboardList, Stethoscope, Activity, ClipboardPlus } from 'lucide-react';
 import { useAppStore } from '@/lib/store';
 import { formatCurrency, formatDate, formatTime, formatRelativeTime, genderLabels, statusColors, statusLabels, type PatientItem, type VisitItem, type InvoiceItem } from '@/lib/constants';
 import { toast } from 'sonner';
@@ -58,9 +58,20 @@ export function PatientDetail({ role = 'admin' }: Props) {
     <div className="pb-24">
       {/* Patient Header */}
       <div className="bg-gradient-to-l from-emerald-600 to-teal-600 text-white p-4 pb-6">
-        <button onClick={() => setScreen(role === 'admin' ? 'admin-patients' : 'nurse-patients')} className="flex items-center gap-1 text-white/80 mb-3 text-sm">
-          <ArrowRight className="w-4 h-4" /> رجوع
-        </button>
+        <div className="flex items-center justify-between mb-3">
+          <button onClick={() => setScreen(role === 'admin' ? 'admin-patients' : 'nurse-patients')} className="flex items-center gap-1 text-white/80 text-sm">
+            <ArrowRight className="w-4 h-4" /> رجوع
+          </button>
+          {role === 'nurse' && (
+            <button
+              onClick={() => setScreen('nurse-add-visit')}
+              className="flex items-center gap-1.5 bg-white/20 backdrop-blur-sm px-3 py-1.5 rounded-xl text-sm font-medium active:scale-[0.97] transition-transform"
+            >
+              <ClipboardPlus className="w-4 h-4" />
+              إضافة زيارة
+            </button>
+          )}
+        </div>
         <div className="flex items-center gap-3">
           <div className="w-14 h-14 bg-white/20 rounded-2xl flex items-center justify-center">
             <UserIcon className="w-8 h-8" />

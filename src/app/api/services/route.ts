@@ -6,12 +6,18 @@ export async function GET() {
   try {
     const snapshot = await adminDb
       .collection('services')
-      .orderBy('category')
       .get();
 
     const services = snapshot.docs
       .map((doc) => ({ id: doc.id, ...doc.data() }))
-      .filter((service: any) => service.status !== 'deleted');
+      .filter((service: any) => service.status !== 'deleted')
+      .sort((a: any, b: any) => {
+        // Sort by category then name
+        const catA = a.category || '';
+        const catB = b.category || '';
+        if (catA !== catB) return catA.localeCompare(catB, 'ar');
+        return (a.nameAr || '').localeCompare(b.nameAr || '', 'ar');
+      });
 
     return NextResponse.json(services);
   } catch (error) {
