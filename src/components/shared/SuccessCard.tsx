@@ -2,7 +2,7 @@
 
 import React from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
-import { CheckCircle, X, Stethoscope, CreditCard, User as UserIcon, FileText } from 'lucide-react';
+import { CheckCircle, X, Stethoscope, CreditCard, User as UserIcon, Banknote } from 'lucide-react';
 import { formatCurrency } from '@/lib/constants';
 
 interface SuccessCardService {
@@ -37,6 +37,14 @@ export function SuccessCard({
   invoiceId,
   message,
 }: SuccessCardProps) {
+  const headerGradient = type === 'payment'
+    ? 'from-green-500 to-emerald-500'
+    : type === 'emergency'
+    ? 'from-red-500 to-orange-500'
+    : 'from-emerald-500 to-teal-500';
+
+  const isPaidInFull = remaining !== undefined && remaining <= 0;
+
   return (
     <AnimatePresence>
       {visible && (
@@ -56,7 +64,7 @@ export function SuccessCard({
             onClick={(e) => e.stopPropagation()}
           >
             {/* Success Header */}
-            <div className="bg-gradient-to-l from-emerald-500 to-teal-500 p-5 text-center text-white relative">
+            <div className={`bg-gradient-to-l ${headerGradient} p-5 text-center text-white relative`}>
               <button
                 onClick={onClose}
                 className="absolute top-3 right-3 w-7 h-7 bg-white/20 rounded-full flex items-center justify-center backdrop-blur-sm"
@@ -69,10 +77,20 @@ export function SuccessCard({
                 transition={{ type: 'spring', delay: 0.15, damping: 12 }}
                 className="w-16 h-16 bg-white/20 rounded-full flex items-center justify-center mx-auto mb-3 backdrop-blur-sm"
               >
-                <CheckCircle className="w-9 h-9" />
+                {type === 'payment' ? (
+                  <Banknote className="w-9 h-9" />
+                ) : (
+                  <CheckCircle className="w-9 h-9" />
+                )}
               </motion.div>
               <h3 className="text-lg font-bold">{title}</h3>
               {message && <p className="text-xs opacity-80 mt-1">{message}</p>}
+              {type === 'payment' && isPaidInFull && (
+                <div className="mt-2 inline-flex items-center gap-1.5 bg-white/20 px-3 py-1 rounded-full backdrop-blur-sm">
+                  <CheckCircle className="w-4 h-4" />
+                  <span className="text-xs font-bold">مدفوع بالكامل</span>
+                </div>
+              )}
             </div>
 
             {/* Card Content */}
@@ -108,12 +126,12 @@ export function SuccessCard({
                 </div>
               )}
 
-              {/* Invoice */}
+              {/* Invoice / Payment Info */}
               {total !== undefined && (
                 <div className="bg-gray-50 dark:bg-gray-700/50 rounded-xl p-3">
                   <div className="flex items-center gap-2 mb-2">
                     <CreditCard className="w-4 h-4 text-emerald-600 dark:text-emerald-400" />
-                    <p className="text-xs font-bold">الفاتورة</p>
+                    <p className="text-xs font-bold">{type === 'payment' ? 'تفاصيل الدفع' : 'الفاتورة'}</p>
                     {invoiceId && (
                       <span className="text-[10px] text-muted-foreground mr-auto" dir="ltr">#{invoiceId}</span>
                     )}
@@ -140,10 +158,13 @@ export function SuccessCard({
                   <div className="mt-2">
                     <div className="h-1.5 bg-gray-200 dark:bg-gray-600 rounded-full overflow-hidden">
                       <div
-                        className="h-full bg-emerald-500 rounded-full transition-all duration-500"
+                        className={`h-full rounded-full transition-all duration-500 ${isPaidInFull ? 'bg-green-500' : 'bg-emerald-500'}`}
                         style={{ width: `${total > 0 ? Math.min(100, ((paid || 0) / total) * 100) : 0}%` }}
                       />
                     </div>
+                    <p className="text-[10px] text-center mt-1 text-muted-foreground">
+                      {total > 0 ? Math.round(((paid || 0) / total) * 100) : 0}% مدفوع
+                    </p>
                   </div>
                 </div>
               )}
