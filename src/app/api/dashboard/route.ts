@@ -1,59 +1,113 @@
-import { db } from '@/lib/db';
+import { adminDb } from '@/lib/firebase-admin';
 import { NextResponse } from 'next/server';
 
 export async function GET() {
   try {
-    const [
-      totalPatients,
-      totalEmergencies,
-      activeEmergencies,
-      totalAppointments,
-      todayAppointments,
-      totalPayments,
-      totalServices,
-      totalNurses,
-      todayPayments,
-      pendingInvoices,
-    ] = await Promise.all([
-      db.patient.count(),
-      db.emergency.count(),
-      db.emergency.count({ where: { status: 'active' } }),
-      db.appointment.count(),
-      db.appointment.count({ where: { date: { gte: new Date(new Date().setHours(0, 0, 0, 0)) } } }),
-      db.payment.aggregate({ _sum: { amount: true } }),
-      db.patientService.count(),
-      db.user.count({ where: { role: 'nurse', active: true } }),
-      db.payment.aggregate({
-        _sum: { amount: true },
-        where: { createdAt: { gte: new Date(new Date().setHours(0, 0, 0, 0)) } },
-      }),
-      db.invoice.count({ where: { status: { in: ['unpaid', 'partial'] } } }),
+    const [patientsSnap, emergenciesSnap, appointmentsSnap, servicesSnap, nursesSnap, paymentsSnap, invoicesSnap] = await Promise.all([
+      adminDb.collection('patients').get(),
+      adminDb.collection('emergencies').get(),
+      adminDb.collection('appointments').get(),
+      adminDb.collection('patientServices').get(),
+      adminDb.collection('users').where('role', '==', 'nurse').where('active', '==', true).get(),
+      adminDb.collection('payments').get(),
+      adminDb.collection('invoices').where('status', 'in', ['unpaid', 'partial']).get(),
     ]);
 
-    const servicesByCategory = await db.service.groupBy({
-      by: ['category'],
-      _count: { id: true },
-      where: { active: true },
-    });
+    const totalPatients = patientsSnap.size;
+    const totalEmergencies = emergenciesSnap.size;
+    const activeEmergencies = emergenciesSnap.docs.filter(d => d.data().status === 'active').length;
+    const totalAppointments = appointmentsSnap.size;
 
-    const recentEmergencies = await db.emergency.findMany({
-      where: { status: 'active' },
-      orderBy: { arrivalTime: 'desc' },
-      take: 5,
-      include: { patient: true, nurse: true },
-    });
+    const today = new Date();
+    today.setHours(0, 0, 0, 0);
+    const todayStr = today.toISOString();
+    
+    const todayAppointments = appointmentsSnap.docs.filter(d => {
+      const date = d.data().date;
+      return date && new Date(date) >= new Date(todayStr);
+    }).length;
 
-    const recentPayments = await db.payment.findMany({
-      orderBy: { createdAt: 'desc' },
-      take: 5,
-      include: { patient: true },
-    });
+    const totalRevenue = paymentsSnap.docs.reduce((sum, d) => {
+      const data = d.data();
+      return sum + (data.type === 'payment' ? (data.amount || 0) : -(data.amount || 0));
+    }, 0);
 
-    const todaySchedule = await db.appointment.findMany({
-      where: { date: { gte: new Date(new Date().setHours(0, 0, 0, 0)), lt: new Date(new Date().setHours(23, 59, 59, 999)) } },
-      orderBy: { date: 'asc' },
-      include: { patient: true, nurse: true },
+    const todayPayments = paymentsSnap.docs.filter(d => {
+      const date = d.data().createdAt;
+      return date && new Date(date) >= new Date(todayStr);
+    }).reduce((sum, d) => {
+      const data = d.data();
+      return sum + (data.type === 'payment' ? (data.amount || 0) : -(data.amount || 0));
+    }, 0);
+
+    const totalServices = servicesSnap.size;
+    const totalNurses = nursesSnap.size;
+    const pendingInvoices = invoicesSnap.size;
+
+    // Services by category
+    const categoryMap: Record<string, number> = {};
+    const servicesCatSnap = await adminDb.collection('services').where('active', '==', true).get();
+    servicesCatSnap.docs.forEach(d => {
+      const cat = d.data().category || 'أخرى';
+      categoryMap[cat] = (categoryMap[cat] || 0) + 1;
     });
+    const servicesByCategory = Object.entries(categoryMap).map(([category, count]) => ({
+      category,
+      _count: { id: count },
+    }));
+
+    // Recent emergencies (active)
+    const recentEmergencies = [];
+    const activeEmergenciesDocs = emergenciesSnap.docs.filter(d => d.data().status === 'active').slice(0, 5);
+    for (const doc of activeEmergenciesDocs) {
+      const data = { id: doc.id, ...doc.data() } as any;
+      if (data.patientId) {
+        const patientDoc = await adminDb.collection('patients').doc(data.patientId).get();
+        if (patientDoc.exists) data.patient = { id: patientDoc.id, ...patientDoc.data() };
+      }
+      if (data.nurseId) {
+        const nurseDoc = await adminDb.collection('users').doc(data.nurseId).get();
+        if (nurseDoc.exists) data.nurse = { id: nurseDoc.id, name: nurseDoc.data()?.name };
+      }
+      recentEmergencies.push(data);
+    }
+
+    // Recent payments
+    const recentPayments = [];
+    const sortedPayments = paymentsSnap.docs.sort((a, b) => {
+      const da = a.data().createdAt || '';
+      const db = b.data().createdAt || '';
+      return db.localeCompare(da);
+    }).slice(0, 5);
+    for (const doc of sortedPayments) {
+      const data = { id: doc.id, ...doc.data() } as any;
+      if (data.patientId) {
+        const patientDoc = await adminDb.collection('patients').doc(data.patientId).get();
+        if (patientDoc.exists) data.patient = { id: patientDoc.id, ...patientDoc.data() };
+      }
+      recentPayments.push(data);
+    }
+
+    // Today schedule
+    const todaySchedule = [];
+    const todayApptsDocs = appointmentsSnap.docs.filter(d => {
+      const date = d.data().date;
+      if (!date) return false;
+      const dDate = new Date(date);
+      return dDate >= new Date(todayStr) && dDate < new Date(new Date(todayStr).getTime() + 86400000);
+    });
+    for (const doc of todayApptsDocs) {
+      const data = { id: doc.id, ...doc.data() } as any;
+      if (data.patientId) {
+        const patientDoc = await adminDb.collection('patients').doc(data.patientId).get();
+        if (patientDoc.exists) data.patient = { id: patientDoc.id, ...patientDoc.data() };
+      }
+      if (data.nurseId) {
+        const nurseDoc = await adminDb.collection('users').doc(data.nurseId).get();
+        if (nurseDoc.exists) data.nurse = { id: nurseDoc.id, name: nurseDoc.data()?.name };
+      }
+      todaySchedule.push(data);
+    }
 
     return NextResponse.json({
       totalPatients,
@@ -61,17 +115,17 @@ export async function GET() {
       activeEmergencies,
       totalAppointments,
       todayAppointments,
-      totalRevenue: totalPayments._sum.amount || 0,
+      totalRevenue,
       totalServices,
       totalNurses,
-      todayRevenue: todayPayments._sum.amount || 0,
+      todayRevenue: todayPayments,
       pendingInvoices,
       servicesByCategory,
       recentEmergencies,
       recentPayments,
       todaySchedule,
     });
-  } catch (error) {
-    return NextResponse.json({ error: 'Failed' }, { status: 500 });
+  } catch (error: any) {
+    return NextResponse.json({ error: error.message || 'Failed' }, { status: 500 });
   }
 }

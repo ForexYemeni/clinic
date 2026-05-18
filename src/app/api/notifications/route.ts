@@ -1,4 +1,4 @@
-import { db } from '@/lib/db';
+import { adminDb } from '@/lib/firebase-admin';
 import { NextResponse } from 'next/server';
 
 export async function GET(request: Request) {
@@ -7,10 +7,8 @@ export async function GET(request: Request) {
     const userId = searchParams.get('userId');
     if (!userId) return NextResponse.json({ error: 'userId required' }, { status: 400 });
     
-    const notifications = await db.notification.findMany({
-      where: { userId },
-      orderBy: { createdAt: 'desc' },
-    });
+    const snapshot = await adminDb.collection('notifications').where('userId', '==', userId).orderBy('createdAt', 'desc').get();
+    const notifications = snapshot.docs.map((doc) => ({ id: doc.id, ...doc.data() }));
     return NextResponse.json(notifications);
   } catch (error) {
     return NextResponse.json({ error: 'Failed' }, { status: 500 });
@@ -20,8 +18,8 @@ export async function GET(request: Request) {
 export async function POST(request: Request) {
   try {
     const body = await request.json();
-    const notification = await db.notification.create({ data: body });
-    return NextResponse.json(notification);
+    const docRef = await adminDb.collection('notifications').add({ ...body, createdAt: new Date().toISOString() });
+    return NextResponse.json({ id: docRef.id, ...body });
   } catch (error) {
     return NextResponse.json({ error: 'Failed' }, { status: 500 });
   }
