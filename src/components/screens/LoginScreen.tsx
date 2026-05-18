@@ -2,7 +2,7 @@
 
 import React, { useState, useEffect } from 'react';
 import { motion } from 'framer-motion';
-import { Heart, AlertCircle, Eye, EyeOff } from 'lucide-react';
+import { Heart, AlertCircle, Eye, EyeOff, Phone } from 'lucide-react';
 import { Card, CardContent } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
@@ -12,22 +12,38 @@ import { useAppStore } from '@/lib/store';
 import { toast } from 'sonner';
 
 const LoginScreen = React.memo(function LoginScreen() {
-  const { setUser, setScreen } = useAppStore();
-  const [email, setEmail] = useState('');
+  const { setUser, setScreen, setIsFirstSetup, setClinicName } = useAppStore();
+  const [phone, setPhone] = useState('');
   const [password, setPassword] = useState('');
   const [showPassword, setShowPassword] = useState(false);
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState('');
-  const [rememberMe, setRememberMe] = useState(false);
+  const [checkingSetup, setCheckingSetup] = useState(true);
 
-  // Load saved email
+  // Check setup status and load saved credentials
   useEffect(() => {
-    const saved = localStorage.getItem('clinic-remember-email');
-    if (saved) {
-      setEmail(saved);
-      setRememberMe(true);
+    const checkSetup = async () => {
+      try {
+        const res = await fetch('/api/clinic');
+        const data = await res.json();
+        setIsFirstSetup(data.isFirstSetup);
+        setClinicName(data.name);
+        if (!data.isFirstSetup) {
+          setScreen('admin-setup');
+          return;
+        }
+      } catch {
+        // Default to login
+      }
+      setCheckingSetup(false);
+    };
+
+    // Load saved phone
+    const savedPhone = localStorage.getItem('clinic-remember-phone');
+    if (savedPhone) {
+      setPhone(savedPhone);
     } else {
-      setEmail('admin@clinic.com');
+      setPhone('050000000');
     }
     const savedPass = localStorage.getItem('clinic-remember-pass');
     if (savedPass) {
@@ -35,38 +51,54 @@ const LoginScreen = React.memo(function LoginScreen() {
     } else {
       setPassword('admin123');
     }
-  }, []);
+
+    checkSetup();
+  }, [setIsFirstSetup, setClinicName, setScreen]);
 
   const handleLogin = async () => {
-    if (!email || !password) { setError('يرجى إدخال البريد وكلمة المرور'); return; }
+    // Validate phone
+    const phoneClean = phone.replace(/\D/g, '');
+    if (phoneClean.length !== 9) {
+      setError('رقم الهاتف يجب أن يكون 9 أرقام');
+      return;
+    }
+    if (!password) {
+      setError('يرجى إدخال كلمة المرور');
+      return;
+    }
     setLoading(true);
     setError('');
     try {
       const res = await fetch('/api/auth', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ email, password }),
+        body: JSON.stringify({ phone: phoneClean, password }),
       });
       const data = await res.json();
       if (!res.ok) { setError(data.error); return; }
       setUser(data.user);
+      if (data.clinicName) setClinicName(data.clinicName);
+      if (data.isFirstSetup !== undefined) setIsFirstSetup(data.isFirstSetup);
       setScreen(data.user.role === 'admin' ? 'admin-dashboard' : 'nurse-dashboard');
       toast.success(`مرحباً ${data.user.name}`);
 
-      // Save email if remember me
-      if (rememberMe) {
-        localStorage.setItem('clinic-remember-email', email);
-        localStorage.setItem('clinic-remember-pass', password);
-      } else {
-        localStorage.removeItem('clinic-remember-email');
-        localStorage.removeItem('clinic-remember-pass');
-      }
+      // Save phone if remember
+      localStorage.setItem('clinic-remember-phone', phoneClean);
+      localStorage.setItem('clinic-remember-pass', password);
     } catch {
       setError('خطأ في الاتصال');
     } finally {
       setLoading(false);
     }
   };
+
+  if (checkingSetup) {
+    return (
+      <div className="min-h-screen bg-gradient-to-br from-emerald-50 via-teal-50 to-emerald-50 dark:from-gray-900 dark:via-gray-800 dark:to-gray-900 flex items-center justify-center">
+        <div className="w-8 h-8 border-2 border-emerald-500/30 border-t-emerald-500 rounded-full animate-spin" />
+      </div>
+    );
+  }
 
   return (
     <div className="min-h-screen bg-gradient-to-br from-emerald-50 via-teal-50 to-emerald-50 dark:from-gray-900 dark:via-gray-800 dark:to-gray-900 flex flex-col">
@@ -109,15 +141,23 @@ const LoginScreen = React.memo(function LoginScreen() {
                 </motion.div>
               )}
               <div className="space-y-2">
-                <Label className="text-xs font-semibold">البريد الإلكتروني</Label>
-                <Input
-                  type="email"
-                  value={email}
-                  onChange={(e) => setEmail(e.target.value)}
-                  placeholder="example@clinic.com"
-                  className="h-12 rounded-xl bg-white/50 dark:bg-gray-700/50"
-                  dir="ltr"
-                />
+                <Label className="text-xs font-semibold">رقم الهاتف</Label>
+                <div className="relative">
+                  <Input
+                    type="tel"
+                    value={phone}
+                    onChange={(e) => {
+                      const val = e.target.value.replace(/\D/g, '');
+                      if (val.length <= 9) setPhone(val);
+                    }}
+                    placeholder="050000000"
+                    className="h-12 rounded-xl bg-white/50 dark:bg-gray-700/50 pr-10"
+                    dir="ltr"
+                    maxLength={9}
+                  />
+                  <Phone className="absolute right-3 top-1/2 -translate-y-1/2 w-4 h-4 text-muted-foreground" />
+                </div>
+                <p className="text-[10px] text-muted-foreground">9 أرقام بدون رمز الدولة</p>
               </div>
               <div className="space-y-2">
                 <Label className="text-xs font-semibold">كلمة المرور</Label>
@@ -140,15 +180,6 @@ const LoginScreen = React.memo(function LoginScreen() {
                   </button>
                 </div>
               </div>
-              <label className="flex items-center gap-2 cursor-pointer">
-                <input
-                  type="checkbox"
-                  checked={rememberMe}
-                  onChange={(e) => setRememberMe(e.target.checked)}
-                  className="w-4 h-4 rounded border-muted-foreground text-emerald-600 focus:ring-emerald-500"
-                />
-                <span className="text-xs text-muted-foreground">تذكرني</span>
-              </label>
               <Button
                 onClick={handleLogin}
                 disabled={loading}
@@ -167,12 +198,12 @@ const LoginScreen = React.memo(function LoginScreen() {
           <div className="mt-6 bg-white/60 dark:bg-gray-800/60 backdrop-blur rounded-2xl p-4 border border-white/30 dark:border-gray-700/30">
             <p className="text-xs text-muted-foreground mb-2 font-semibold">حسابات تجريبية:</p>
             <div className="space-y-1.5 text-xs text-muted-foreground">
-              <div className="flex justify-between items-center cursor-pointer touch-feedback p-2 rounded-xl hover:bg-emerald-50/50 dark:hover:bg-emerald-900/10 transition-colors" onClick={() => { setEmail('admin@clinic.com'); setPassword('admin123'); }}>
-                <span>المدير: admin@clinic.com</span>
+              <div className="flex justify-between items-center cursor-pointer touch-feedback p-2 rounded-xl hover:bg-emerald-50/50 dark:hover:bg-emerald-900/10 transition-colors" onClick={() => { setPhone('050000000'); setPassword('admin123'); }}>
+                <span>المدير: 050000000</span>
                 <Badge variant="outline" className="text-[10px] border-emerald-500/30 text-emerald-600">مدير</Badge>
               </div>
-              <div className="flex justify-between items-center cursor-pointer touch-feedback p-2 rounded-xl hover:bg-teal-50/50 dark:hover:bg-teal-900/10 transition-colors" onClick={() => { setEmail('noura@clinic.com'); setPassword('nurse123'); }}>
-                <span>الممرضة: noura@clinic.com</span>
+              <div className="flex justify-between items-center cursor-pointer touch-feedback p-2 rounded-xl hover:bg-teal-50/50 dark:hover:bg-teal-900/10 transition-colors" onClick={() => { setPhone('050000001'); setPassword('nurse123'); }}>
+                <span>الممرضة: 050000001</span>
                 <Badge variant="outline" className="text-[10px] border-teal-500/30 text-teal-600">ممرض</Badge>
               </div>
             </div>

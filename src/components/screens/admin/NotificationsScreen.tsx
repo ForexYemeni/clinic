@@ -32,7 +32,6 @@ const NotificationsScreen = React.memo(function NotificationsScreen() {
     refresh();
   };
 
-  // Group by date
   const grouped = useMemo(() => {
     if (!notifications) return {};
     const now = new Date();
@@ -61,7 +60,7 @@ const NotificationsScreen = React.memo(function NotificationsScreen() {
     <div className="px-4 pb-24 pt-2 space-y-3">
       <div className="flex items-center justify-between">
         <div className="flex items-center gap-3">
-          <Button variant="ghost" size="icon" className="h-9 w-9 rounded-xl" onClick={() => setScreen(user?.role === 'admin' ? 'admin-more' : 'nurse-profile')}>
+          <Button variant="ghost" size="icon" className="h-9 w-9 rounded-xl" onClick={() => setScreen(user?.role === 'admin' ? 'admin-more' : 'admin-more')}>
             <ChevronRight className="w-5 h-5" />
           </Button>
           <h2 className="text-lg font-bold">الإشعارات</h2>

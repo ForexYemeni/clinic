@@ -1,7 +1,7 @@
 'use client';
 
 import React, { useMemo } from 'react';
-import { ClipboardList, Plus } from 'lucide-react';
+import { AlertTriangle, Plus } from 'lucide-react';
 import { Card, CardContent } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
@@ -15,7 +15,7 @@ import {
   statusColors, statusLabels,
 } from '@/lib/constants';
 
-const NurseCases = React.memo(function NurseCases() {
+const NurseEmergencies = React.memo(function NurseEmergencies() {
   const { setScreen } = useAppStore();
   const { data: emergencies, loading } = useData<EmergencyItem[]>('/api/emergencies');
 
@@ -24,13 +24,13 @@ const NurseCases = React.memo(function NurseCases() {
   return (
     <div className="px-4 pb-24 pt-2 space-y-3">
       <div className="flex items-center justify-between">
-        <h2 className="text-lg font-bold">الحالات</h2>
-        <Button size="sm" className="rounded-xl bg-gradient-to-r from-red-600 to-red-700 shadow-sm" onClick={() => setScreen('nurse-add-case')}>
+        <h2 className="text-lg font-bold">الطوارئ</h2>
+        <Button size="sm" className="rounded-xl bg-gradient-to-r from-red-600 to-red-700 shadow-sm" onClick={() => setScreen('nurse-add-emergency')}>
           <Plus className="w-4 h-4 ml-1" /> حالة جديدة
         </Button>
       </div>
       {!emergencies || emergencies.length === 0 ? (
-        <EmptyState icon={ClipboardList} title="لا توجد حالات" />
+        <EmptyState icon={AlertTriangle} title="لا توجد حالات طوارئ" />
       ) : (
         <div className="space-y-2">
           {emergencies.map((em) => (
@@ -44,6 +44,7 @@ const NurseCases = React.memo(function NurseCases() {
                       <Badge className={`text-[9px] ${severityColors[em.severity]}`}>{severityLabels[em.severity]}</Badge>
                     </div>
                     <p className="text-xs text-muted-foreground">{em.notes}</p>
+                    <p className="text-[10px] text-muted-foreground mt-1">{formatTime(em.arrivalTime)}</p>
                   </div>
                   <Badge className={`text-[9px] shrink-0 ${statusColors[em.status]}`}>{statusLabels[em.status]}</Badge>
                 </div>
@@ -56,4 +57,4 @@ const NurseCases = React.memo(function NurseCases() {
   );
 });
 
-export { NurseCases };
+export { NurseEmergencies };

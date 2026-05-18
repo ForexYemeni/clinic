@@ -1,7 +1,7 @@
 'use client';
 
 import React from 'react';
-import { Briefcase, Calendar, DollarSign, Bell, Settings, ChevronLeft, LogOut } from 'lucide-react';
+import { Briefcase, DollarSign, Bell, Settings, ChevronLeft, LogOut } from 'lucide-react';
 import { Card, CardContent } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { useAppStore, ScreenType } from '@/lib/store';
@@ -10,7 +10,6 @@ const AdminMoreMenu = React.memo(function AdminMoreMenu() {
   const { setScreen, logout } = useAppStore();
   const menuItems = [
     { id: 'admin-nurses', label: 'إدارة الممرضين', icon: Briefcase, color: 'text-teal-600 bg-gradient-to-br from-teal-100 to-teal-50 dark:from-teal-900/30 dark:to-teal-800/20' },
-    { id: 'admin-appointments', label: 'المواعيد', icon: Calendar, color: 'text-blue-600 bg-gradient-to-br from-blue-100 to-blue-50 dark:from-blue-900/30 dark:to-blue-800/20' },
     { id: 'admin-finance', label: 'النظام المالي', icon: DollarSign, color: 'text-emerald-600 bg-gradient-to-br from-emerald-100 to-emerald-50 dark:from-emerald-900/30 dark:to-emerald-800/20' },
     { id: 'admin-notifications', label: 'الإشعارات', icon: Bell, color: 'text-amber-600 bg-gradient-to-br from-amber-100 to-amber-50 dark:from-amber-900/30 dark:to-amber-800/20' },
     { id: 'admin-settings', label: 'الإعدادات', icon: Settings, color: 'text-gray-600 bg-gradient-to-br from-gray-100 to-gray-50 dark:from-gray-900/30 dark:to-gray-800/20' },

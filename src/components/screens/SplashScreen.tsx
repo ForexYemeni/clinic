@@ -27,11 +27,6 @@ const SplashScreen = React.memo(function SplashScreen() {
           transition={{ repeat: Infinity, duration: 5, ease: 'easeInOut', delay: 1 }}
           className="absolute -bottom-16 -left-16 w-48 h-48 rounded-full border-4 border-white/10"
         />
-        <motion.div
-          animate={{ scale: [1, 1.15, 1], opacity: [0.03, 0.06, 0.03] }}
-          transition={{ repeat: Infinity, duration: 3.5, ease: 'easeInOut', delay: 0.5 }}
-          className="absolute top-1/3 left-1/4 w-32 h-32 rounded-full border-2 border-white/10"
-        />
       </div>
 
       {/* Logo */}

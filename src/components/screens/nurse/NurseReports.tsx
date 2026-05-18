@@ -1,7 +1,7 @@
 'use client';
 
 import React, { useState } from 'react';
-import { ChevronRight, Save, FileText } from 'lucide-react';
+import { Save, FileText } from 'lucide-react';
 import { Card, CardContent } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
@@ -10,8 +10,8 @@ import { Textarea } from '@/components/ui/textarea';
 import { useAppStore } from '@/lib/store';
 import { toast } from 'sonner';
 
-const NurseDailyReport = React.memo(function NurseDailyReport() {
-  const { user, setScreen } = useAppStore();
+const NurseReports = React.memo(function NurseReports() {
+  const { user } = useAppStore();
   const [form, setForm] = useState({ patientsCount: 0, servicesCount: 0, emergenciesCount: 0, notes: '' });
   const [saving, setSaving] = useState(false);
 
@@ -33,12 +33,7 @@ const NurseDailyReport = React.memo(function NurseDailyReport() {
 
   return (
     <div className="px-4 pb-24 pt-2 space-y-4">
-      <div className="flex items-center gap-3">
-        <Button variant="ghost" size="icon" className="h-9 w-9 rounded-xl" onClick={() => setScreen('nurse-profile')}>
-          <ChevronRight className="w-5 h-5" />
-        </Button>
-        <h2 className="text-lg font-bold">التقرير اليومي</h2>
-      </div>
+      <h2 className="text-lg font-bold">التقارير</h2>
 
       {/* Today's date */}
       <div className="flex items-center gap-2 p-3 bg-gradient-to-r from-blue-50 to-cyan-50 dark:from-blue-900/10 dark:to-cyan-900/10 rounded-xl">
@@ -50,6 +45,7 @@ const NurseDailyReport = React.memo(function NurseDailyReport() {
 
       <Card className="border-0 shadow-sm">
         <CardContent className="p-4 space-y-3">
+          <h3 className="text-sm font-bold">التقرير اليومي</h3>
           <div className="grid grid-cols-3 gap-3">
             <div className="space-y-1.5">
               <Label className="text-xs font-semibold">عدد المرضى</Label>
@@ -77,4 +73,4 @@ const NurseDailyReport = React.memo(function NurseDailyReport() {
   );
 });
 
-export { NurseDailyReport };
+export { NurseReports };

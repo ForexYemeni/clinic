@@ -10,12 +10,11 @@ export async function GET(request: Request, { params }: { params: Promise<{ id: 
     const patientData = { id: doc.id, ...doc.data() };
     
     // Get related data
-    const [visitsSnap, servicesSnap, medicationsSnap, emergenciesSnap, appointmentsSnap, paymentsSnap, invoicesSnap] = await Promise.all([
+    const [visitsSnap, servicesSnap, medicationsSnap, emergenciesSnap, paymentsSnap, invoicesSnap] = await Promise.all([
       adminDb.collection('visits').where('patientId', '==', id).orderBy('visitDate', 'desc').get(),
       adminDb.collection('patientServices').where('patientId', '==', id).get(),
       adminDb.collection('medications').where('patientId', '==', id).orderBy('createdAt', 'desc').get(),
       adminDb.collection('emergencies').where('patientId', '==', id).orderBy('createdAt', 'desc').get(),
-      adminDb.collection('appointments').where('patientId', '==', id).orderBy('date', 'desc').get(),
       adminDb.collection('payments').where('patientId', '==', id).orderBy('createdAt', 'desc').get(),
       adminDb.collection('invoices').where('patientId', '==', id).orderBy('createdAt', 'desc').get(),
     ]);
@@ -35,17 +34,15 @@ export async function GET(request: Request, { params }: { params: Promise<{ id: 
       patientServices.push(psData);
     }
 
-    // Enrich emergencies and appointments with nurse data
-    const emergencies = emergenciesSnap.docs.map(d => {
-      const data = { id: d.id, ...d.data() } as any;
-      return data;
-    });
-    
-    const appointments = appointmentsSnap.docs.map(d => ({ id: d.id, ...d.data() }));
+    const emergencies = emergenciesSnap.docs.map(d => ({ id: d.id, ...d.data() }));
     const visits = visitsSnap.docs.map(d => ({ id: d.id, ...d.data() }));
     const medications = medicationsSnap.docs.map(d => ({ id: d.id, ...d.data() }));
     const payments = paymentsSnap.docs.map(d => ({ id: d.id, ...d.data() }));
-    const invoices = invoicesSnap.docs.map(d => ({ id: d.id, ...d.data() }));
+    const invoices = invoicesSnap.docs.map(d => {
+      const data = { id: d.id, ...d.data() } as any;
+      data.remaining = data.remaining || (data.total - data.paid);
+      return data;
+    });
 
     return NextResponse.json({
       ...patientData,
@@ -53,7 +50,6 @@ export async function GET(request: Request, { params }: { params: Promise<{ id: 
       services: patientServices,
       medications,
       emergencies,
-      appointments,
       payments,
       invoices,
     });

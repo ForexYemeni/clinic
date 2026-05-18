@@ -2,7 +2,7 @@
 
 import React, { useMemo, useState, useCallback } from 'react';
 import { motion } from 'framer-motion';
-import { Users, AlertTriangle, Calendar, DollarSign, Plus, Clock, RefreshCw } from 'lucide-react';
+import { Users, AlertTriangle, DollarSign, Plus, Stethoscope, RefreshCw } from 'lucide-react';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
@@ -13,7 +13,7 @@ import { SkeletonLoader } from '@/components/shared/SkeletonLoader';
 import { EmptyState } from '@/components/shared/EmptyState';
 import {
   DashboardData, formatCurrency, formatTime,
-  severityColors, severityLabels, statusColors, statusLabels,
+  severityColors, severityLabels,
   CHART_COLORS, statGradients,
 } from '@/lib/constants';
 import { BarChart, Bar, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer, PieChart, Pie, Cell } from 'recharts';
@@ -32,7 +32,7 @@ const AdminDashboard = React.memo(function AdminDashboard() {
     if (!data) return [];
     return data.servicesByCategory.map((s) => ({
       name: s.category,
-      value: s._count.id,
+      value: s.count,
     }));
   }, [data]);
 
@@ -75,8 +75,8 @@ const AdminDashboard = React.memo(function AdminDashboard() {
       <div className="grid grid-cols-2 gap-3">
         <StatCard icon={Users} label="إجمالي المرضى" value={data.totalPatients} color="text-white" gradient={statGradients.emerald} trend="+12%" />
         <StatCard icon={AlertTriangle} label="حالات الطوارئ" value={data.activeEmergencies} color="text-white" gradient={statGradients.red} />
-        <StatCard icon={Calendar} label="مواعيد اليوم" value={data.todayAppointments} color="text-white" gradient={statGradients.blue} />
-        <StatCard icon={DollarSign} label="إيرادات اليوم" value={formatCurrency(data.todayRevenue)} color="bg-amber-100 text-amber-600 dark:bg-amber-900/30 dark:text-amber-400" gradient={statGradients.amber} trend="+8%" />
+        <StatCard icon={DollarSign} label="إيرادات اليوم" value={formatCurrency(data.todayRevenue)} color="text-white" gradient={statGradients.amber} trend="+8%" />
+        <StatCard icon={Stethoscope} label="الخدمات المقدمة" value={data.totalServices} color="text-white" gradient={statGradients.teal} />
       </div>
 
       {/* Revenue Chart */}
@@ -135,6 +135,26 @@ const AdminDashboard = React.memo(function AdminDashboard() {
         </CardContent>
       </Card>
 
+      {/* Most Used Services */}
+      {data.topServices && data.topServices.length > 0 && (
+        <Card className="border-0 shadow-sm">
+          <CardHeader className="pb-2 pt-4 px-4">
+            <CardTitle className="text-sm font-bold">الأكثر استخداماً</CardTitle>
+          </CardHeader>
+          <CardContent className="px-4 pb-3 space-y-2">
+            {data.topServices.slice(0, 5).map((s, i) => (
+              <div key={i} className="flex items-center gap-3 p-2 bg-muted/50 rounded-xl">
+                <div className="w-8 h-8 rounded-lg bg-gradient-to-br from-emerald-100 to-teal-50 dark:from-emerald-900/30 dark:to-teal-900/20 flex items-center justify-center">
+                  <span className="text-xs font-bold text-emerald-600 dark:text-emerald-400">{i + 1}</span>
+                </div>
+                <span className="text-sm font-medium flex-1 truncate">{s.name}</span>
+                <Badge className="text-[9px] bg-emerald-100 text-emerald-700 dark:bg-emerald-900/30 dark:text-emerald-400">{s.count} مرة</Badge>
+              </div>
+            ))}
+          </CardContent>
+        </Card>
+      )}
+
       {/* Active Emergencies */}
       {data.recentEmergencies.length > 0 && (
         <motion.div initial={{ opacity: 0, y: 10 }} animate={{ opacity: 1, y: 0 }}>
@@ -161,34 +181,6 @@ const AdminDashboard = React.memo(function AdminDashboard() {
             </CardContent>
           </Card>
         </motion.div>
-      )}
-
-      {/* Today Schedule */}
-      {data.todaySchedule.length > 0 && (
-        <Card className="border-0 shadow-sm">
-          <CardHeader className="pb-2 pt-4 px-4">
-            <div className="flex items-center justify-between">
-              <CardTitle className="text-sm font-bold flex items-center gap-2">
-                <Clock className="w-4 h-4 text-blue-500" /> مواعيد اليوم
-              </CardTitle>
-              <Button variant="ghost" size="sm" className="text-xs h-7" onClick={() => setScreen('admin-appointments')}>عرض الكل</Button>
-            </div>
-          </CardHeader>
-          <CardContent className="px-4 pb-3 space-y-2">
-            {data.todaySchedule.slice(0, 4).map((appt) => (
-              <div key={appt.id} className="flex items-center gap-3 p-2.5 bg-muted/50 rounded-xl touch-feedback" onClick={() => setScreen('admin-appointments')}>
-                <div className="w-10 h-10 rounded-xl bg-gradient-to-br from-blue-100 to-blue-50 dark:from-blue-900/30 dark:to-blue-800/20 flex items-center justify-center">
-                  <span className="text-xs font-bold text-blue-600 dark:text-blue-400">{formatTime(appt.date)}</span>
-                </div>
-                <div className="flex-1 min-w-0">
-                  <p className="text-sm font-semibold truncate">{appt.patient?.name}</p>
-                  <p className="text-xs text-muted-foreground truncate">{appt.notes}</p>
-                </div>
-                <Badge className={`text-[10px] ${statusColors[appt.status] || ''}`}>{statusLabels[appt.status]}</Badge>
-              </div>
-            ))}
-          </CardContent>
-        </Card>
       )}
     </div>
   );

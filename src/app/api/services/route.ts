@@ -7,7 +7,6 @@ export async function GET() {
     const services = [];
     for (const doc of snapshot.docs) {
       const data = { id: doc.id, ...doc.data() };
-      // Get count of patient services
       const psSnap = await adminDb.collection('patientServices').where('serviceId', '==', doc.id).get();
       (data as any)._count = { patientServices: psSnap.size };
       services.push(data);
@@ -21,8 +20,13 @@ export async function GET() {
 export async function POST(request: Request) {
   try {
     const body = await request.json();
-    const docRef = await adminDb.collection('services').add({ ...body, createdAt: new Date().toISOString() });
-    return NextResponse.json({ id: docRef.id, ...body });
+    const data = {
+      ...body,
+      active: body.active !== false,
+      createdAt: new Date().toISOString(),
+    };
+    const docRef = await adminDb.collection('services').add(data);
+    return NextResponse.json({ id: docRef.id, ...data });
   } catch (error) {
     return NextResponse.json({ error: 'Failed' }, { status: 500 });
   }

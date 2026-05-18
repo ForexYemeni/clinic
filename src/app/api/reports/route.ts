@@ -16,24 +16,21 @@ export async function GET(request: Request) {
     }
     const startStr = startDate.toISOString();
 
-    const [patientsSnap, servicesSnap, emergenciesSnap, paymentsSnap, appointmentsSnap, dailyReportsSnap] = await Promise.all([
+    const [patientsSnap, servicesSnap, emergenciesSnap, paymentsSnap, dailyReportsSnap] = await Promise.all([
       adminDb.collection('patients').where('createdAt', '>=', startStr).get(),
       adminDb.collection('patientServices').where('createdAt', '>=', startStr).get(),
       adminDb.collection('emergencies').where('arrivalTime', '>=', startStr).get(),
       adminDb.collection('payments').where('type', '==', 'payment').where('createdAt', '>=', startStr).get(),
-      adminDb.collection('appointments').where('createdAt', '>=', startStr).get(),
       adminDb.collection('dailyReports').where('date', '>=', startStr).get(),
     ]);
 
     const newPatients = patientsSnap.size;
     const servicesProvided = servicesSnap.size;
     const emergencies = emergenciesSnap.size;
-    const appointments = appointmentsSnap.size;
 
     const revenue = paymentsSnap.docs.reduce((sum, doc) => sum + (doc.data().amount || 0), 0);
     const paymentCount = paymentsSnap.size;
 
-    // Daily reports with nurse info
     const dailyReports = [];
     for (const doc of dailyReportsSnap.docs) {
       const data = { id: doc.id, ...doc.data() } as Record<string, unknown>;
@@ -51,7 +48,6 @@ export async function GET(request: Request) {
       return db.localeCompare(da);
     });
 
-    // Payment method breakdown
     const methodMap: Record<string, { sum: number; count: number }> = {};
     paymentsSnap.docs.forEach(doc => {
       const data = doc.data();
@@ -75,7 +71,6 @@ export async function GET(request: Request) {
         emergencies,
         revenue,
         paymentCount,
-        appointments,
       },
       dailyReports,
       paymentByMethod,

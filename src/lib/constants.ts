@@ -1,21 +1,20 @@
-import { type LucideIcon, AlertTriangle, Calendar, Stethoscope, Info, Users, FileText, Activity } from 'lucide-react';
+import { type LucideIcon, AlertTriangle, Stethoscope, Info, Users, FileText, Activity } from 'lucide-react';
 
 // ==================== TYPES ====================
 export interface DashboardData {
   totalPatients: number;
   totalEmergencies: number;
   activeEmergencies: number;
-  totalAppointments: number;
-  todayAppointments: number;
+  todayServices: number;
   totalRevenue: number;
   totalServices: number;
   totalNurses: number;
   todayRevenue: number;
   pendingInvoices: number;
-  servicesByCategory: { category: string; _count: { id: number } }[];
+  servicesByCategory: { category: string; count: number }[];
   recentEmergencies: EmergencyItem[];
   recentPayments: PaymentItem[];
-  todaySchedule: AppointmentItem[];
+  topServices: { name: string; count: number }[];
 }
 
 export interface EmergencyItem {
@@ -27,6 +26,8 @@ export interface EmergencyItem {
   notes?: string;
   actions?: string;
   arrivalTime: string;
+  patientName?: string;
+  nurseName?: string;
   patient?: { id?: string; name: string };
   nurse?: { id?: string; name: string };
   [key: string]: unknown;
@@ -44,28 +45,26 @@ export interface PaymentItem {
   [key: string]: unknown;
 }
 
-export interface AppointmentItem {
-  id: string;
-  patientId?: string;
-  nurseId?: string;
-  date: string;
-  duration?: number;
-  type?: string;
-  status: string;
-  notes?: string;
-  patient?: { id?: string; name: string };
-  nurse?: { id?: string; name: string };
-  [key: string]: unknown;
-}
-
 export interface InvoiceItem {
   id: string;
   patientId?: string;
+  items: InvoiceLineItem[];
   total: number;
   paid: number;
+  remaining: number;
   status: string;
   patient?: { id?: string; name: string };
+  createdAt: string;
   [key: string]: unknown;
+}
+
+export interface InvoiceLineItem {
+  serviceId?: string;
+  serviceName: string;
+  price: number;
+  quantity: number;
+  nurseName?: string;
+  date?: string;
 }
 
 export interface PatientItem {
@@ -84,6 +83,8 @@ export interface PatientItem {
   visits?: VisitItem[];
   services?: PatientServiceItem[];
   medications?: MedicationItem[];
+  invoices?: InvoiceItem[];
+  payments?: PaymentItem[];
   _count?: { visits?: number; patientServices?: number };
   createdAt: string;
   [key: string]: unknown;
@@ -96,6 +97,13 @@ export interface VisitItem {
   status: string;
   visitDate: string;
   notes?: string;
+  vitalSigns?: {
+    bloodPressure?: string;
+    heartRate?: number;
+    temperature?: number;
+    oxygenLevel?: number;
+    sugarLevel?: number;
+  };
   [key: string]: unknown;
 }
 
@@ -105,6 +113,7 @@ export interface PatientServiceItem {
   status: string;
   service?: { nameAr: string; price: number; duration: number };
   nurse?: { name: string };
+  createdAt?: string;
   [key: string]: unknown;
 }
 
@@ -130,12 +139,50 @@ export interface NotificationItem {
 export interface NurseItem {
   id: string;
   name: string;
-  email: string;
   phone?: string;
+  email?: string;
   active: boolean;
   role: string;
   [key: string]: unknown;
 }
+
+export interface BillingItem {
+  id: string;
+  patientId: string;
+  services: { name: string; price: number; date: string }[];
+  total: number;
+  paid: number;
+  remaining: number;
+  status: 'paid' | 'unpaid' | 'partial';
+  createdAt: string;
+  [key: string]: unknown;
+}
+
+export interface DefaultService {
+  nameAr: string;
+  price: number;
+  duration: number;
+  category: string;
+  description: string;
+}
+
+// ==================== DEFAULT SERVICES (14) ====================
+export const DEFAULT_SERVICES: DefaultService[] = [
+  { nameAr: 'قياس الضغط', price: 20, duration: 10, category: 'قياسات', description: 'قياس ضغط الدم' },
+  { nameAr: 'قياس السكر', price: 20, duration: 10, category: 'قياسات', description: 'قياس مستوى السكر في الدم' },
+  { nameAr: 'قياس الحرارة', price: 15, duration: 5, category: 'قياسات', description: 'قياس درجة حرارة الجسم' },
+  { nameAr: 'قياس الأكسجين', price: 25, duration: 10, category: 'قياسات', description: 'قياس مستوى الأكسجين في الدم' },
+  { nameAr: 'تضميد الجروح', price: 50, duration: 20, category: 'إسعافات', description: 'تنظيف وتضميد الجروح' },
+  { nameAr: 'الحروق', price: 60, duration: 25, category: 'إسعافات', description: 'علاج الحروق البسيطة والمتوسطة' },
+  { nameAr: 'الكسور البسيطة', price: 80, duration: 30, category: 'إسعافات', description: 'تثبيت وعلاج الكسور البسيطة' },
+  { nameAr: 'الأكسجين العلاجي', price: 40, duration: 30, category: 'علاج', description: 'إعطاء الأكسجين العلاجي' },
+  { nameAr: 'الحقن', price: 30, duration: 15, category: 'علاج', description: 'إعطاء الحقن العضلية والوريدية' },
+  { nameAr: 'المحاليل', price: 50, duration: 45, category: 'علاج', description: 'إعطاء المحاليل الوريدية' },
+  { nameAr: 'الأدوية', price: 25, duration: 10, category: 'علاج', description: 'صرف وتقديم الأدوية' },
+  { nameAr: 'الرذاذ الاستنشاقي', price: 30, duration: 15, category: 'علاج', description: 'علاج بالرذاذ والاستنشاق' },
+  { nameAr: 'تغيير الضمادات', price: 35, duration: 15, category: 'رعاية', description: 'تغيير وتجديد الضمادات' },
+  { nameAr: 'الإسعافات الأولية العامة', price: 100, duration: 30, category: 'إسعافات', description: 'إسعافات أولية شاملة' },
+];
 
 // ==================== FORMAT HELPERS ====================
 export const formatCurrency = (amount: number): string =>
@@ -189,8 +236,6 @@ export const statusColors: Record<string, string> = {
   treated: 'bg-green-100 text-green-700 dark:bg-green-900/30 dark:text-green-400',
   transferred: 'bg-blue-100 text-blue-700 dark:bg-blue-900/30 dark:text-blue-400',
   archived: 'bg-gray-100 text-gray-700 dark:bg-gray-900/30 dark:text-gray-400',
-  scheduled: 'bg-blue-100 text-blue-700 dark:bg-blue-900/30 dark:text-blue-400',
-  confirmed: 'bg-green-100 text-green-700 dark:bg-green-900/30 dark:text-green-400',
   completed: 'bg-emerald-100 text-emerald-700 dark:bg-emerald-900/30 dark:text-emerald-400',
   cancelled: 'bg-red-100 text-red-700 dark:bg-red-900/30 dark:text-red-400',
   paid: 'bg-green-100 text-green-700 dark:bg-green-900/30 dark:text-green-400',
@@ -205,8 +250,6 @@ export const statusLabels: Record<string, string> = {
   treated: 'تم العلاج',
   transferred: 'محول',
   archived: 'مؤرشف',
-  scheduled: 'مجدول',
-  confirmed: 'مؤكد',
   completed: 'مكتمل',
   cancelled: 'ملغي',
   paid: 'مدفوع',
@@ -228,30 +271,26 @@ export const genderLabels: Record<string, string> = {
   female: 'أنثى',
 };
 
-export const appointmentTypeLabels: Record<string, string> = {
-  checkup: 'فحص عام',
-  'follow-up': 'متابعة',
-  treatment: 'علاج',
-  emergency: 'طوارئ',
+export const paymentMethodLabels: Record<string, string> = {
+  cash: 'نقدي',
+  card: 'بطاقة',
+  transfer: 'تحويل',
 };
 
-export const appointmentTypeColors: Record<string, string> = {
-  checkup: 'bg-emerald-100 text-emerald-700 dark:bg-emerald-900/30 dark:text-emerald-400',
-  'follow-up': 'bg-blue-100 text-blue-700 dark:bg-blue-900/30 dark:text-blue-400',
-  treatment: 'bg-purple-100 text-purple-700 dark:bg-purple-900/30 dark:text-purple-400',
-  emergency: 'bg-red-100 text-red-700 dark:bg-red-900/30 dark:text-red-400',
+export const paymentMethodColors: Record<string, string> = {
+  cash: 'bg-emerald-100 text-emerald-700 dark:bg-emerald-900/30 dark:text-emerald-400',
+  card: 'bg-blue-100 text-blue-700 dark:bg-blue-900/30 dark:text-blue-400',
+  transfer: 'bg-purple-100 text-purple-700 dark:bg-purple-900/30 dark:text-purple-400',
 };
 
 export const notificationTypeIcons: Record<string, LucideIcon> = {
   emergency: AlertTriangle,
-  appointment: Calendar,
   service: Stethoscope,
   system: Info,
 };
 
 export const notificationTypeColors: Record<string, string> = {
   emergency: 'bg-red-100 text-red-600 dark:bg-red-900/30 dark:text-red-400',
-  appointment: 'bg-blue-100 text-blue-600 dark:bg-blue-900/30 dark:text-blue-400',
   service: 'bg-emerald-100 text-emerald-600 dark:bg-emerald-900/30 dark:text-emerald-400',
   system: 'bg-gray-100 text-gray-600 dark:bg-gray-900/30 dark:text-gray-400',
 };
@@ -264,9 +303,8 @@ export const PIE_COLORS = ['#059669', '#0d9488', '#0891b2', '#6366f1', '#8b5cf6'
 export const statGradients = {
   emerald: 'bg-gradient-to-br from-emerald-500 to-emerald-600',
   red: 'bg-gradient-to-br from-red-500 to-red-600',
-  blue: 'bg-gradient-to-br from-blue-500 to-blue-600',
-  amber: 'bg-gradient-to-br from-amber-500 to-amber-600',
   teal: 'bg-gradient-to-br from-teal-500 to-teal-600',
+  amber: 'bg-gradient-to-br from-amber-500 to-amber-600',
   purple: 'bg-gradient-to-br from-purple-500 to-purple-600',
 };
 

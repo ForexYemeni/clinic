@@ -9,7 +9,7 @@ export async function GET() {
       const data = { id: doc.id, ...doc.data() } as any;
       if (data.patientId) {
         const patientDoc = await adminDb.collection('patients').doc(data.patientId).get();
-        if (patientDoc.exists) data.patient = { id: patientDoc.id, ...patientDoc.data() };
+        if (patientDoc.exists) data.patient = { id: patientDoc.id, name: patientDoc.data()?.name };
       }
       payments.push(data);
     }

@@ -28,8 +28,24 @@ export async function GET() {
 export async function POST(request: Request) {
   try {
     const body = await request.json();
-    const docRef = await adminDb.collection('emergencies').add({ ...body, createdAt: new Date().toISOString() });
-    return NextResponse.json({ id: docRef.id, ...body });
+    // Enrich with patient and nurse name
+    const data: any = { ...body, createdAt: new Date().toISOString() };
+    if (!data.arrivalTime) data.arrivalTime = new Date().toISOString();
+    
+    if (data.patientId) {
+      const patientDoc = await adminDb.collection('patients').doc(data.patientId).get();
+      if (patientDoc.exists) {
+        data.patientName = patientDoc.data()?.name;
+        data.status = data.status || 'active';
+      }
+    }
+    if (data.nurseId) {
+      const nurseDoc = await adminDb.collection('users').doc(data.nurseId).get();
+      if (nurseDoc.exists) data.nurseName = nurseDoc.data()?.name;
+    }
+    
+    const docRef = await adminDb.collection('emergencies').add(data);
+    return NextResponse.json({ id: docRef.id, ...data });
   } catch (error) {
     return NextResponse.json({ error: 'Failed' }, { status: 500 });
   }

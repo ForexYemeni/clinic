@@ -8,7 +8,7 @@ import { useData } from '@/hooks/useData';
 import { NotificationItem } from '@/lib/constants';
 
 const TopHeader = React.memo(function TopHeader() {
-  const { user, theme, toggleTheme, setScreen } = useAppStore();
+  const { user, theme, toggleTheme, setScreen, clinicName } = useAppStore();
   const { data: notifications } = useData<NotificationItem[]>(
     user ? `/api/notifications?userId=${user.id}` : null,
     { refreshInterval: 60_000 }
@@ -20,7 +20,7 @@ const TopHeader = React.memo(function TopHeader() {
   }, [notifications]);
 
   const handleBellClick = useCallback(() => {
-    setScreen(user?.role === 'admin' ? 'admin-notifications' : 'nurse-notifications');
+    setScreen(user?.role === 'admin' ? 'admin-notifications' : 'admin-notifications');
   }, [user?.role, setScreen]);
 
   return (
@@ -31,7 +31,7 @@ const TopHeader = React.memo(function TopHeader() {
             <Heart className="w-5 h-5 text-white" fill="currentColor" />
           </div>
           <div>
-            <h1 className="text-sm font-bold leading-tight">عيادة الإسعافات</h1>
+            <h1 className="text-sm font-bold leading-tight">{clinicName}</h1>
             <p className="text-[10px] text-muted-foreground">{user?.name}</p>
           </div>
         </div>

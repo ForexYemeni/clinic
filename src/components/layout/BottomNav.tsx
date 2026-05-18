@@ -1,7 +1,7 @@
 'use client';
 
 import React, { useMemo } from 'react';
-import { Home, Users, Stethoscope, AlertTriangle, MoreHorizontal, Calendar, ClipboardList, User } from 'lucide-react';
+import { Home, Users, AlertTriangle, FileText } from 'lucide-react';
 import { useAppStore, ScreenType } from '@/lib/store';
 
 const BottomNav = React.memo(function BottomNav() {
@@ -11,17 +11,16 @@ const BottomNav = React.memo(function BottomNav() {
   const adminTabs = useMemo(() => [
     { id: 'admin-dashboard', label: 'الرئيسية', icon: Home },
     { id: 'admin-patients', label: 'المرضى', icon: Users },
-    { id: 'admin-services', label: 'الخدمات', icon: Stethoscope },
+    { id: 'admin-services', label: 'الخدمات', icon: FileText },
     { id: 'admin-emergencies', label: 'الطوارئ', icon: AlertTriangle },
-    { id: 'admin-more', label: 'المزيد', icon: MoreHorizontal },
+    { id: 'admin-more', label: 'المزيد', icon: Home },
   ], []);
 
   const nurseTabs = useMemo(() => [
     { id: 'nurse-dashboard', label: 'الرئيسية', icon: Home },
     { id: 'nurse-patients', label: 'المرضى', icon: Users },
-    { id: 'nurse-cases', label: 'الحالات', icon: ClipboardList },
-    { id: 'nurse-appointments', label: 'المواعيد', icon: Calendar },
-    { id: 'nurse-profile', label: 'الملف', icon: User },
+    { id: 'nurse-emergencies', label: 'الطوارئ', icon: AlertTriangle },
+    { id: 'nurse-reports', label: 'التقارير', icon: FileText },
   ], []);
 
   const tabs = isAdmin ? adminTabs : nurseTabs;

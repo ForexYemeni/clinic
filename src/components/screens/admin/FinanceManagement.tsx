@@ -1,7 +1,7 @@
 'use client';
 
 import React, { useMemo } from 'react';
-import { ChevronRight, DollarSign, Receipt, TrendingUp } from 'lucide-react';
+import { DollarSign, Receipt, TrendingUp } from 'lucide-react';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
@@ -12,7 +12,7 @@ import { StatCard } from '@/components/shared/StatCard';
 import { SkeletonLoader } from '@/components/shared/SkeletonLoader';
 import {
   PaymentItem, InvoiceItem, formatCurrency, formatDate,
-  statusColors, statusLabels, statGradients,
+  statusColors, statusLabels, statGradients, paymentMethodLabels,
 } from '@/lib/constants';
 import { BarChart, Bar, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer } from 'recharts';
 
@@ -42,12 +42,12 @@ const FinanceManagement = React.memo(function FinanceManagement() {
     <div className="px-4 pb-24 pt-2 space-y-3">
       <div className="flex items-center gap-3">
         <Button variant="ghost" size="icon" className="h-9 w-9 rounded-xl" onClick={() => setScreen('admin-more')}>
-          <ChevronRight className="w-5 h-5" />
+          <DollarSign className="w-5 h-5" />
         </Button>
         <h2 className="text-lg font-bold">النظام المالي</h2>
       </div>
 
-      {/* Summary cards with gradients */}
+      {/* Summary cards */}
       <div className="grid grid-cols-2 gap-3">
         <StatCard icon={DollarSign} label="إجمالي الإيرادات" value={formatCurrency(totalRevenue)} color="text-white" gradient={statGradients.emerald} />
         <StatCard icon={Receipt} label="مستحقات معلقة" value={formatCurrency(unpaidTotal)} color="text-white" gradient={statGradients.red} />
@@ -93,7 +93,7 @@ const FinanceManagement = React.memo(function FinanceManagement() {
                 </div>
                 <div className="flex-1 min-w-0">
                   <p className="text-sm font-semibold">{p.patient?.name}</p>
-                  <p className="text-xs text-muted-foreground truncate">{p.description}</p>
+                  <p className="text-xs text-muted-foreground truncate">{p.description} - {paymentMethodLabels[p.method || 'cash']}</p>
                 </div>
                 <div className="text-left shrink-0">
                   <p className={`text-sm font-bold ${p.type === 'payment' ? 'text-emerald-600 dark:text-emerald-400' : 'text-red-600 dark:text-red-400'}`}>

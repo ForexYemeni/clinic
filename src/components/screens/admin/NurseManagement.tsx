@@ -1,12 +1,11 @@
 'use client';
 
 import React, { useState, useCallback } from 'react';
-import { Briefcase, UserPlus, Trash2 } from 'lucide-react';
+import { Briefcase, UserPlus, Trash2, Phone } from 'lucide-react';
 import { Card, CardContent } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
-import { Badge } from '@/components/ui/badge';
 import { Switch } from '@/components/ui/switch';
 import { Avatar, AvatarFallback } from '@/components/ui/avatar';
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from '@/components/ui/dialog';
@@ -20,19 +19,21 @@ const NurseManagement = React.memo(function NurseManagement() {
   const { setScreen } = useAppStore();
   const { data: users, loading, refresh } = useData<NurseItem[]>('/api/users');
   const [showAdd, setShowAdd] = useState(false);
-  const [form, setForm] = useState({ name: '', email: '', password: 'nurse123', phone: '' });
+  const [form, setForm] = useState({ name: '', phone: '', password: 'nurse123' });
 
   const nurses = React.useMemo(() => (users || []).filter((u) => u.role === 'nurse'), [users]);
 
   const handleAdd = async () => {
-    if (!form.name || !form.email) { toast.error('يرجى ملء جميع الحقول'); return; }
+    if (!form.name || !form.phone) { toast.error('يرجى ملء جميع الحقول'); return; }
+    const phoneClean = form.phone.replace(/\D/g, '');
+    if (phoneClean.length !== 9) { toast.error('رقم الهاتف يجب أن يكون 9 أرقام'); return; }
     try {
       const res = await fetch('/api/users', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ ...form, role: 'nurse', active: true }),
+        body: JSON.stringify({ ...form, phone: phoneClean, role: 'nurse', active: true }),
       });
-      if (res.ok) { toast.success('تم إضافة الممرض بنجاح'); setShowAdd(false); setForm({ name: '', email: '', password: 'nurse123', phone: '' }); refresh(); }
+      if (res.ok) { toast.success('تم إضافة الممرض بنجاح'); setShowAdd(false); setForm({ name: '', phone: '', password: 'nurse123' }); refresh(); }
       else toast.error('خطأ في الإضافة');
     } catch { toast.error('خطأ في الاتصال'); }
   };
@@ -66,9 +67,8 @@ const NurseManagement = React.memo(function NurseManagement() {
           </DialogHeader>
           <div className="space-y-3">
             <div className="space-y-1.5"><Label className="text-xs font-semibold">الاسم *</Label><Input value={form.name} onChange={(e) => setForm({...form, name: e.target.value})} className="h-11 rounded-xl" placeholder="اسم الممرض" /></div>
-            <div className="space-y-1.5"><Label className="text-xs font-semibold">البريد *</Label><Input type="email" value={form.email} onChange={(e) => setForm({...form, email: e.target.value})} className="h-11 rounded-xl" placeholder="email@clinic.com" dir="ltr" /></div>
+            <div className="space-y-1.5"><Label className="text-xs font-semibold">رقم الهاتف (9 أرقام) *</Label><Input type="tel" value={form.phone} onChange={(e) => { const val = e.target.value.replace(/\D/g, ''); if (val.length <= 9) setForm({...form, phone: val}); }} className="h-11 rounded-xl" placeholder="050000000" dir="ltr" maxLength={9} /></div>
             <div className="space-y-1.5"><Label className="text-xs font-semibold">كلمة المرور</Label><Input value={form.password} onChange={(e) => setForm({...form, password: e.target.value})} className="h-11 rounded-xl" /></div>
-            <div className="space-y-1.5"><Label className="text-xs font-semibold">الهاتف</Label><Input value={form.phone} onChange={(e) => setForm({...form, phone: e.target.value})} className="h-11 rounded-xl" dir="ltr" /></div>
             <Button onClick={handleAdd} className="w-full h-11 rounded-xl bg-gradient-to-r from-emerald-600 to-teal-600 shadow-sm">حفظ</Button>
           </div>
         </DialogContent>
@@ -83,7 +83,7 @@ const NurseManagement = React.memo(function NurseManagement() {
               </Avatar>
               <div className="flex-1 min-w-0">
                 <p className="text-sm font-semibold">{n.name}</p>
-                <p className="text-xs text-muted-foreground" dir="ltr">{n.email}</p>
+                <p className="text-xs text-muted-foreground" dir="ltr">{n.phone || n.email}</p>
               </div>
               <div className="flex items-center gap-2">
                 <Switch checked={n.active} onCheckedChange={() => handleToggle(n.id, n.active)} />

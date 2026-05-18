@@ -1,4 +1,4 @@
-import { adminDb, adminAuth } from '@/lib/firebase-admin';
+import { adminDb } from '@/lib/firebase-admin';
 import { NextResponse } from 'next/server';
 
 export async function PUT(request: Request, { params }: { params: Promise<{ id: string }> }) {
@@ -7,16 +7,13 @@ export async function PUT(request: Request, { params }: { params: Promise<{ id: 
     const body = await request.json();
     
     // Update in Firestore
-    await adminDb.collection('users').doc(id).update({
-      ...(body.name && { name: body.name }),
-      ...(body.phone && { phone: body.phone }),
-      ...(body.active !== undefined && { active: body.active }),
-    });
+    const updateData: Record<string, unknown> = {};
+    if (body.name !== undefined) updateData.name = body.name;
+    if (body.phone !== undefined) updateData.phone = body.phone;
+    if (body.active !== undefined) updateData.active = body.active;
+    if (body.password !== undefined) updateData.password = body.password;
     
-    // Update in Firebase Auth if needed
-    if (body.active !== undefined) {
-      await adminAuth.updateUser(id, { disabled: !body.active });
-    }
+    await adminDb.collection('users').doc(id).update(updateData);
     
     return NextResponse.json({ id, ...body });
   } catch (error: any) {
@@ -28,7 +25,6 @@ export async function DELETE(request: Request, { params }: { params: Promise<{ i
   try {
     const { id } = await params;
     await adminDb.collection('users').doc(id).delete();
-    try { await adminAuth.deleteUser(id); } catch {}
     return NextResponse.json({ success: true });
   } catch (error) {
     return NextResponse.json({ error: 'Failed' }, { status: 500 });

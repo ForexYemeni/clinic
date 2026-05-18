@@ -1,21 +1,20 @@
 import { create } from 'zustand';
 
 export type ScreenType = 
-  | 'splash' | 'login' 
+  | 'splash' | 'login' | 'admin-setup'
   | 'admin-dashboard' | 'admin-patients' | 'admin-services' | 'admin-emergencies' | 'admin-more'
-  | 'admin-nurses' | 'admin-appointments' | 'admin-finance' | 'admin-reports' | 'admin-notifications' | 'admin-settings'
+  | 'admin-nurses' | 'admin-finance' | 'admin-reports' | 'admin-notifications' | 'admin-settings'
   | 'admin-patient-detail' | 'admin-add-patient' | 'admin-add-nurse' | 'admin-add-emergency'
-  | 'admin-add-appointment' | 'admin-add-payment' | 'admin-add-invoice'
-  | 'nurse-dashboard' | 'nurse-patients' | 'nurse-cases' | 'nurse-appointments' | 'nurse-profile'
-  | 'nurse-services' | 'nurse-daily-report' | 'nurse-notifications' | 'nurse-settings'
-  | 'nurse-patient-detail' | 'nurse-add-case' | 'nurse-add-service';
+  | 'admin-add-payment'
+  | 'nurse-dashboard' | 'nurse-patients' | 'nurse-emergencies' | 'nurse-reports'
+  | 'nurse-patient-detail' | 'nurse-add-emergency';
 
 export interface User {
   id: string;
   name: string;
-  email: string;
+  phone: string;
   role: 'admin' | 'nurse';
-  phone?: string;
+  email?: string;
   avatar?: string;
   active: boolean;
 }
@@ -25,6 +24,8 @@ interface AppState {
   user: User | null;
   theme: 'light' | 'dark';
   isSplashDone: boolean;
+  isFirstSetup: boolean;
+  clinicName: string;
   selectedPatientId: string | null;
   selectedEmergencyId: string | null;
   searchQuery: string;
@@ -34,6 +35,8 @@ interface AppState {
   setTheme: (theme: 'light' | 'dark') => void;
   toggleTheme: () => void;
   setSplashDone: (done: boolean) => void;
+  setIsFirstSetup: (val: boolean) => void;
+  setClinicName: (name: string) => void;
   setSelectedPatientId: (id: string | null) => void;
   setSelectedEmergencyId: (id: string | null) => void;
   setSearchQuery: (query: string) => void;
@@ -45,6 +48,8 @@ export const useAppStore = create<AppState>((set) => ({
   user: null,
   theme: 'light',
   isSplashDone: false,
+  isFirstSetup: false,
+  clinicName: 'عيادة الإسعافات الأولية',
   selectedPatientId: null,
   selectedEmergencyId: null,
   searchQuery: '',
@@ -67,6 +72,8 @@ export const useAppStore = create<AppState>((set) => ({
     return { theme: newTheme };
   }),
   setSplashDone: (done) => set({ isSplashDone: done }),
+  setIsFirstSetup: (val) => set({ isFirstSetup: val }),
+  setClinicName: (name) => set({ clinicName: name }),
   setSelectedPatientId: (id) => set({ selectedPatientId: id }),
   setSelectedEmergencyId: (id) => set({ selectedEmergencyId: id }),
   setSearchQuery: (query) => set({ searchQuery: query }),
