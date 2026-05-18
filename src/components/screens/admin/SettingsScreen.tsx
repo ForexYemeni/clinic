@@ -1,108 +1,88 @@
 'use client';
 
-import { Card } from '@/components/ui/card';
+import React from 'react';
+import { ChevronLeft, Moon, Sun, Bell, LogOut, Shield, Info } from 'lucide-react';
+import { Card, CardContent } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
-import { Switch } from '@/components/ui/switch';
-import { Label } from '@/components/ui/label';
+import { Badge } from '@/components/ui/badge';
 import { Separator } from '@/components/ui/separator';
+import { Switch } from '@/components/ui/switch';
+import { Avatar, AvatarFallback } from '@/components/ui/avatar';
 import { useAppStore } from '@/lib/store';
-import { Moon, Sun, Shield, Heart, LogOut, Info, ChevronLeft } from 'lucide-react';
-import { toast } from 'sonner';
 
-export function SettingsScreen() {
-  const { user, theme, toggleTheme, logout } = useAppStore();
-
-  const menuItems = [
-    {
-      icon: Shield,
-      label: 'الأمان والخصوصية',
-      description: 'إعدادات الأمان',
-      onClick: () => toast.info('قريباً'),
-    },
-    {
-      icon: Info,
-      label: 'حول التطبيق',
-      description: 'الإصدار 1.0.0',
-      onClick: () => toast.info('عيادة الإسعافات الأولية - الإصدار 1.0.0'),
-    },
-  ];
+const SettingsScreen = React.memo(function SettingsScreen() {
+  const { user, theme, toggleTheme, logout, setScreen } = useAppStore();
 
   return (
-    <div className="p-4">
-      <h2 className="text-xl font-bold text-foreground mb-4">الإعدادات</h2>
-
-      {/* Profile card */}
-      <Card className="medical-card p-4 mb-4">
-        <div className="flex items-center gap-3">
-          <div className="w-14 h-14 rounded-2xl bg-gradient-to-br from-teal-500 to-emerald-600 flex items-center justify-center">
-            <Shield className="w-7 h-7 text-white" />
-          </div>
-          <div className="flex-1">
-            <h3 className="font-bold text-foreground">{user?.name}</h3>
-            <p className="text-sm text-muted-foreground">{user?.email}</p>
-            <p className="text-xs text-primary font-medium mt-1">
-              {user?.role === 'admin' ? 'مدير النظام' : 'طبيب تمريض'}
-            </p>
-          </div>
-        </div>
-      </Card>
-
-      {/* Theme */}
-      <Card className="medical-card p-4 mb-4">
-        <div className="flex items-center justify-between">
-          <div className="flex items-center gap-3">
-            {theme === 'light' ? <Moon className="w-5 h-5 text-muted-foreground" /> : <Sun className="w-5 h-5 text-muted-foreground" />}
-            <div>
-              <Label className="font-medium">الوضع الداكن</Label>
-              <p className="text-xs text-muted-foreground">
-                {theme === 'light' ? 'تفعيل الوضع الداكن' : 'تفعيل الوضع الفاتح'}
-              </p>
-            </div>
-          </div>
-          <Switch checked={theme === 'dark'} onCheckedChange={toggleTheme} />
-        </div>
-      </Card>
-
-      {/* Menu items */}
-      <Card className="medical-card mb-4">
-        {menuItems.map((item, i) => (
-          <div key={i}>
-            <button
-              onClick={item.onClick}
-              className="flex items-center justify-between w-full p-4 hover:bg-muted/50 transition-colors"
-            >
-              <div className="flex items-center gap-3">
-                <item.icon className="w-5 h-5 text-muted-foreground" />
-                <div className="text-right">
-                  <p className="text-sm font-medium">{item.label}</p>
-                  <p className="text-xs text-muted-foreground">{item.description}</p>
-                </div>
-              </div>
-              <ChevronLeft className="w-4 h-4 text-muted-foreground" />
-            </button>
-            {i < menuItems.length - 1 && <Separator />}
-          </div>
-        ))}
-      </Card>
-
-      {/* Logout */}
-      <Button
-        variant="outline"
-        className="w-full h-12 rounded-xl text-red-500 border-red-200 hover:bg-red-50 dark:hover:bg-red-900/20"
-        onClick={logout}
-      >
-        <LogOut className="w-4 h-4 ml-2" />
-        تسجيل الخروج
-      </Button>
-
-      {/* App info */}
-      <div className="text-center mt-6 mb-4">
-        <div className="flex items-center justify-center gap-2 mb-2">
-          <Heart className="w-4 h-4 text-primary fill-primary" />
-          <span className="text-sm font-semibold text-primary">عيادة الإسعافات الأولية</span>
-        </div>
-        <p className="text-xs text-muted-foreground">الإصدار 1.0.0</p>
+    <div className="px-4 pb-24 pt-2 space-y-3">
+      <div className="flex items-center gap-3">
+        <Button variant="ghost" size="icon" className="h-9 w-9 rounded-xl" onClick={() => setScreen(user?.role === 'admin' ? 'admin-more' : 'nurse-profile')}>
+          <ChevronLeft className="w-5 h-5" />
+        </Button>
+        <h2 className="text-lg font-bold">الإعدادات</h2>
       </div>
+
+      {/* Profile card with gradient */}
+      <Card className="border-0 shadow-sm overflow-hidden">
+        <div className="h-20 bg-gradient-to-r from-emerald-500 to-teal-600 relative">
+          <div className="absolute -bottom-8 right-4">
+            <Avatar className="w-16 h-16 border-4 border-background ring-2 ring-emerald-200 dark:ring-emerald-800">
+              <AvatarFallback className="bg-gradient-to-br from-emerald-100 to-teal-100 dark:from-emerald-900/30 dark:to-teal-900/30 text-emerald-600 dark:text-emerald-400 text-xl font-bold">
+                {user?.name?.charAt(0)}
+              </AvatarFallback>
+            </Avatar>
+          </div>
+        </div>
+        <CardContent className="pt-12 pb-4 px-4">
+          <h3 className="font-bold text-base">{user?.name}</h3>
+          <p className="text-sm text-muted-foreground" dir="ltr">{user?.email}</p>
+          <Badge className="mt-2 text-[10px] bg-gradient-to-r from-emerald-100 to-teal-100 dark:from-emerald-900/30 dark:to-teal-900/30 text-emerald-700 dark:text-emerald-400 border-0">
+            {user?.role === 'admin' ? 'مدير النظام' : 'ممرض'}
+          </Badge>
+        </CardContent>
+      </Card>
+
+      {/* Settings groups */}
+      <Card className="border-0 shadow-sm">
+        <CardContent className="p-0">
+          <div className="flex items-center justify-between p-4">
+            <div className="flex items-center gap-3">
+              <div className={`w-9 h-9 rounded-xl flex items-center justify-center ${theme === 'light' ? 'bg-amber-50 text-amber-500 dark:bg-amber-900/30' : 'bg-blue-50 text-blue-500 dark:bg-blue-900/30'}`}>
+                {theme === 'light' ? <Sun className="w-5 h-5" /> : <Moon className="w-5 h-5" />}
+              </div>
+              <span className="text-sm font-medium">الوضع {theme === 'light' ? 'الفاتح' : 'الليلي'}</span>
+            </div>
+            <Switch checked={theme === 'dark'} onCheckedChange={toggleTheme} />
+          </div>
+          <Separator />
+          <button className="flex items-center gap-3 p-4 w-full touch-feedback" onClick={() => setScreen(user?.role === 'admin' ? 'admin-notifications' : 'nurse-notifications')}>
+            <div className="w-9 h-9 rounded-xl flex items-center justify-center bg-emerald-50 text-emerald-600 dark:bg-emerald-900/30 dark:text-emerald-400">
+              <Bell className="w-5 h-5" />
+            </div>
+            <span className="text-sm font-medium">الإشعارات</span>
+            <ChevronLeft className="w-4 h-4 mr-auto text-muted-foreground" />
+          </button>
+        </CardContent>
+      </Card>
+
+      <Card className="border-0 shadow-sm">
+        <CardContent className="p-4">
+          <div className="flex items-center gap-2 mb-2">
+            <Info className="w-4 h-4 text-muted-foreground" />
+            <h4 className="text-xs font-semibold text-muted-foreground">معلومات التطبيق</h4>
+          </div>
+          <div className="space-y-1.5 text-xs text-muted-foreground">
+            <p>عيادة الإسعافات الأولية - الإصدار 2.0</p>
+            <p>نظام إدارة احترافي لعيادات الإسعافات</p>
+          </div>
+        </CardContent>
+      </Card>
+
+      <Button variant="destructive" className="w-full h-12 rounded-xl font-semibold" onClick={logout}>
+        <LogOut className="w-4 h-4 ml-1" /> تسجيل الخروج
+      </Button>
     </div>
   );
-}
+});
+
+export { SettingsScreen };

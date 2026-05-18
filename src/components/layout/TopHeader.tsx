@@ -1,87 +1,56 @@
 'use client';
 
-import { Bell, Moon, Sun, LogOut, User } from 'lucide-react';
-import { useAppStore } from '@/lib/store';
-import { Badge } from '@/components/ui/badge';
+import React, { useMemo, useCallback } from 'react';
+import { Heart, Bell, Moon, Sun } from 'lucide-react';
 import { Button } from '@/components/ui/button';
-import {
-  DropdownMenu,
-  DropdownMenuContent,
-  DropdownMenuItem,
-  DropdownMenuTrigger,
-} from '@/components/ui/dropdown-menu';
+import { useAppStore } from '@/lib/store';
+import { useData } from '@/hooks/useData';
+import { NotificationItem } from '@/lib/constants';
 
-export function TopHeader() {
-  const { user, theme, toggleTheme, unreadCount, setScreen, logout } = useAppStore();
+const TopHeader = React.memo(function TopHeader() {
+  const { user, theme, toggleTheme, setScreen } = useAppStore();
+  const { data: notifications } = useData<NotificationItem[]>(
+    user ? `/api/notifications?userId=${user.id}` : null,
+    { refreshInterval: 60_000 }
+  );
+
+  const unreadCount = useMemo(() => {
+    if (!notifications) return 0;
+    return notifications.filter(n => !n.read).length;
+  }, [notifications]);
+
+  const handleBellClick = useCallback(() => {
+    setScreen(user?.role === 'admin' ? 'admin-notifications' : 'nurse-notifications');
+  }, [user?.role, setScreen]);
 
   return (
-    <header className="top-header">
-      <div className="flex items-center justify-between px-4 py-3">
-        {/* Right: User info */}
+    <header className="sticky top-0 z-40 glass-header border-b border-border">
+      <div className="flex items-center justify-between px-4 h-14">
         <div className="flex items-center gap-3">
-          <div className="w-10 h-10 rounded-full bg-gradient-to-br from-teal-500 to-emerald-600 flex items-center justify-center shadow-sm">
-            <User className="w-5 h-5 text-white" />
+          <div className="w-9 h-9 bg-gradient-to-br from-emerald-500 to-teal-600 rounded-xl flex items-center justify-center shadow-sm">
+            <Heart className="w-5 h-5 text-white" fill="currentColor" />
           </div>
           <div>
-            <h2 className="font-bold text-foreground text-sm">{user?.name || ''}</h2>
-            <p className="text-xs text-muted-foreground">
-              {user?.role === 'admin' ? 'مدير النظام' : 'طبيب تمريض'}
-            </p>
+            <h1 className="text-sm font-bold leading-tight">عيادة الإسعافات</h1>
+            <p className="text-[10px] text-muted-foreground">{user?.name}</p>
           </div>
         </div>
-
-        {/* Left: Actions */}
-        <div className="flex items-center gap-1">
-          {/* Theme toggle */}
-          <Button
-            variant="ghost"
-            size="icon"
-            className="w-10 h-10 rounded-full"
-            onClick={toggleTheme}
-          >
-            {theme === 'light' ? (
-              <Moon className="w-5 h-5 text-muted-foreground" />
-            ) : (
-              <Sun className="w-5 h-5 text-muted-foreground" />
-            )}
-          </Button>
-
-          {/* Notifications */}
-          <Button
-            variant="ghost"
-            size="icon"
-            className="w-10 h-10 rounded-full relative"
-            onClick={() => setScreen('notifications')}
-          >
-            <Bell className="w-5 h-5 text-muted-foreground" />
+        <div className="flex items-center gap-1.5">
+          <Button variant="ghost" size="icon" className="h-9 w-9 rounded-xl touch-feedback relative" onClick={handleBellClick}>
+            <Bell className="w-5 h-5" />
             {unreadCount > 0 && (
-              <Badge className="absolute -top-0.5 -left-0.5 h-5 min-w-5 flex items-center justify-center p-0 text-[10px] bg-red-500 text-white border-2 border-card">
+              <span className="absolute -top-0.5 -left-0.5 min-w-[16px] h-4 bg-red-500 text-white text-[9px] rounded-full flex items-center justify-center px-1 font-bold animate-bounce-in">
                 {unreadCount > 9 ? '9+' : unreadCount}
-              </Badge>
+              </span>
             )}
           </Button>
-
-          {/* Menu */}
-          <DropdownMenu>
-            <DropdownMenuTrigger asChild>
-              <Button variant="ghost" size="icon" className="w-10 h-10 rounded-full">
-                <LogOut className="w-5 h-5 text-muted-foreground" />
-              </Button>
-            </DropdownMenuTrigger>
-            <DropdownMenuContent align="end" className="w-48">
-              <DropdownMenuItem onClick={() => setScreen('settings')}>
-                الإعدادات
-              </DropdownMenuItem>
-              <DropdownMenuItem
-                onClick={logout}
-                className="text-red-600 dark:text-red-400"
-              >
-                تسجيل الخروج
-              </DropdownMenuItem>
-            </DropdownMenuContent>
-          </DropdownMenu>
+          <Button variant="ghost" size="icon" className="h-9 w-9 rounded-xl touch-feedback" onClick={toggleTheme}>
+            {theme === 'light' ? <Moon className="w-5 h-5" /> : <Sun className="w-5 h-5" />}
+          </Button>
         </div>
       </div>
     </header>
   );
-}
+});
+
+export { TopHeader };

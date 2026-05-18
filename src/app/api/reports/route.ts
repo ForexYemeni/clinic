@@ -1,5 +1,5 @@
+import { adminDb } from '@/lib/firebase-admin';
 import { NextResponse } from 'next/server';
-import { db } from '@/lib/db';
 
 export async function GET(request: Request) {
   try {
@@ -14,59 +14,74 @@ export async function GET(request: Request) {
     } else if (type === 'monthly') {
       startDate.setMonth(startDate.getMonth() - 1);
     }
+    const startStr = startDate.toISOString();
 
-    const [patients, services, emergencies, payments, appointments] = await Promise.all([
-      db.patient.count({
-        where: { createdAt: { gte: startDate } },
-      }),
-      db.patientService.count({
-        where: { createdAt: { gte: startDate } },
-      }),
-      db.emergency.count({
-        where: { arrivalTime: { gte: startDate } },
-      }),
-      db.payment.aggregate({
-        where: { type: 'payment', createdAt: { gte: startDate } },
-        _sum: { amount: true },
-        _count: true,
-      }),
-      db.appointment.count({
-        where: { createdAt: { gte: startDate } },
-      }),
+    const [patientsSnap, servicesSnap, emergenciesSnap, paymentsSnap, appointmentsSnap, dailyReportsSnap] = await Promise.all([
+      adminDb.collection('patients').where('createdAt', '>=', startStr).get(),
+      adminDb.collection('patientServices').where('createdAt', '>=', startStr).get(),
+      adminDb.collection('emergencies').where('arrivalTime', '>=', startStr).get(),
+      adminDb.collection('payments').where('type', '==', 'payment').where('createdAt', '>=', startStr).get(),
+      adminDb.collection('appointments').where('createdAt', '>=', startStr).get(),
+      adminDb.collection('dailyReports').where('date', '>=', startStr).get(),
     ]);
 
-    // Daily reports from nurses
-    const dailyReports = await db.dailyReport.findMany({
-      where: { date: { gte: startDate } },
-      include: {
-        nurse: { select: { name: true } },
-      },
-      orderBy: { date: 'desc' },
+    const newPatients = patientsSnap.size;
+    const servicesProvided = servicesSnap.size;
+    const emergencies = emergenciesSnap.size;
+    const appointments = appointmentsSnap.size;
+
+    const revenue = paymentsSnap.docs.reduce((sum, doc) => sum + (doc.data().amount || 0), 0);
+    const paymentCount = paymentsSnap.size;
+
+    // Daily reports with nurse info
+    const dailyReports = [];
+    for (const doc of dailyReportsSnap.docs) {
+      const data = { id: doc.id, ...doc.data() } as Record<string, unknown>;
+      if (data.nurseId) {
+        const nurseDoc = await adminDb.collection('users').doc(data.nurseId as string).get();
+        if (nurseDoc.exists) {
+          data.nurse = { name: nurseDoc.data()?.name };
+        }
+      }
+      dailyReports.push(data);
+    }
+    dailyReports.sort((a, b) => {
+      const da = (a as Record<string, unknown>).date as string || '';
+      const db = (b as Record<string, unknown>).date as string || '';
+      return db.localeCompare(da);
     });
 
     // Payment method breakdown
-    const paymentByMethod = await db.payment.groupBy({
-      by: ['method'],
-      where: { type: 'payment', createdAt: { gte: startDate } },
-      _sum: { amount: true },
-      _count: true,
+    const methodMap: Record<string, { sum: number; count: number }> = {};
+    paymentsSnap.docs.forEach(doc => {
+      const data = doc.data();
+      const method = data.method || 'cash';
+      if (!methodMap[method]) methodMap[method] = { sum: 0, count: 0 };
+      methodMap[method].sum += data.amount || 0;
+      methodMap[method].count += 1;
     });
+    const paymentByMethod = Object.entries(methodMap).map(([method, val]) => ({
+      method,
+      _sum: { amount: val.sum },
+      _count: val.count,
+    }));
 
     return NextResponse.json({
       period: type,
-      startDate,
+      startDate: startStr,
       stats: {
-        newPatients: patients,
-        servicesProvided: services,
-        emergencies: emergencies,
-        revenue: payments._sum.amount || 0,
-        paymentCount: payments._count,
+        newPatients,
+        servicesProvided,
+        emergencies,
+        revenue,
+        paymentCount,
         appointments,
       },
       dailyReports,
       paymentByMethod,
     });
   } catch (error) {
+    console.error('Reports error:', error);
     return NextResponse.json({ error: 'خطأ في جلب التقارير' }, { status: 500 });
   }
 }

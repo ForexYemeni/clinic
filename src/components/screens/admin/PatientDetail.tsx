@@ -1,348 +1,204 @@
 'use client';
 
-import { useEffect, useState } from 'react';
-import { Card } from '@/components/ui/card';
-import { Badge } from '@/components/ui/badge';
+import React, { useState, useMemo } from 'react';
+import { motion } from 'framer-motion';
+import { ChevronRight, Phone, AlertCircle, MapPin, Activity, Shield, FileText, ClipboardList, User, Stethoscope, Heart } from 'lucide-react';
+import { Card, CardContent } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
-import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
-import { LoadingSpinner } from '@/components/shared/LoadingSpinner';
-import { EmergencyBadge } from '@/components/shared/EmergencyBadge';
-import { StatusBadge } from '@/components/shared/StatusBadge';
+import { Badge } from '@/components/ui/badge';
+import { Avatar, AvatarFallback } from '@/components/ui/avatar';
 import { useAppStore } from '@/lib/store';
-import { ArrowRight, User, Phone, MapPin, Droplets, Heart, AlertTriangle, Calendar, Clock, DollarSign, Pill, FileText } from 'lucide-react';
-import { format } from 'date-fns';
-import { ar } from 'date-fns/locale';
+import { useData } from '@/hooks/useData';
+import { EmptyState } from '@/components/shared/EmptyState';
+import { SkeletonLoader } from '@/components/shared/SkeletonLoader';
+import {
+  PatientItem, formatCurrency, formatDate, formatTime,
+  statusColors, statusLabels, genderLabels,
+} from '@/lib/constants';
 
-interface PatientDetailData {
-  id: string;
-  name: string;
-  age: number;
-  gender: string;
-  phone: string | null;
-  emergencyPhone: string | null;
-  address: string | null;
-  bloodType: string | null;
-  chronicDiseases: string | null;
-  allergies: string | null;
-  medicalHistory: string | null;
-  notes: string | null;
-  createdAt: string;
-  registeredByUser: { name: string } | null;
-  visits: Array<{
-    id: string;
-    visitDate: string;
-    reason: string | null;
-    diagnosis: string | null;
-    vitals: string | null;
-    status: string;
-    notes: string | null;
-  }>;
-  services: Array<{
-    id: string;
-    status: string;
-    notes: string | null;
-    performedAt: string | null;
-    service: { nameAr: string; price: number };
-    nurse: { name: string } | null;
-  }>;
-  medications: Array<{
-    id: string;
-    name: string;
-    dosage: string | null;
-    frequency: string | null;
-    startDate: string;
-    endDate: string | null;
-    notes: string | null;
-  }>;
-  emergencies: Array<{
-    id: string;
-    severity: string;
-    arrivalTime: string;
-    treatmentTime: string | null;
-    status: string;
-    notes: string | null;
-    nurse: { name: string } | null;
-  }>;
-  appointments: Array<{
-    id: string;
-    date: string;
-    duration: number;
-    type: string | null;
-    status: string;
-    notes: string | null;
-    nurse: { name: string } | null;
-  }>;
-  payments: Array<{
-    id: string;
-    amount: number;
-    method: string;
-    type: string;
-    description: string | null;
-    createdAt: string;
-  }>;
-  invoices: Array<{
-    id: string;
-    total: number;
-    paid: number;
-    status: string;
-    dueDate: string | null;
-    createdAt: string;
-  }>;
-  _count: Record<string, number>;
+interface PatientDetailProps {
+  role: 'admin' | 'nurse';
 }
 
-export function PatientDetail() {
-  const { goBack } = useAppStore();
-  const [patient, setPatient] = useState<PatientDetailData | null>(null);
-  const [loading, setLoading] = useState(true);
-  const patientId = useAppStore.getState().selectedPatientId;
+const PatientDetail = React.memo(function PatientDetail({ role }: PatientDetailProps) {
+  const { selectedPatientId, setScreen } = useAppStore();
+  const { data: patient, loading } = useData<PatientItem>(selectedPatientId ? `/api/patients/${selectedPatientId}` : null);
+  const [activeTab, setActiveTab] = useState<'info' | 'visits' | 'services' | 'medications'>('info');
 
-  useEffect(() => {
-    if (patientId) fetchPatient();
-  }, [patientId]);
+  const tabs = useMemo(() => [
+    { id: 'info' as const, label: 'المعلومات', icon: User },
+    { id: 'visits' as const, label: 'الزيارات', icon: FileText },
+    { id: 'services' as const, label: 'الخدمات', icon: Stethoscope },
+    { id: 'medications' as const, label: 'الأدوية', icon: Activity },
+  ], []);
 
-  const fetchPatient = async () => {
-    try {
-      const res = await fetch(`/api/patients/${patientId}`);
-      const data = await res.json();
-      setPatient(data.patient);
-    } catch (error) {
-      console.error(error);
-    } finally {
-      setLoading(false);
-    }
-  };
-
-  if (loading) return <LoadingSpinner text="جاري تحميل بيانات المريض..." />;
-  if (!patient) return null;
+  if (loading) return <SkeletonLoader type="patient-detail" />;
+  if (!patient) return <EmptyState icon={User} title="لم يتم العثور على المريض" />;
 
   return (
-    <div className="p-4">
-      {/* Header */}
-      <div className="flex items-center gap-3 mb-4">
-        <Button variant="ghost" size="icon" className="w-10 h-10 rounded-full" onClick={goBack}>
-          <ArrowRight className="w-5 h-5" />
-        </Button>
-        <h2 className="text-xl font-bold text-foreground">ملف المريض</h2>
-      </div>
+    <div className="pb-24 pt-0">
+      {/* Header with gradient */}
+      <div className="bg-gradient-to-br from-emerald-600 via-teal-600 to-emerald-700 -mx-4 px-4 pt-2 pb-8 rounded-b-3xl relative overflow-hidden">
+        {/* Decorative circles */}
+        <div className="absolute -top-10 -left-10 w-32 h-32 rounded-full border-4 border-white/5" />
+        <div className="absolute -bottom-6 -right-6 w-24 h-24 rounded-full border-4 border-white/5" />
 
-      {/* Patient Info Card */}
-      <Card className="medical-card p-4 mb-4">
-        <div className="flex items-start gap-3">
-          <div className={`w-14 h-14 rounded-2xl flex items-center justify-center ${
-            patient.gender === 'male' ? 'bg-blue-100 dark:bg-blue-900/30' : 'bg-pink-100 dark:bg-pink-900/30'
-          }`}>
-            <User className={`w-7 h-7 ${
-              patient.gender === 'male' ? 'text-blue-600 dark:text-blue-400' : 'text-pink-600 dark:text-pink-400'
-            }`} />
-          </div>
-          <div className="flex-1">
-            <h3 className="text-lg font-bold text-foreground">{patient.name}</h3>
-            <div className="flex items-center gap-2 mt-1 text-sm text-muted-foreground">
+        <div className="flex items-center gap-3 mb-5">
+          <Button variant="ghost" size="icon" className="h-9 w-9 rounded-xl text-white hover:bg-white/20" onClick={() => setScreen(role === 'admin' ? 'admin-patients' : 'nurse-patients')}>
+            <ChevronRight className="w-5 h-5" />
+          </Button>
+          <h2 className="text-white font-bold">ملف المريض</h2>
+        </div>
+        <div className="flex items-center gap-4">
+          <Avatar className="w-16 h-16 border-2 border-white/30 ring-4 ring-white/10">
+            <AvatarFallback className="bg-white/20 text-white text-xl font-bold backdrop-blur-sm">{patient.name.charAt(0)}</AvatarFallback>
+          </Avatar>
+          <div className="text-white">
+            <h3 className="text-lg font-bold">{patient.name}</h3>
+            <div className="flex items-center gap-3 mt-1 text-emerald-100 text-xs">
               <span>{patient.age} سنة</span>
-              <span>•</span>
-              <span>{patient.gender === 'male' ? 'ذكر' : 'أنثى'}</span>
+              <span className="w-1 h-1 bg-emerald-200/50 rounded-full" />
+              <span>{genderLabels[patient.gender] || patient.gender}</span>
               {patient.bloodType && (
-                <>
-                  <span>•</span>
-                  <Badge variant="outline" className="text-xs">
-                    <Droplets className="w-3 h-3 ml-1 text-red-500" />
-                    {patient.bloodType}
-                  </Badge>
-                </>
+                <Badge className="bg-white/20 text-white text-[10px] backdrop-blur-sm border border-white/10">🩸 {patient.bloodType}</Badge>
               )}
             </div>
-            {patient.phone && (
-              <div className="flex items-center gap-1.5 text-sm text-muted-foreground mt-1">
-                <Phone className="w-3.5 h-3.5" />
-                <span dir="ltr">{patient.phone}</span>
-              </div>
-            )}
-            {patient.address && (
-              <div className="flex items-center gap-1.5 text-sm text-muted-foreground mt-1">
-                <MapPin className="w-3.5 h-3.5" />
-                <span>{patient.address}</span>
-              </div>
-            )}
           </div>
         </div>
+      </div>
 
-        {/* Medical alerts */}
-        {(patient.allergies || patient.chronicDiseases) && (
-          <div className="mt-4 space-y-2">
-            {patient.allergies && (
-              <div className="flex items-start gap-2 bg-red-50 dark:bg-red-900/20 rounded-lg p-2.5">
-                <AlertTriangle className="w-4 h-4 text-red-500 mt-0.5 shrink-0" />
-                <div>
-                  <p className="text-xs font-semibold text-red-700 dark:text-red-400">حساسية</p>
-                  <p className="text-xs text-red-600 dark:text-red-300">{patient.allergies}</p>
-                </div>
-              </div>
-            )}
-            {patient.chronicDiseases && (
-              <div className="flex items-start gap-2 bg-amber-50 dark:bg-amber-900/20 rounded-lg p-2.5">
-                <Heart className="w-4 h-4 text-amber-500 mt-0.5 shrink-0" />
-                <div>
-                  <p className="text-xs font-semibold text-amber-700 dark:text-amber-400">أمراض مزمنة</p>
-                  <p className="text-xs text-amber-600 dark:text-amber-300">{patient.chronicDiseases}</p>
-                </div>
-              </div>
-            )}
-          </div>
+      {/* Tabs with animated underline */}
+      <div className="flex gap-1 px-4 -mt-4">
+        {tabs.map((tab) => (
+          <button
+            key={tab.id}
+            onClick={() => setActiveTab(tab.id)}
+            className={`flex-1 py-2.5 text-xs font-semibold rounded-xl transition-all duration-200 ${
+              activeTab === tab.id ? 'bg-white dark:bg-gray-800 shadow-sm text-emerald-600 dark:text-emerald-400' : 'bg-muted/50 text-muted-foreground hover:bg-muted'
+            }`}
+          >
+            {tab.label}
+          </button>
+        ))}
+      </div>
+
+      {/* Tab Content */}
+      <div className="px-4 mt-4 space-y-3">
+        {activeTab === 'info' && (
+          <motion.div initial={{ opacity: 0, y: 5 }} animate={{ opacity: 1, y: 0 }} className="space-y-2.5">
+            {[
+              patient.phone && { icon: Phone, color: 'text-emerald-600 bg-emerald-50 dark:bg-emerald-900/30', label: 'الهاتف', value: patient.phone, dir: 'ltr' },
+              patient.emergencyPhone && { icon: AlertCircle, color: 'text-red-500 bg-red-50 dark:bg-red-900/30', label: 'هاتف الطوارئ', value: patient.emergencyPhone, dir: 'ltr' },
+              patient.address && { icon: MapPin, color: 'text-blue-500 bg-blue-50 dark:bg-blue-900/30', label: 'العنوان', value: patient.address },
+              patient.chronicDiseases && { icon: Activity, color: 'text-amber-500 bg-amber-50 dark:bg-amber-900/30', label: 'الأمراض المزمنة', value: patient.chronicDiseases },
+              patient.allergies && { icon: Shield, color: 'text-purple-500 bg-purple-50 dark:bg-purple-900/30', label: 'الحساسية', value: patient.allergies },
+              patient.medicalHistory && { icon: FileText, color: 'text-teal-500 bg-teal-50 dark:bg-teal-900/30', label: 'التاريخ الطبي', value: patient.medicalHistory },
+              patient.notes && { icon: ClipboardList, color: 'text-gray-500 bg-gray-50 dark:bg-gray-900/30', label: 'ملاحظات', value: patient.notes },
+            ].filter(Boolean).map((item, i) => (
+              item && (
+                <Card key={i} className="border-0 shadow-sm">
+                  <CardContent className="p-3.5 flex items-center gap-3">
+                    <div className={`w-9 h-9 rounded-xl flex items-center justify-center ${item.color}`}>
+                      <item.icon className="w-4 h-4" />
+                    </div>
+                    <div className="flex-1 min-w-0">
+                      <p className="text-[10px] text-muted-foreground">{item.label}</p>
+                      <p className="text-sm font-medium" dir={item.dir as 'ltr' | 'rtl' | undefined}>{item.value}</p>
+                    </div>
+                  </CardContent>
+                </Card>
+              )
+            ))}
+          </motion.div>
         )}
-      </Card>
 
-      {/* Tabs */}
-      <Tabs defaultValue="visits" className="w-full">
-        <TabsList className="w-full grid grid-cols-4 h-11">
-          <TabsTrigger value="visits" className="text-xs">
-            <FileText className="w-3.5 h-3.5 ml-1" />
-            الزيارات
-          </TabsTrigger>
-          <TabsTrigger value="services" className="text-xs">
-            <Heart className="w-3.5 h-3.5 ml-1" />
-            الخدمات
-          </TabsTrigger>
-          <TabsTrigger value="meds" className="text-xs">
-            <Pill className="w-3.5 h-3.5 ml-1" />
-            الأدوية
-          </TabsTrigger>
-          <TabsTrigger value="finance" className="text-xs">
-            <DollarSign className="w-3.5 h-3.5 ml-1" />
-            المالية
-          </TabsTrigger>
-        </TabsList>
-
-        <TabsContent value="visits" className="mt-3 space-y-3">
-          {patient.visits.length === 0 ? (
-            <p className="text-center text-sm text-muted-foreground py-8">لا توجد زيارات</p>
-          ) : (
-            patient.visits.map((visit) => (
-              <Card key={visit.id} className="medical-card p-3">
-                <div className="flex items-center justify-between mb-2">
-                  <div className="flex items-center gap-2 text-sm">
-                    <Calendar className="w-3.5 h-3.5 text-muted-foreground" />
-                    <span>{format(new Date(visit.visitDate), 'dd/MM/yyyy', { locale: ar })}</span>
-                  </div>
-                  <StatusBadge status={visit.status} size="sm" />
-                </div>
-                {visit.reason && <p className="text-sm font-medium">{visit.reason}</p>}
-                {visit.diagnosis && <p className="text-xs text-muted-foreground mt-1">التشخيص: {visit.diagnosis}</p>}
-                {visit.vitals && (
-                  <div className="mt-2 bg-muted/50 rounded-lg p-2">
-                    <p className="text-xs text-muted-foreground">العلامات الحيوية:</p>
-                    {(() => {
-                      try {
-                        const vitals = JSON.parse(visit.vitals);
-                        return (
-                          <div className="flex flex-wrap gap-2 mt-1">
-                            {vitals.bp && <Badge variant="outline" className="text-xs">ضغط: {vitals.bp}</Badge>}
-                            {vitals.pulse && <Badge variant="outline" className="text-xs">نبض: {vitals.pulse}</Badge>}
-                            {vitals.temp && <Badge variant="outline" className="text-xs">حرارة: {vitals.temp}</Badge>}
-                            {vitals.o2 && <Badge variant="outline" className="text-xs">أكسجين: {vitals.o2}%</Badge>}
-                            {vitals.sugar && <Badge variant="outline" className="text-xs">سكر: {vitals.sugar}</Badge>}
-                          </div>
-                        );
-                      } catch {
-                        return null;
-                      }
-                    })()}
-                  </div>
-                )}
-              </Card>
-            ))
-          )}
-        </TabsContent>
-
-        <TabsContent value="services" className="mt-3 space-y-3">
-          {patient.services.length === 0 ? (
-            <p className="text-center text-sm text-muted-foreground py-8">لا توجد خدمات</p>
-          ) : (
-            patient.services.map((ps) => (
-              <Card key={ps.id} className="medical-card p-3">
-                <div className="flex items-center justify-between">
-                  <div>
-                    <p className="text-sm font-medium">{ps.service.nameAr}</p>
-                    <p className="text-xs text-muted-foreground">
-                      {ps.nurse?.name || '-'} • {ps.service.price} ر.س
-                    </p>
-                  </div>
-                  <StatusBadge status={ps.status} size="sm" />
-                </div>
-              </Card>
-            ))
-          )}
-        </TabsContent>
-
-        <TabsContent value="meds" className="mt-3 space-y-3">
-          {patient.medications.length === 0 ? (
-            <p className="text-center text-sm text-muted-foreground py-8">لا توجد أدوية</p>
-          ) : (
-            patient.medications.map((med) => (
-              <Card key={med.id} className="medical-card p-3">
-                <div className="flex items-start gap-3">
-                  <div className="w-9 h-9 rounded-lg bg-purple-100 dark:bg-purple-900/30 flex items-center justify-center shrink-0">
-                    <Pill className="w-4 h-4 text-purple-600 dark:text-purple-400" />
-                  </div>
-                  <div className="flex-1">
-                    <p className="text-sm font-semibold">{med.name}</p>
-                    {med.dosage && <p className="text-xs text-muted-foreground">الجرعة: {med.dosage}</p>}
-                    {med.frequency && <p className="text-xs text-muted-foreground">التكرار: {med.frequency}</p>}
-                    <p className="text-xs text-muted-foreground mt-1">
-                      من: {format(new Date(med.startDate), 'dd/MM/yyyy', { locale: ar })}
-                    </p>
-                  </div>
-                </div>
-              </Card>
-            ))
-          )}
-        </TabsContent>
-
-        <TabsContent value="finance" className="mt-3 space-y-3">
-          {patient.payments.length === 0 && patient.invoices.length === 0 ? (
-            <p className="text-center text-sm text-muted-foreground py-8">لا توجد بيانات مالية</p>
-          ) : (
-            <>
-              {patient.invoices.length > 0 && (
-                <div>
-                  <h4 className="text-sm font-semibold mb-2">الفواتير</h4>
-                  {patient.invoices.map((inv) => (
-                    <Card key={inv.id} className="medical-card p-3 mb-2">
-                      <div className="flex items-center justify-between">
-                        <div>
-                          <p className="text-sm font-medium">{inv.total} ر.س</p>
-                          <p className="text-xs text-muted-foreground">مدفوع: {inv.paid} ر.س</p>
-                        </div>
-                        <StatusBadge status={inv.status} size="sm" />
+        {activeTab === 'visits' && (
+          <motion.div initial={{ opacity: 0, y: 5 }} animate={{ opacity: 1, y: 0 }}>
+            {patient.visits?.length > 0 ? (
+              <div className="space-y-2.5">
+                {patient.visits.map((v, i) => (
+                  <Card key={v.id} className="border-0 shadow-sm relative overflow-hidden">
+                    {/* Timeline dot */}
+                    <div className="absolute right-0 top-0 bottom-0 w-1 bg-emerald-400" />
+                    <CardContent className="p-3.5 pr-5">
+                      <div className="flex items-start justify-between mb-2">
+                        <p className="text-sm font-semibold">{v.reason}</p>
+                        <Badge className={`text-[9px] ${statusColors[v.status]}`}>{statusLabels[v.status]}</Badge>
                       </div>
-                    </Card>
-                  ))}
-                </div>
-              )}
-              {patient.payments.length > 0 && (
-                <div>
-                  <h4 className="text-sm font-semibold mb-2">المدفوعات</h4>
-                  {patient.payments.map((pay) => (
-                    <Card key={pay.id} className="medical-card p-3 mb-2">
-                      <div className="flex items-center justify-between">
-                        <div>
-                          <p className="text-sm font-medium">{pay.description || pay.type === 'payment' ? 'دفعة' : 'استرداد'}</p>
-                          <p className="text-xs text-muted-foreground">
-                            {format(new Date(pay.createdAt), 'dd/MM/yyyy', { locale: ar })} • {pay.method}
-                          </p>
-                        </div>
-                        <span className={`text-sm font-bold ${pay.type === 'payment' ? 'text-emerald-600' : 'text-red-500'}`}>
-                          {pay.type === 'payment' ? '+' : '-'}{pay.amount} ر.س
-                        </span>
+                      {v.diagnosis && <p className="text-xs text-muted-foreground mb-1">{v.diagnosis}</p>}
+                      <p className="text-[10px] text-muted-foreground flex items-center gap-1">
+                        <Activity className="w-3 h-3" /> {formatDate(v.visitDate)}
+                      </p>
+                      {v.notes && <p className="text-xs text-muted-foreground mt-2 bg-muted/50 p-2 rounded-lg">{v.notes}</p>}
+                    </CardContent>
+                  </Card>
+                ))}
+              </div>
+            ) : <EmptyState icon={FileText} title="لا توجد زيارات" />}
+          </motion.div>
+        )}
+
+        {activeTab === 'services' && (
+          <motion.div initial={{ opacity: 0, y: 5 }} animate={{ opacity: 1, y: 0 }}>
+            {patient.services?.length > 0 ? (
+              <div className="space-y-2.5">
+                {patient.services.map((ps) => (
+                  <Card key={ps.id} className="border-0 shadow-sm">
+                    <CardContent className="p-3.5">
+                      <div className="flex items-start justify-between mb-1">
+                        <p className="text-sm font-semibold">{ps.service?.nameAr}</p>
+                        <Badge className={`text-[9px] ${statusColors[ps.status]}`}>{statusLabels[ps.status]}</Badge>
                       </div>
-                    </Card>
-                  ))}
-                </div>
-              )}
-            </>
-          )}
-        </TabsContent>
-      </Tabs>
+                      <div className="flex items-center gap-3 text-xs text-muted-foreground">
+                        <span className="text-emerald-600 dark:text-emerald-400 font-semibold">{formatCurrency(ps.service?.price || 0)}</span>
+                        <span>{ps.service?.duration} دقيقة</span>
+                      </div>
+                      {ps.nurse && <p className="text-[10px] text-muted-foreground mt-1">الممرض: {ps.nurse.name}</p>}
+                    </CardContent>
+                  </Card>
+                ))}
+              </div>
+            ) : <EmptyState icon={Stethoscope} title="لا توجد خدمات" />}
+          </motion.div>
+        )}
+
+        {activeTab === 'medications' && (
+          <motion.div initial={{ opacity: 0, y: 5 }} animate={{ opacity: 1, y: 0 }}>
+            {patient.medications?.length > 0 ? (
+              <div className="space-y-2.5">
+                {patient.medications.map((med) => (
+                  <Card key={med.id} className="border-0 shadow-sm">
+                    <CardContent className="p-3.5 flex items-center gap-3">
+                      <div className="w-10 h-10 rounded-xl bg-gradient-to-br from-purple-100 to-purple-50 dark:from-purple-900/30 dark:to-purple-800/20 flex items-center justify-center">
+                        <Heart className="w-5 h-5 text-purple-600 dark:text-purple-400" />
+                      </div>
+                      <div className="flex-1">
+                        <p className="text-sm font-semibold">{med.name}</p>
+                        <p className="text-xs text-muted-foreground">{med.dosage} - {med.frequency}</p>
+                      </div>
+                      {med.notes && <p className="text-[10px] text-muted-foreground max-w-[100px] text-left">{med.notes}</p>}
+                    </CardContent>
+                  </Card>
+                ))}
+              </div>
+            ) : <EmptyState icon={Activity} title="لا توجد أدوية" />}
+          </motion.div>
+        )}
+      </div>
+
+      {/* FAB */}
+      {role === 'admin' && (
+        <div className="fixed bottom-20 left-4 z-30 flex flex-col gap-2 animate-slide-up">
+          <button
+            className="w-12 h-12 rounded-full bg-gradient-to-r from-emerald-500 to-teal-500 text-white shadow-lg shadow-emerald-500/30 flex items-center justify-center touch-feedback"
+            onClick={() => window.open(`tel:${patient.phone}`, '_self')}
+          >
+            <Phone className="w-5 h-5" />
+          </button>
+        </div>
+      )}
     </div>
   );
-}
+});
+
+export { PatientDetail };
