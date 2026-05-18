@@ -1,0 +1,194 @@
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "sqlite"
+  url      = env("DATABASE_URL")
+}
+
+model User {
+  id        String   @id @default(cuid())
+  name      String
+  email     String   @unique
+  password  String
+  role      String   @default("nurse") // "admin" or "nurse"
+  phone     String?
+  avatar    String?
+  active    Boolean  @default(true)
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  registeredPatients Patient[]    @relation("PatientRegistrar")
+  emergencies        Emergency[]  @relation("EmergencyNurse")
+  appointments       Appointment[] @relation("AppointmentNurse")
+  notifications      Notification[]
+  dailyReports       DailyReport[]
+  patientServices    PatientService[] @relation("ServiceNurse")
+}
+
+model Patient {
+  id             String   @id @default(cuid())
+  name           String
+  age            Int
+  gender         String   // "male" or "female"
+  phone          String?
+  emergencyPhone String?
+  address        String?
+  bloodType      String?
+  chronicDiseases String? // comma separated
+  allergies      String?   // comma separated
+  medicalHistory String?
+  notes          String?
+  createdAt      DateTime @default(now())
+  updatedAt      DateTime @updatedAt
+
+  registeredBy String?
+  registeredByUser User? @relation("PatientRegistrar", fields: [registeredBy], references: [id])
+
+  visits       Visit[]
+  services     PatientService[]
+  medications  Medication[]
+  emergencies  Emergency[]
+  appointments Appointment[]
+  payments     Payment[]
+  invoices     Invoice[]
+}
+
+model Visit {
+  id          String   @id @default(cuid())
+  patientId   String
+  patient     Patient  @relation(fields: [patientId], references: [id])
+  visitDate   DateTime @default(now())
+  reason      String?
+  diagnosis   String?
+  notes       String?
+  vitals      String?  // JSON string for vital signs
+  status      String   @default("active") // "active", "completed", "follow-up"
+  createdAt   DateTime @default(now())
+  updatedAt   DateTime @updatedAt
+}
+
+model Service {
+  id          String   @id @default(cuid())
+  name        String
+  nameAr      String
+  description String?
+  price       Float
+  duration    Int      @default(15) // minutes
+  category    String?
+  active      Boolean  @default(true)
+  createdAt   DateTime @default(now())
+  updatedAt   DateTime @updatedAt
+
+  patientServices PatientService[]
+}
+
+model PatientService {
+  id          String   @id @default(cuid())
+  patientId   String
+  patient     Patient  @relation(fields: [patientId], references: [id])
+  serviceId   String
+  service     Service  @relation(fields: [serviceId], references: [id])
+  nurseId     String?
+  nurse       User?    @relation("ServiceNurse", fields: [nurseId], references: [id])
+  status      String   @default("pending") // "pending", "in-progress", "completed"
+  notes       String?
+  performedAt DateTime?
+  createdAt   DateTime @default(now())
+  updatedAt   DateTime @updatedAt
+}
+
+model Medication {
+  id          String   @id @default(cuid())
+  patientId   String
+  patient     Patient  @relation(fields: [patientId], references: [id])
+  name        String
+  dosage      String?
+  frequency   String?
+  startDate   DateTime @default(now())
+  endDate     DateTime?
+  notes       String?
+  createdAt   DateTime @default(now())
+  updatedAt   DateTime @updatedAt
+}
+
+model Emergency {
+  id              String   @id @default(cuid())
+  patientId       String
+  patient         Patient  @relation(fields: [patientId], references: [id])
+  nurseId         String?
+  nurse           User?    @relation("EmergencyNurse", fields: [nurseId], references: [id])
+  severity        String   @default("moderate") // "low", "moderate", "high", "critical"
+  arrivalTime     DateTime @default(now())
+  treatmentTime   DateTime?
+  actions         String?  // JSON string for actions taken
+  status          String   @default("active") // "active", "treated", "transferred", "archived"
+  notes           String?
+  createdAt       DateTime @default(now())
+  updatedAt       DateTime @updatedAt
+}
+
+model Appointment {
+  id          String   @id @default(cuid())
+  patientId   String
+  patient     Patient  @relation(fields: [patientId], references: [id])
+  nurseId     String?
+  nurse       User?    @relation("AppointmentNurse", fields: [nurseId], references: [id])
+  date        DateTime
+  duration    Int      @default(30) // minutes
+  type        String?  // "checkup", "follow-up", "treatment", "emergency"
+  status      String   @default("scheduled") // "scheduled", "confirmed", "completed", "cancelled"
+  notes       String?
+  createdAt   DateTime @default(now())
+  updatedAt   DateTime @updatedAt
+}
+
+model Payment {
+  id          String   @id @default(cuid())
+  patientId   String
+  patient     Patient  @relation(fields: [patientId], references: [id])
+  amount      Float
+  method      String   @default("cash") // "cash", "card", "insurance"
+  type        String   @default("payment") // "payment", "refund"
+  description String?
+  createdAt   DateTime @default(now())
+  updatedAt   DateTime @updatedAt
+}
+
+model Invoice {
+  id          String   @id @default(cuid())
+  patientId   String
+  patient     Patient  @relation(fields: [patientId], references: [id])
+  items       String   // JSON string for invoice items
+  total       Float
+  paid        Float    @default(0)
+  status      String   @default("unpaid") // "unpaid", "partial", "paid"
+  dueDate     DateTime?
+  createdAt   DateTime @default(now())
+  updatedAt   DateTime @updatedAt
+}
+
+model Notification {
+  id          String   @id @default(cuid())
+  userId      String
+  user        User     @relation(fields: [userId], references: [id])
+  title       String
+  message     String
+  type        String   @default("system") // "system", "emergency", "appointment", "service"
+  read        Boolean  @default(false)
+  createdAt   DateTime @default(now())
+}
+
+model DailyReport {
+  id          String   @id @default(cuid())
+  nurseId     String
+  nurse       User     @relation(fields: [nurseId], references: [id])
+  date        DateTime
+  patientsCount Int    @default(0)
+  servicesCount Int    @default(0)
+  emergenciesCount Int @default(0)
+  notes       String?
+  createdAt   DateTime @default(now())
+  updatedAt   DateTime @updatedAt
+}
