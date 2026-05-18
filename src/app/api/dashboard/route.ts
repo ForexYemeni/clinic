@@ -1,69 +1,118 @@
 import { adminDb } from '@/lib/firebase-admin';
-import { NextResponse } from 'next/server';
+import { NextRequest, NextResponse } from 'next/server';
 
-export async function GET() {
+// GET: Dashboard stats based on role
+// ?role=admin - total stats
+// ?role=nurse - today's patients, pending tasks
+export async function GET(request: NextRequest) {
   try {
-    const [patientsSnap, emergenciesSnap, servicesSnap, nursesSnap, paymentsSnap, invoicesSnap] = await Promise.all([
-      adminDb.collection('patients').get(),
-      adminDb.collection('emergencies').get(),
-      adminDb.collection('patientServices').get(),
-      adminDb.collection('users').where('role', '==', 'nurse').where('active', '==', true).get(),
-      adminDb.collection('payments').get(),
-      adminDb.collection('invoices').where('status', 'in', ['unpaid', 'partial']).get(),
-    ]);
-
-    const totalPatients = patientsSnap.size;
-    const totalEmergencies = emergenciesSnap.size;
-    const activeEmergencies = emergenciesSnap.docs.filter(d => d.data().status === 'active').length;
+    const { searchParams } = new URL(request.url);
+    const role = searchParams.get('role') || 'admin';
+    const nurseId = searchParams.get('nurseId');
 
     const today = new Date();
     today.setHours(0, 0, 0, 0);
     const todayStr = today.toISOString();
 
-    const todayServices = servicesSnap.docs.filter(d => {
-      const date = d.data().createdAt;
-      return date && new Date(date) >= new Date(todayStr);
-    }).length;
+    if (role === 'nurse' && nurseId) {
+      // Nurse dashboard: today's patients, pending tasks
+      const [todayVisitsSnap, activeEmergenciesSnap] = await Promise.all([
+        adminDb.collection('visits')
+          .where('nurseId', '==', nurseId)
+          .where('visitDate', '>=', todayStr)
+          .get(),
+        adminDb.collection('emergencies')
+          .where('nurseId', '==', nurseId)
+          .where('status', '==', 'active')
+          .get(),
+      ]);
 
-    const totalRevenue = paymentsSnap.docs.reduce((sum, d) => {
-      const data = d.data();
-      return sum + (data.type === 'payment' ? (data.amount || 0) : -(data.amount || 0));
-    }, 0);
+      // Get unique patient IDs from today's visits
+      const patientIds = new Set<string>();
+      todayVisitsSnap.docs.forEach((doc) => {
+        const pid = doc.data().patientId;
+        if (pid) patientIds.add(pid);
+      });
 
-    const todayRevenue = paymentsSnap.docs.filter(d => {
-      const date = d.data().createdAt;
-      return date && new Date(date) >= new Date(todayStr);
-    }).reduce((sum, d) => {
-      const data = d.data();
-      return sum + (data.type === 'payment' ? (data.amount || 0) : -(data.amount || 0));
-    }, 0);
+      return NextResponse.json({
+        role: 'nurse',
+        todayPatients: patientIds.size,
+        todayVisits: todayVisitsSnap.size,
+        activeEmergencies: activeEmergenciesSnap.size,
+        pendingTasks: activeEmergenciesSnap.size,
+      });
+    }
 
-    const totalServices = servicesSnap.size;
-    const totalNurses = nursesSnap.size;
+    // Admin dashboard: total stats
+    const [
+      patientsSnap,
+      visitsSnap,
+      emergenciesSnap,
+      servicesSnap,
+      nursesSnap,
+      invoicesSnap,
+      todayVisitsSnap,
+      todayEmergenciesSnap,
+    ] = await Promise.all([
+      adminDb.collection('patients').get(),
+      adminDb.collection('visits').get(),
+      adminDb.collection('emergencies').get(),
+      adminDb.collection('services').where('status', '==', 'active').get(),
+      adminDb.collection('users').where('role', '==', 'nurse').where('active', '==', true).get(),
+      adminDb.collection('invoices').where('status', 'in', ['unpaid', 'partial']).get(),
+      adminDb.collection('visits').where('visitDate', '>=', todayStr).get(),
+      adminDb.collection('emergencies').where('status', '==', 'active').get(),
+    ]);
+
+    const totalPatients = patientsSnap.size;
+    const totalVisits = visitsSnap.size;
+    const totalEmergencies = emergenciesSnap.size;
+    const activeEmergencies = todayEmergenciesSnap.size;
+    const activeServices = servicesSnap.size;
+    const activeNurses = nursesSnap.size;
     const pendingInvoices = invoicesSnap.size;
+
+    // Calculate revenue
+    const totalRevenue = visitsSnap.docs.reduce(
+      (sum, doc) => sum + (doc.data().totalPrice || 0),
+      0
+    );
+
+    const todayRevenue = todayVisitsSnap.docs.reduce(
+      (sum, doc) => sum + (doc.data().totalPrice || 0),
+      0
+    );
+
+    const todayPatients = new Set(
+      todayVisitsSnap.docs.map((doc) => doc.data().patientId).filter(Boolean)
+    ).size;
+
+    // Unpaid amount
+    const unpaidAmount = invoicesSnap.docs.reduce(
+      (sum, doc) => sum + ((doc.data().remaining) ?? (doc.data().total - (doc.data().paid || 0))),
+      0
+    );
 
     // Services by category
     const categoryMap: Record<string, number> = {};
-    const servicesCatSnap = await adminDb.collection('services').where('active', '==', true).get();
-    servicesCatSnap.docs.forEach(d => {
-      const cat = d.data().category || 'أخرى';
+    servicesSnap.docs.forEach((doc) => {
+      const cat = doc.data().category || 'أخرى';
       categoryMap[cat] = (categoryMap[cat] || 0) + 1;
     });
-    const servicesByCategory = Object.entries(categoryMap).map(([category, count]) => ({
-      category,
-      count,
-    }));
+    const servicesByCategory = Object.entries(categoryMap).map(
+      ([category, count]) => ({ category, count })
+    );
 
-    // Top services (most used)
+    // Top services (most used across all visits)
     const serviceCountMap: Record<string, number> = {};
     const serviceNameMap: Record<string, string> = {};
-    for (const psDoc of servicesSnap.docs) {
-      const serviceId = psDoc.data().serviceId;
-      if (serviceId) {
-        serviceCountMap[serviceId] = (serviceCountMap[serviceId] || 0) + 1;
-        if (!serviceNameMap[serviceId]) {
-          const serviceDoc = await adminDb.collection('services').doc(serviceId).get();
-          if (serviceDoc.exists) serviceNameMap[serviceId] = serviceDoc.data()?.nameAr || '';
+    for (const visitDoc of visitsSnap.docs) {
+      const sids: string[] = visitDoc.data().serviceIds || [];
+      for (const sid of sids) {
+        serviceCountMap[sid] = (serviceCountMap[sid] || 0) + 1;
+        if (!serviceNameMap[sid]) {
+          const sDoc = await adminDb.collection('services').doc(sid).get();
+          if (sDoc.exists) serviceNameMap[sid] = sDoc.data()?.nameAr || '';
         }
       }
     }
@@ -74,52 +123,49 @@ export async function GET() {
 
     // Recent emergencies (active)
     const recentEmergencies = [];
-    const activeEmergenciesDocs = emergenciesSnap.docs.filter(d => d.data().status === 'active').slice(0, 5);
-    for (const doc of activeEmergenciesDocs) {
+    const activeEmergencyDocs = emergenciesSnap.docs
+      .filter((d) => d.data().status === 'active')
+      .slice(0, 5);
+    for (const doc of activeEmergencyDocs) {
       const data = { id: doc.id, ...doc.data() } as any;
       if (data.patientId) {
         const patientDoc = await adminDb.collection('patients').doc(data.patientId).get();
-        if (patientDoc.exists) data.patient = { id: patientDoc.id, ...patientDoc.data() };
+        if (patientDoc.exists) {
+          data.patient = { id: patientDoc.id, name: patientDoc.data()?.name };
+        }
       }
       if (data.nurseId) {
         const nurseDoc = await adminDb.collection('users').doc(data.nurseId).get();
-        if (nurseDoc.exists) data.nurse = { id: nurseDoc.id, name: nurseDoc.data()?.name };
+        if (nurseDoc.exists) {
+          data.nurse = { id: nurseDoc.id, name: nurseDoc.data()?.name };
+        }
       }
       recentEmergencies.push(data);
     }
 
-    // Recent payments
-    const recentPayments = [];
-    const sortedPayments = paymentsSnap.docs.sort((a, b) => {
-      const da = a.data().createdAt || '';
-      const db = b.data().createdAt || '';
-      return db.localeCompare(da);
-    }).slice(0, 5);
-    for (const doc of sortedPayments) {
-      const data = { id: doc.id, ...doc.data() } as any;
-      if (data.patientId) {
-        const patientDoc = await adminDb.collection('patients').doc(data.patientId).get();
-        if (patientDoc.exists) data.patient = { id: patientDoc.id, name: patientDoc.data()?.name };
-      }
-      recentPayments.push(data);
-    }
-
     return NextResponse.json({
+      role: 'admin',
       totalPatients,
+      totalVisits,
       totalEmergencies,
       activeEmergencies,
-      todayServices,
+      activeServices,
+      activeNurses,
       totalRevenue,
-      totalServices,
-      totalNurses,
       todayRevenue,
+      todayPatients,
+      todayVisits: todayVisitsSnap.size,
       pendingInvoices,
+      unpaidAmount,
       servicesByCategory,
-      recentEmergencies,
-      recentPayments,
       topServices,
+      recentEmergencies,
     });
-  } catch (error: any) {
-    return NextResponse.json({ error: error.message || 'Failed' }, { status: 500 });
+  } catch (error) {
+    console.error('Dashboard error:', error);
+    return NextResponse.json(
+      { error: 'خطأ في جلب بيانات لوحة التحكم' },
+      { status: 500 }
+    );
   }
 }

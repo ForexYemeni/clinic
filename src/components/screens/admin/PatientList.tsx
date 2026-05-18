@@ -1,117 +1,140 @@
 'use client';
 
-import React, { useMemo } from 'react';
-import { Users, Plus, Phone, AlertTriangle, Eye } from 'lucide-react';
-import { Card, CardContent } from '@/components/ui/card';
-import { Button } from '@/components/ui/button';
-import { Badge } from '@/components/ui/badge';
-import { Avatar, AvatarFallback } from '@/components/ui/avatar';
+import React, { useEffect, useState, useCallback } from 'react';
+import { motion } from 'framer-motion';
+import { Plus, Search, Phone, User as UserIcon, ChevronLeft } from 'lucide-react';
 import { useAppStore } from '@/lib/store';
-import { useData } from '@/hooks/useData';
-import { SearchInput } from '@/components/shared/SearchInput';
-import { EmptyState } from '@/components/shared/EmptyState';
-import { SkeletonLoader } from '@/components/shared/SkeletonLoader';
-import { PatientItem, genderLabels } from '@/lib/constants';
+import { formatRelativeTime, genderLabels, type PatientItem } from '@/lib/constants';
+import { toast } from 'sonner';
 
-interface PatientListProps {
-  role: 'admin' | 'nurse';
+interface Props {
+  role?: 'admin' | 'nurse';
 }
 
-const PatientList = React.memo(function PatientList({ role }: PatientListProps) {
-  const { setScreen, setSelectedPatientId, searchQuery, setSearchQuery } = useAppStore();
-  const { data: patients, loading } = useData<PatientItem[]>('/api/patients');
+export function PatientList({ role = 'admin' }: Props) {
+  const { setScreen, setSelectedPatientId, user } = useAppStore();
+  const [patients, setPatients] = useState<PatientItem[]>([]);
+  const [loading, setLoading] = useState(true);
+  const [search, setSearch] = useState('');
 
-  const filtered = useMemo(() => {
-    if (!patients) return [];
-    if (!searchQuery) return patients;
-    return patients.filter((p) =>
-      p.name.includes(searchQuery) || p.phone?.includes(searchQuery) || p.bloodType?.includes(searchQuery)
-    );
-  }, [patients, searchQuery]);
+  const fetchPatients = useCallback(async () => {
+    try {
+      const res = await fetch('/api/patients');
+      if (res.ok) {
+        const data = await res.json();
+        setPatients(data);
+      }
+    } catch {} finally {
+      setLoading(false);
+    }
+  }, []);
 
-  if (loading && !patients) return <SkeletonLoader type="card-list" />;
+  useEffect(() => { fetchPatients(); }, [fetchPatients]);
+
+  const filtered = patients.filter(p =>
+    p.name.includes(search) || (p.phone && p.phone.includes(search))
+  );
+
+  const handleAddPatient = () => {
+    if (role === 'admin') {
+      setScreen('admin-add-patient');
+    } else {
+      setScreen('nurse-add-visit');
+    }
+  };
+
+  const handleSelectPatient = (id: string) => {
+    setSelectedPatientId(id);
+    setScreen(role === 'admin' ? 'admin-patient-detail' : 'nurse-patient-detail');
+  };
 
   return (
-    <div className="px-4 pb-24 pt-2 space-y-3">
-      <div className="flex items-center justify-between">
+    <div className="p-4 pb-24">
+      {/* Header */}
+      <div className="flex items-center justify-between mb-4">
         <h2 className="text-lg font-bold">المرضى</h2>
-        {role === 'admin' && (
-          <Button size="sm" className="rounded-xl bg-gradient-to-r from-emerald-600 to-teal-600 shadow-sm" onClick={() => setScreen('admin-add-patient')}>
-            <Plus className="w-4 h-4 ml-1" /> إضافة
-          </Button>
-        )}
+        <button
+          onClick={handleAddPatient}
+          className="flex items-center gap-1.5 bg-emerald-600 text-white px-4 py-2 rounded-xl text-sm font-medium active:scale-[0.97] transition-transform"
+        >
+          <Plus className="w-4 h-4" />
+          مريض جديد
+        </button>
       </div>
-      <SearchInput value={searchQuery} onChange={setSearchQuery} placeholder="بحث عن مريض..." />
-      {filtered.length === 0 ? (
-        <EmptyState icon={Users} title="لا يوجد مرضى" description="لم يتم العثور على نتائج" />
+
+      {/* Search */}
+      <div className="relative mb-4">
+        <Search className="absolute right-3 top-1/2 -translate-y-1/2 w-4 h-4 text-muted-foreground" />
+        <input
+          type="text"
+          value={search}
+          onChange={(e) => setSearch(e.target.value)}
+          placeholder="بحث بالاسم أو رقم الهاتف..."
+          className="w-full h-10 pr-9 pl-4 bg-white dark:bg-gray-800 border border-border rounded-xl text-sm focus:outline-none focus:ring-2 focus:ring-emerald-500"
+        />
+      </div>
+
+      {/* Stats */}
+      <div className="flex items-center gap-2 mb-3 text-xs text-muted-foreground">
+        <span>{filtered.length} مريض</span>
+      </div>
+
+      {/* Patient List */}
+      {loading ? (
+        <div className="space-y-3">{[1,2,3,4,5].map(i => <div key={i} className="h-20 bg-gray-100 dark:bg-gray-800 rounded-2xl animate-pulse" />)}</div>
       ) : (
         <div className="space-y-2">
-          {filtered.map((p) => (
-            <Card
-              key={p.id}
-              className="border-0 shadow-sm touch-feedback overflow-hidden group hover:shadow-md transition-shadow"
-              onClick={() => { setSelectedPatientId(p.id); setScreen(role === 'admin' ? 'admin-patient-detail' : 'nurse-patient-detail'); }}
+          {filtered.map((patient, i) => (
+            <motion.button
+              key={patient.id}
+              initial={{ opacity: 0, y: 10 }}
+              animate={{ opacity: 1, y: 0 }}
+              transition={{ delay: i * 0.03 }}
+              onClick={() => handleSelectPatient(patient.id)}
+              className="w-full bg-white dark:bg-gray-800 rounded-xl p-3 border border-border text-right active:scale-[0.98] transition-transform"
             >
-              <CardContent className="p-3.5">
+              <div className="flex items-center justify-between">
                 <div className="flex items-center gap-3">
-                  <Avatar className="w-12 h-12 ring-2 ring-emerald-100 dark:ring-emerald-900/30">
-                    <AvatarFallback className="bg-gradient-to-br from-emerald-100 to-teal-100 dark:from-emerald-900/30 dark:to-teal-900/30 text-emerald-600 dark:text-emerald-400 font-bold text-sm">
-                      {p.name.charAt(0)}
-                    </AvatarFallback>
-                  </Avatar>
-                  <div className="flex-1 min-w-0">
-                    <div className="flex items-center gap-2">
-                      <p className="text-sm font-semibold truncate">{p.name}</p>
-                      {p.bloodType && (
-                        <Badge className="text-[9px] h-5 px-1.5 bg-red-50 text-red-600 dark:bg-red-900/30 dark:text-red-400 border border-red-200/50 dark:border-red-800/30 rounded-full font-bold">
-                          🩸 {p.bloodType}
-                        </Badge>
+                  <div className="w-11 h-11 bg-emerald-100 dark:bg-emerald-900/30 rounded-xl flex items-center justify-center">
+                    <UserIcon className="w-5 h-5 text-emerald-600 dark:text-emerald-400" />
+                  </div>
+                  <div>
+                    <p className="font-medium text-sm">{patient.name}</p>
+                    <div className="flex items-center gap-2 mt-0.5">
+                      <span className="text-xs text-muted-foreground">
+                        {patient.age} سنة - {genderLabels[patient.gender] || patient.gender}
+                      </span>
+                      {patient.phone && (
+                        <span className="text-xs text-muted-foreground flex items-center gap-0.5" dir="ltr">
+                          <Phone className="w-3 h-3" />{patient.phone}
+                        </span>
                       )}
                     </div>
-                    <div className="flex items-center gap-3 mt-0.5">
-                      <span className="text-xs text-muted-foreground">{p.age} سنة</span>
-                      <span className="text-xs text-muted-foreground">{genderLabels[p.gender] || p.gender}</span>
-                    </div>
-                  </div>
-                  <div className="flex flex-col items-end gap-1">
-                    <Badge className={`text-[9px] ${p.chronicDiseases ? 'bg-amber-100 text-amber-700 dark:bg-amber-900/30 dark:text-amber-400' : 'bg-green-100 text-green-700 dark:bg-green-900/30 dark:text-green-400'}`}>
-                      {p.chronicDiseases ? 'أمراض مزمنة' : 'سليم'}
-                    </Badge>
-                    <p className="text-[10px] text-muted-foreground">{p._count?.visits || 0} زيارة</p>
                   </div>
                 </div>
-                {/* Quick actions */}
-                <div className="flex items-center gap-1.5 mt-2.5 pt-2.5 border-t border-border/50">
-                  {p.phone && (
-                    <button
-                      className="flex items-center gap-1 px-2 py-1 rounded-lg bg-emerald-50 dark:bg-emerald-900/20 text-emerald-600 dark:text-emerald-400 text-[10px] font-medium touch-feedback"
-                      onClick={(e) => { e.stopPropagation(); window.open(`tel:${p.phone}`, '_self'); }}
-                    >
-                      <Phone className="w-3 h-3" /> اتصال
-                    </button>
+                <div className="flex items-center gap-2">
+                  {patient.bloodType && (
+                    <span className="text-[10px] bg-red-100 dark:bg-red-900/30 text-red-700 dark:text-red-400 px-2 py-0.5 rounded-full font-medium">
+                      {patient.bloodType}
+                    </span>
                   )}
-                  <button
-                    className="flex items-center gap-1 px-2 py-1 rounded-lg bg-blue-50 dark:bg-blue-900/20 text-blue-600 dark:text-blue-400 text-[10px] font-medium touch-feedback"
-                    onClick={(e) => { e.stopPropagation(); setSelectedPatientId(p.id); setScreen(role === 'admin' ? 'admin-patient-detail' : 'nurse-patient-detail'); }}
-                  >
-                    <Eye className="w-3 h-3" /> عرض
-                  </button>
-                  {role === 'admin' && (
-                    <button
-                      className="flex items-center gap-1 px-2 py-1 rounded-lg bg-red-50 dark:bg-red-900/20 text-red-600 dark:text-red-400 text-[10px] font-medium touch-feedback"
-                      onClick={(e) => { e.stopPropagation(); setScreen('admin-add-emergency'); }}
-                    >
-                      <AlertTriangle className="w-3 h-3" /> طوارئ
-                    </button>
-                  )}
+                  <ChevronLeft className="w-4 h-4 text-muted-foreground" />
                 </div>
-              </CardContent>
-            </Card>
+              </div>
+            </motion.button>
           ))}
+        </div>
+      )}
+
+      {!loading && filtered.length === 0 && (
+        <div className="text-center py-12">
+          <UserIcon className="w-12 h-12 mx-auto text-muted-foreground/30" />
+          <p className="text-muted-foreground mt-3">لا يوجد مرضى</p>
+          <button onClick={handleAddPatient} className="mt-3 text-emerald-600 text-sm font-medium">
+            إضافة أول مريض
+          </button>
         </div>
       )}
     </div>
   );
-});
-
-export { PatientList };
+}

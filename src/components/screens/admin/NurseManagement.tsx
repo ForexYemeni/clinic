@@ -1,106 +1,187 @@
 'use client';
 
-import React, { useState, useCallback } from 'react';
-import { Briefcase, UserPlus, Trash2, Phone } from 'lucide-react';
-import { Card, CardContent } from '@/components/ui/card';
-import { Button } from '@/components/ui/button';
-import { Input } from '@/components/ui/input';
-import { Label } from '@/components/ui/label';
-import { Switch } from '@/components/ui/switch';
-import { Avatar, AvatarFallback } from '@/components/ui/avatar';
-import { Dialog, DialogContent, DialogHeader, DialogTitle } from '@/components/ui/dialog';
+import React, { useEffect, useState, useCallback } from 'react';
+import { Plus, Phone, UserCheck, UserX, Trash2, Lock } from 'lucide-react';
 import { useAppStore } from '@/lib/store';
-import { useData } from '@/hooks/useData';
-import { SkeletonLoader } from '@/components/shared/SkeletonLoader';
-import { NurseItem } from '@/lib/constants';
+import { type NurseItem } from '@/lib/constants';
 import { toast } from 'sonner';
 
-const NurseManagement = React.memo(function NurseManagement() {
+export function NurseManagement() {
   const { setScreen } = useAppStore();
-  const { data: users, loading, refresh } = useData<NurseItem[]>('/api/users');
-  const [showAdd, setShowAdd] = useState(false);
-  const [form, setForm] = useState({ name: '', phone: '', password: 'nurse123' });
+  const [nurses, setNurses] = useState<NurseItem[]>([]);
+  const [loading, setLoading] = useState(true);
+  const [showAddForm, setShowAddForm] = useState(false);
+  const [newNurse, setNewNurse] = useState({ name: '', phone: '', password: '' });
 
-  const nurses = React.useMemo(() => (users || []).filter((u) => u.role === 'nurse'), [users]);
+  const fetchNurses = useCallback(async () => {
+    try {
+      const res = await fetch('/api/users?role=nurse');
+      if (res.ok) {
+        const data = await res.json();
+        setNurses(data);
+      }
+    } catch {} finally {
+      setLoading(false);
+    }
+  }, []);
 
-  const handleAdd = async () => {
-    if (!form.name || !form.phone) { toast.error('يرجى ملء جميع الحقول'); return; }
-    const phoneClean = form.phone.replace(/\D/g, '');
-    if (phoneClean.length !== 9) { toast.error('رقم الهاتف يجب أن يكون 9 أرقام'); return; }
+  useEffect(() => { fetchNurses(); }, [fetchNurses]);
+
+  const handleAddNurse = async () => {
+    if (!newNurse.name.trim()) { toast.error('أدخل اسم الممرض'); return; }
+    if (newNurse.phone.length !== 9) { toast.error('رقم الهاتف يجب أن يكون 9 أرقام'); return; }
+    if (!newNurse.password) { toast.error('أدخل كلمة المرور'); return; }
+
     try {
       const res = await fetch('/api/users', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ ...form, phone: phoneClean, role: 'nurse', active: true }),
+        body: JSON.stringify({ ...newNurse, role: 'nurse' }),
       });
-      if (res.ok) { toast.success('تم إضافة الممرض بنجاح'); setShowAdd(false); setForm({ name: '', phone: '', password: 'nurse123' }); refresh(); }
-      else toast.error('خطأ في الإضافة');
-    } catch { toast.error('خطأ في الاتصال'); }
+      if (res.ok) {
+        toast.success('تمت إضافة الممرض');
+        setShowAddForm(false);
+        setNewNurse({ name: '', phone: '', password: '' });
+        fetchNurses();
+      } else {
+        const data = await res.json();
+        toast.error(data.error || 'خطأ في الإضافة');
+      }
+    } catch {
+      toast.error('خطأ في الاتصال');
+    }
   };
 
-  const handleToggle = useCallback(async (id: string, active: boolean) => {
+  const handleToggleActive = async (id: string, currentActive: boolean) => {
     try {
-      await fetch(`/api/users/${id}`, { method: 'PUT', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ active: !active }) });
-      toast.success(!active ? 'تم تفعيل الممرض' : 'تم تعطيل الممرض');
-      refresh();
-    } catch { toast.error('خطأ في التحديث'); }
-  }, [refresh]);
+      const res = await fetch(`/api/users/${id}`, {
+        method: 'PUT',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ active: !currentActive }),
+      });
+      if (res.ok) {
+        toast.success(!currentActive ? 'تم تفعيل الممرض' : 'تم تعطيل الممرض');
+        fetchNurses();
+      }
+    } catch {}
+  };
 
-  if (loading && !users) return <SkeletonLoader type="card-list" />;
+  const handleDelete = async (id: string) => {
+    if (!confirm('هل تريد حذف هذا الممرض؟')) return;
+    try {
+      const res = await fetch(`/api/users/${id}`, { method: 'DELETE' });
+      if (res.ok) {
+        toast.success('تم حذف الممرض');
+        fetchNurses();
+      }
+    } catch {}
+  };
+
+  const handleChangePassword = async (id: string) => {
+    const newPassword = prompt('أدخل كلمة المرور الجديدة:');
+    if (!newPassword) return;
+    try {
+      const res = await fetch(`/api/users/${id}`, {
+        method: 'PUT',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ password: newPassword }),
+      });
+      if (res.ok) toast.success('تم تغيير كلمة المرور');
+    } catch {}
+  };
 
   return (
-    <div className="px-4 pb-24 pt-2 space-y-3">
-      <div className="flex items-center gap-3">
-        <Button variant="ghost" size="icon" className="h-9 w-9 rounded-xl" onClick={() => setScreen('admin-more')}>
-          <Briefcase className="w-5 h-5" />
-        </Button>
+    <div className="p-4 pb-24">
+      <div className="flex items-center justify-between mb-4">
         <h2 className="text-lg font-bold">إدارة الممرضين</h2>
+        <button
+          onClick={() => setShowAddForm(true)}
+          className="flex items-center gap-1.5 bg-emerald-600 text-white px-4 py-2 rounded-xl text-sm font-medium active:scale-[0.97] transition-transform"
+        >
+          <Plus className="w-4 h-4" />
+          إضافة ممرض
+        </button>
       </div>
-      <Button className="w-full h-11 rounded-xl bg-gradient-to-r from-emerald-600 to-teal-600 shadow-sm" onClick={() => setShowAdd(true)}>
-        <UserPlus className="w-4 h-4 ml-1" /> إضافة ممرض جديد
-      </Button>
 
-      <Dialog open={showAdd} onOpenChange={setShowAdd}>
-        <DialogContent dir="rtl" className="rounded-2xl max-w-[90vw]">
-          <DialogHeader>
-            <DialogTitle>إضافة ممرض جديد</DialogTitle>
-          </DialogHeader>
+      {/* Add Form */}
+      {showAddForm && (
+        <div className="bg-emerald-50 dark:bg-emerald-900/20 rounded-2xl p-4 mb-4 border border-emerald-200 dark:border-emerald-800">
+          <h3 className="font-bold text-sm mb-3">ممرض جديد</h3>
           <div className="space-y-3">
-            <div className="space-y-1.5"><Label className="text-xs font-semibold">الاسم *</Label><Input value={form.name} onChange={(e) => setForm({...form, name: e.target.value})} className="h-11 rounded-xl" placeholder="اسم الممرض" /></div>
-            <div className="space-y-1.5"><Label className="text-xs font-semibold">رقم الهاتف (9 أرقام) *</Label><Input type="tel" value={form.phone} onChange={(e) => { const val = e.target.value.replace(/\D/g, ''); if (val.length <= 9) setForm({...form, phone: val}); }} className="h-11 rounded-xl" placeholder="050000000" dir="ltr" maxLength={9} /></div>
-            <div className="space-y-1.5"><Label className="text-xs font-semibold">كلمة المرور</Label><Input value={form.password} onChange={(e) => setForm({...form, password: e.target.value})} className="h-11 rounded-xl" /></div>
-            <Button onClick={handleAdd} className="w-full h-11 rounded-xl bg-gradient-to-r from-emerald-600 to-teal-600 shadow-sm">حفظ</Button>
+            <input
+              type="text"
+              value={newNurse.name}
+              onChange={(e) => setNewNurse(p => ({ ...p, name: e.target.value }))}
+              placeholder="اسم الممرض"
+              className="w-full h-10 px-3 bg-white dark:bg-gray-800 border border-border rounded-xl text-sm focus:outline-none focus:ring-2 focus:ring-emerald-500"
+            />
+            <div className="relative">
+              <div className="absolute left-3 top-1/2 -translate-y-1/2 text-xs text-muted-foreground font-mono">967+</div>
+              <input
+                type="tel"
+                value={newNurse.phone}
+                onChange={(e) => setNewNurse(p => ({ ...p, phone: e.target.value.replace(/\D/g, '').slice(0, 9) }))}
+                placeholder="رقم الهاتف (9 أرقام)"
+                className="w-full h-10 px-3 pl-12 bg-white dark:bg-gray-800 border border-border rounded-xl text-sm font-mono focus:outline-none focus:ring-2 focus:ring-emerald-500"
+                dir="ltr"
+              />
+            </div>
+            <input
+              type="password"
+              value={newNurse.password}
+              onChange={(e) => setNewNurse(p => ({ ...p, password: e.target.value }))}
+              placeholder="كلمة المرور"
+              className="w-full h-10 px-3 bg-white dark:bg-gray-800 border border-border rounded-xl text-sm focus:outline-none focus:ring-2 focus:ring-emerald-500"
+            />
+            <div className="flex gap-2">
+              <button onClick={handleAddNurse} className="flex-1 h-10 bg-emerald-600 text-white font-medium rounded-xl active:scale-[0.97] transition-transform">
+                إضافة
+              </button>
+              <button onClick={() => setShowAddForm(false)} className="flex-1 h-10 bg-gray-200 dark:bg-gray-700 font-medium rounded-xl active:scale-[0.97] transition-transform">
+                إلغاء
+              </button>
+            </div>
           </div>
-        </DialogContent>
-      </Dialog>
+        </div>
+      )}
 
-      <div className="space-y-2">
-        {nurses.map((n) => (
-          <Card key={n.id} className="border-0 shadow-sm">
-            <CardContent className="p-3.5 flex items-center gap-3">
-              <Avatar className="w-11 h-11 ring-2 ring-teal-100 dark:ring-teal-900/30">
-                <AvatarFallback className="bg-gradient-to-br from-teal-100 to-teal-50 dark:from-teal-900/30 dark:to-teal-800/20 text-teal-600 dark:text-teal-400 font-bold">{n.name.charAt(0)}</AvatarFallback>
-              </Avatar>
-              <div className="flex-1 min-w-0">
-                <p className="text-sm font-semibold">{n.name}</p>
-                <p className="text-xs text-muted-foreground" dir="ltr">{n.phone || n.email}</p>
+      {/* Nurse List */}
+      {loading ? (
+        <div className="space-y-3">{[1,2].map(i => <div key={i} className="h-20 bg-gray-100 dark:bg-gray-800 rounded-2xl animate-pulse" />)}</div>
+      ) : nurses.length === 0 ? (
+        <div className="text-center py-12 text-muted-foreground">
+          <p>لا يوجد ممرضين</p>
+        </div>
+      ) : (
+        <div className="space-y-2">
+          {nurses.map(nurse => (
+            <div key={nurse.id} className={`bg-white dark:bg-gray-800 rounded-xl p-3 border border-border ${!nurse.active ? 'opacity-60' : ''}`}>
+              <div className="flex items-center justify-between">
+                <div className="flex items-center gap-3">
+                  <div className={`w-10 h-10 rounded-xl flex items-center justify-center ${nurse.active ? 'bg-emerald-100 dark:bg-emerald-900/30' : 'bg-gray-100 dark:bg-gray-700'}`}>
+                    {nurse.active ? <UserCheck className="w-5 h-5 text-emerald-600" /> : <UserX className="w-5 h-5 text-gray-400" />}
+                  </div>
+                  <div>
+                    <p className="font-medium text-sm">{nurse.name}</p>
+                    <p className="text-xs text-muted-foreground" dir="ltr">{nurse.phone}</p>
+                  </div>
+                </div>
+                <div className="flex items-center gap-1">
+                  <button onClick={() => handleChangePassword(nurse.id)} className="p-2 rounded-lg hover:bg-gray-100 dark:hover:bg-gray-700" title="تغيير كلمة المرور">
+                    <Lock className="w-4 h-4 text-muted-foreground" />
+                  </button>
+                  <button onClick={() => handleToggleActive(nurse.id, nurse.active)} className="p-2 rounded-lg hover:bg-gray-100 dark:hover:bg-gray-700" title={nurse.active ? 'تعطيل' : 'تفعيل'}>
+                    {nurse.active ? <UserX className="w-4 h-4 text-yellow-600" /> : <UserCheck className="w-4 h-4 text-emerald-600" />}
+                  </button>
+                  <button onClick={() => handleDelete(nurse.id)} className="p-2 rounded-lg hover:bg-gray-100 dark:hover:bg-gray-700" title="حذف">
+                    <Trash2 className="w-4 h-4 text-red-500" />
+                  </button>
+                </div>
               </div>
-              <div className="flex items-center gap-2">
-                <Switch checked={n.active} onCheckedChange={() => handleToggle(n.id, n.active)} />
-                <Button variant="ghost" size="icon" className="h-8 w-8 text-red-500" onClick={async () => {
-                  if (confirm('هل أنت متأكد من حذف الممرض؟')) {
-                    await fetch(`/api/users/${n.id}`, { method: 'DELETE' });
-                    toast.success('تم حذف الممرض');
-                    refresh();
-                  }
-                }}><Trash2 className="w-4 h-4" /></Button>
-              </div>
-            </CardContent>
-          </Card>
-        ))}
-      </div>
+            </div>
+          ))}
+        </div>
+      )}
     </div>
   );
-});
-
-export { NurseManagement };
+}

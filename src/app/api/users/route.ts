@@ -1,35 +1,98 @@
 import { adminDb } from '@/lib/firebase-admin';
-import { NextResponse } from 'next/server';
+import { NextRequest, NextResponse } from 'next/server';
 
+// GET: List nurses
 export async function GET() {
   try {
-    const snapshot = await adminDb.collection('users').get();
-    const users = snapshot.docs.map((doc) => ({ id: doc.id, ...doc.data() }));
-    return NextResponse.json(users);
+    const snapshot = await adminDb
+      .collection('users')
+      .where('role', '==', 'nurse')
+      .get();
+
+    const nurses = snapshot.docs.map((doc) => {
+      const data = doc.data();
+      return {
+        id: doc.id,
+        name: data.name || '',
+        phone: data.phone || '',
+        role: data.role,
+        active: data.active !== false,
+        createdAt: data.createdAt || '',
+      };
+    });
+
+    return NextResponse.json(nurses);
   } catch (error) {
-    return NextResponse.json({ error: 'Failed' }, { status: 500 });
+    console.error('Nurses list error:', error);
+    return NextResponse.json(
+      { error: 'خطأ في جلب الممرضين' },
+      { status: 500 }
+    );
   }
 }
 
-export async function POST(request: Request) {
+// POST: Add nurse
+export async function POST(request: NextRequest) {
   try {
     const body = await request.json();
-    const { name, phone, password, role } = body;
-    
-    const phoneClean = (phone || '').replace(/\D/g, '');
-    
-    // Store in Firestore (no Firebase Auth - phone-based)
-    const docRef = await adminDb.collection('users').add({
+    const { name, phone, password } = body;
+
+    if (!name || !phone) {
+      return NextResponse.json(
+        { error: 'يرجى إدخال اسم الممرض ورقم الهاتف' },
+        { status: 400 }
+      );
+    }
+
+    // Validate phone is exactly 9 digits
+    const phoneRegex = /^\d{9}$/;
+    if (!phoneRegex.test(phone)) {
+      return NextResponse.json(
+        { error: 'رقم الهاتف يجب أن يكون 9 أرقام' },
+        { status: 400 }
+      );
+    }
+
+    // Check if phone already exists
+    const existingUser = await adminDb
+      .collection('users')
+      .where('phone', '==', phone)
+      .limit(1)
+      .get();
+
+    if (!existingUser.empty) {
+      return NextResponse.json(
+        { error: 'رقم الهاتف مستخدم بالفعل' },
+        { status: 409 }
+      );
+    }
+
+    const nurseData = {
       name,
-      phone: phoneClean,
-      password: password || 'nurse123',
-      role: role || 'nurse',
+      phone,
+      password: password || '1234',
+      role: 'nurse',
       active: true,
       createdAt: new Date().toISOString(),
-    });
-    
-    return NextResponse.json({ id: docRef.id, name, phone: phoneClean, role });
-  } catch (error: any) {
-    return NextResponse.json({ error: error.message || 'Failed' }, { status: 500 });
+    };
+
+    const docRef = await adminDb.collection('users').add(nurseData);
+
+    return NextResponse.json(
+      {
+        id: docRef.id,
+        name,
+        phone,
+        role: 'nurse',
+        active: true,
+      },
+      { status: 201 }
+    );
+  } catch (error) {
+    console.error('Create nurse error:', error);
+    return NextResponse.json(
+      { error: 'خطأ في إضافة الممرض' },
+      { status: 500 }
+    );
   }
 }

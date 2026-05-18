@@ -94,3 +94,52 @@ Stage Summary:
 - Firebase private key secured via environment variables
 - Repo URL: https://github.com/ForexYemeni/clinic
 - 434 files changed (127K+ lines deleted from old skills/examples, 120 lines added)
+
+---
+Task ID: 5
+Agent: API Agent
+Task: Build comprehensive API routes for first aid clinic management app (Firebase Firestore)
+
+Work Log:
+- Read all existing API route files to understand current implementation
+- Rewrote all 16 API route files per new specifications:
+  1. /api/auth/route.ts - POST: phone+password login (9-digit validation, plain text comparison, token generation); GET: check setup needed (clinic doc with setupComplete=true)
+  2. /api/setup/route.ts - POST: first-time admin setup (adminName, adminPhone, clinicName, password); deletes all seed data; creates clinic doc with setupComplete=true; creates admin user; seeds 14 default services with Yemeni Rial prices (500-3000 ر.ي)
+  3. /api/services/route.ts - GET: list active services (status != 'deleted'); POST: add new service (admin only)
+  4. /api/services/[id]/route.ts - PUT: update service (price, name, pause/activate); DELETE: soft delete (status='deleted')
+  5. /api/patients/route.ts - GET: list patients with search by name; POST: add new patient
+  6. /api/patients/[id]/route.ts - GET: patient detail with visits, services, invoices; PUT: update patient; DELETE: delete patient with related data
+  7. /api/visits/route.ts - GET: list visits (?patientId=); POST: add visit with services, auto-calculate totalPrice from serviceIds, auto-generate invoice
+  8. /api/invoices/route.ts - GET: list invoices (?patientId=, ?status=); POST: create invoice manually
+  9. /api/invoices/[id]/route.ts - PUT: update invoice (add payment, recalculate remaining, update status paid/unpaid/partial)
+  10. /api/emergencies/route.ts - GET: list emergencies (?status=); POST: add emergency with patient/nurse enrichment
+  11. /api/emergencies/[id]/route.ts - PUT: update emergency (status, actions, procedures)
+  12. /api/users/route.ts - GET: list nurses only; POST: add nurse (phone validation, duplicate check)
+  13. /api/users/[id]/route.ts - PUT: update nurse (password, active toggle, admin protection); DELETE: delete nurse (admin protection)
+  14. /api/notifications/route.ts - GET: list notifications (?userId=)
+  15. /api/notifications/[id]/route.ts - PUT: update notification (mark as read)
+  16. /api/reports/route.ts - GET: ?type=daily/monthly/services stats
+  17. /api/dashboard/route.ts - GET: role-based stats (?role=admin/nurse, ?nurseId=)
+
+Key implementation details:
+- All routes use NextRequest/NextResponse from next/server
+- Firebase Admin SDK (adminDb) used for all Firestore operations
+- Phone validation: exactly 9 digits required
+- Services use soft delete (status='deleted') instead of hard delete
+- Visits auto-generate invoices with items from serviceIds
+- Invoice payments track paid/remaining/status (paid/unpaid/partial)
+- Currency: Yemeni Rial (ر.ي) with prices: 500, 500, 300, 500, 1500, 2000, 3000, 1500, 800, 1500, 500, 800, 1000, 3000
+- Admin protection on nurse user management routes
+- Proper error handling with try/catch and Arabic error messages
+- Proper HTTP status codes (400, 401, 403, 404, 409, 500)
+- ESLint passes cleanly
+
+Stage Summary:
+- 16 API route files created/rewritten with full CRUD operations
+- Firebase Firestore integration via Admin SDK
+- Phone-only auth system (no email)
+- Auto-invoice generation on visit creation
+- Soft delete for services
+- Role-based dashboard stats
+- Comprehensive reports (daily, monthly, service usage)
+- All lint checks pass

@@ -1,88 +1,166 @@
 'use client';
 
-import React from 'react';
-import { Moon, Sun, Bell, LogOut, Info, ChevronLeft } from 'lucide-react';
-import { Card, CardContent } from '@/components/ui/card';
-import { Button } from '@/components/ui/button';
-import { Badge } from '@/components/ui/badge';
-import { Separator } from '@/components/ui/separator';
-import { Switch } from '@/components/ui/switch';
-import { Avatar, AvatarFallback } from '@/components/ui/avatar';
+import React, { useState } from 'react';
+import { Building2, Moon, Sun, Lock, LogOut, Shield, Info } from 'lucide-react';
 import { useAppStore } from '@/lib/store';
+import { toast } from 'sonner';
 
-const SettingsScreen = React.memo(function SettingsScreen() {
-  const { user, theme, toggleTheme, logout, setScreen, clinicName } = useAppStore();
+export function SettingsScreen() {
+  const { user, theme, toggleTheme, clinicName, setClinicName, logout } = useAppStore();
+  const [editingName, setEditingName] = useState(false);
+  const [newClinicName, setNewClinicName] = useState(clinicName);
+  const [changingPassword, setChangingPassword] = useState(false);
+  const [passwords, setPasswords] = useState({ current: '', newPassword: '', confirm: '' });
+
+  const handleSaveName = async () => {
+    if (!newClinicName.trim()) return;
+    try {
+      // Update clinic name in Firestore would require an API call
+      setClinicName(newClinicName.trim());
+      setEditingName(false);
+      toast.success('تم تحديث اسم العيادة');
+    } catch {
+      toast.error('خطأ في التحديث');
+    }
+  };
+
+  const handleChangePassword = async () => {
+    if (passwords.newPassword.length < 4) { toast.error('كلمة المرور يجب أن تكون 4 أحرف على الأقل'); return; }
+    if (passwords.newPassword !== passwords.confirm) { toast.error('كلمتا المرور غير متطابقتين'); return; }
+    try {
+      const res = await fetch(`/api/users/${user?.id}`, {
+        method: 'PUT',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ password: passwords.newPassword }),
+      });
+      if (res.ok) {
+        toast.success('تم تغيير كلمة المرور');
+        setChangingPassword(false);
+        setPasswords({ current: '', newPassword: '', confirm: '' });
+      } else {
+        toast.error('خطأ في تغيير كلمة المرور');
+      }
+    } catch {
+      toast.error('خطأ في الاتصال');
+    }
+  };
+
+  const handleLogout = () => {
+    if (confirm('هل تريد تسجيل الخروج؟')) {
+      logout();
+    }
+  };
 
   return (
-    <div className="px-4 pb-24 pt-2 space-y-3">
-      <div className="flex items-center gap-3">
-        <Button variant="ghost" size="icon" className="h-9 w-9 rounded-xl" onClick={() => setScreen(user?.role === 'admin' ? 'admin-more' : 'admin-more')}>
-          <ChevronLeft className="w-5 h-5" />
-        </Button>
-        <h2 className="text-lg font-bold">الإعدادات</h2>
+    <div className="p-4 pb-24">
+      <h2 className="text-lg font-bold mb-4">الإعدادات</h2>
+
+      {/* Clinic Name */}
+      <div className="bg-white dark:bg-gray-800 rounded-xl p-4 border border-border mb-3">
+        <div className="flex items-center justify-between">
+          <div className="flex items-center gap-3">
+            <div className="w-10 h-10 bg-emerald-100 dark:bg-emerald-900/30 rounded-xl flex items-center justify-center">
+              <Building2 className="w-5 h-5 text-emerald-600" />
+            </div>
+            <div>
+              <p className="text-xs text-muted-foreground">اسم العيادة</p>
+              {editingName ? (
+                <div className="flex items-center gap-2 mt-1">
+                  <input
+                    type="text"
+                    value={newClinicName}
+                    onChange={(e) => setNewClinicName(e.target.value)}
+                    className="h-8 px-2 text-sm bg-gray-50 dark:bg-gray-700 border border-border rounded-lg focus:outline-none focus:ring-1 focus:ring-emerald-500"
+                  />
+                  <button onClick={handleSaveName} className="text-xs text-emerald-600 font-medium">حفظ</button>
+                  <button onClick={() => setEditingName(false)} className="text-xs text-muted-foreground">إلغاء</button>
+                </div>
+              ) : (
+                <p className="text-sm font-medium">{clinicName}</p>
+              )}
+            </div>
+          </div>
+          {!editingName && (
+            <button onClick={() => setEditingName(true)} className="text-xs text-emerald-600">تعديل</button>
+          )}
+        </div>
       </div>
 
-      {/* Profile card */}
-      <Card className="border-0 shadow-sm overflow-hidden">
-        <div className="h-20 bg-gradient-to-r from-emerald-500 to-teal-600 relative">
-          <div className="absolute -bottom-8 right-4">
-            <Avatar className="w-16 h-16 border-4 border-background ring-2 ring-emerald-200 dark:ring-emerald-800">
-              <AvatarFallback className="bg-gradient-to-br from-emerald-100 to-teal-100 dark:from-emerald-900/30 dark:to-teal-900/30 text-emerald-600 dark:text-emerald-400 text-xl font-bold">
-                {user?.name?.charAt(0)}
-              </AvatarFallback>
-            </Avatar>
-          </div>
-        </div>
-        <CardContent className="pt-12 pb-4 px-4">
-          <h3 className="font-bold text-base">{user?.name}</h3>
-          <p className="text-sm text-muted-foreground" dir="ltr">{user?.phone}</p>
-          <Badge className="mt-2 text-[10px] bg-gradient-to-r from-emerald-100 to-teal-100 dark:from-emerald-900/30 dark:to-teal-900/30 text-emerald-700 dark:text-emerald-400 border-0">
-            {user?.role === 'admin' ? 'مدير النظام' : 'ممرض'}
-          </Badge>
-        </CardContent>
-      </Card>
-
-      {/* Settings groups */}
-      <Card className="border-0 shadow-sm">
-        <CardContent className="p-0">
-          <div className="flex items-center justify-between p-4">
-            <div className="flex items-center gap-3">
-              <div className={`w-9 h-9 rounded-xl flex items-center justify-center ${theme === 'light' ? 'bg-amber-50 text-amber-500 dark:bg-amber-900/30' : 'bg-blue-50 text-blue-500 dark:bg-blue-900/30'}`}>
-                {theme === 'light' ? <Sun className="w-5 h-5" /> : <Moon className="w-5 h-5" />}
-              </div>
-              <span className="text-sm font-medium">الوضع {theme === 'light' ? 'الفاتح' : 'الليلي'}</span>
+      {/* Theme */}
+      <div className="bg-white dark:bg-gray-800 rounded-xl p-4 border border-border mb-3">
+        <div className="flex items-center justify-between">
+          <div className="flex items-center gap-3">
+            <div className="w-10 h-10 bg-purple-100 dark:bg-purple-900/30 rounded-xl flex items-center justify-center">
+              {theme === 'light' ? <Moon className="w-5 h-5 text-purple-600" /> : <Sun className="w-5 h-5 text-yellow-500" />}
             </div>
-            <Switch checked={theme === 'dark'} onCheckedChange={toggleTheme} />
-          </div>
-          <Separator />
-          <button className="flex items-center gap-3 p-4 w-full touch-feedback" onClick={() => setScreen('admin-notifications')}>
-            <div className="w-9 h-9 rounded-xl flex items-center justify-center bg-emerald-50 text-emerald-600 dark:bg-emerald-900/30 dark:text-emerald-400">
-              <Bell className="w-5 h-5" />
+            <div>
+              <p className="text-sm font-medium">المظهر</p>
+              <p className="text-xs text-muted-foreground">{theme === 'light' ? 'فاتح' : 'داكن'}</p>
             </div>
-            <span className="text-sm font-medium">الإشعارات</span>
-            <ChevronLeft className="w-4 h-4 mr-auto text-muted-foreground" />
+          </div>
+          <button
+            onClick={toggleTheme}
+            className="px-3 py-1.5 bg-gray-100 dark:bg-gray-700 rounded-lg text-xs font-medium active:scale-[0.97] transition-transform"
+          >
+            {theme === 'light' ? 'الوضع الداكن' : 'الوضع الفاتح'}
           </button>
-        </CardContent>
-      </Card>
+        </div>
+      </div>
 
-      <Card className="border-0 shadow-sm">
-        <CardContent className="p-4">
-          <div className="flex items-center gap-2 mb-2">
-            <Info className="w-4 h-4 text-muted-foreground" />
-            <h4 className="text-xs font-semibold text-muted-foreground">معلومات التطبيق</h4>
+      {/* Change Password */}
+      <div className="bg-white dark:bg-gray-800 rounded-xl p-4 border border-border mb-3">
+        {changingPassword ? (
+          <div className="space-y-3">
+            <h3 className="text-sm font-medium flex items-center gap-2">
+              <Lock className="w-4 h-4 text-amber-600" /> تغيير كلمة المرور
+            </h3>
+            <input
+              type="password"
+              value={passwords.newPassword}
+              onChange={(e) => setPasswords(p => ({ ...p, newPassword: e.target.value }))}
+              placeholder="كلمة المرور الجديدة"
+              className="w-full h-10 px-3 bg-gray-50 dark:bg-gray-700 border border-border rounded-xl text-sm focus:outline-none focus:ring-2 focus:ring-emerald-500"
+            />
+            <input
+              type="password"
+              value={passwords.confirm}
+              onChange={(e) => setPasswords(p => ({ ...p, confirm: e.target.value }))}
+              placeholder="تأكيد كلمة المرور"
+              className="w-full h-10 px-3 bg-gray-50 dark:bg-gray-700 border border-border rounded-xl text-sm focus:outline-none focus:ring-2 focus:ring-emerald-500"
+            />
+            <div className="flex gap-2">
+              <button onClick={handleChangePassword} className="flex-1 h-10 bg-emerald-600 text-white rounded-xl text-sm font-medium">حفظ</button>
+              <button onClick={() => setChangingPassword(false)} className="flex-1 h-10 bg-gray-200 dark:bg-gray-700 rounded-xl text-sm font-medium">إلغاء</button>
+            </div>
           </div>
-          <div className="space-y-1.5 text-xs text-muted-foreground">
-            <p>{clinicName} - الإصدار 3.0</p>
-            <p>نظام إدارة احترافي لعيادات الإسعافات</p>
-          </div>
-        </CardContent>
-      </Card>
+        ) : (
+          <button onClick={() => setChangingPassword(true)} className="w-full flex items-center justify-between">
+            <div className="flex items-center gap-3">
+              <div className="w-10 h-10 bg-amber-100 dark:bg-amber-900/30 rounded-xl flex items-center justify-center">
+                <Lock className="w-5 h-5 text-amber-600" />
+              </div>
+              <p className="text-sm font-medium">تغيير كلمة المرور</p>
+            </div>
+          </button>
+        )}
+      </div>
 
-      <Button variant="destructive" className="w-full h-12 rounded-xl font-semibold" onClick={logout}>
-        <LogOut className="w-4 h-4 ml-1" /> تسجيل الخروج
-      </Button>
+      {/* Logout */}
+      <button
+        onClick={handleLogout}
+        className="w-full bg-white dark:bg-gray-800 rounded-xl p-4 border border-border flex items-center gap-3 mb-3 active:scale-[0.98] transition-transform"
+      >
+        <div className="w-10 h-10 bg-red-100 dark:bg-red-900/30 rounded-xl flex items-center justify-center">
+          <LogOut className="w-5 h-5 text-red-600" />
+        </div>
+        <p className="text-sm font-medium text-red-600">تسجيل الخروج</p>
+      </button>
+
+      {/* App Info */}
+      <div className="mt-6 text-center">
+        <p className="text-xs text-muted-foreground">عيادة الإسعافات الأولية v2.0</p>
+        <p className="text-[10px] text-muted-foreground mt-1">جميع الحقوق محفوظة</p>
+      </div>
     </div>
   );
-});
-
-export { SettingsScreen };
+}

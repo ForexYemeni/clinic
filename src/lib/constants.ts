@@ -1,4 +1,4 @@
-import { type LucideIcon, AlertTriangle, Stethoscope, Info, Users, FileText, Activity } from 'lucide-react';
+import { type LucideIcon, AlertTriangle, Stethoscope, Info } from 'lucide-react';
 
 // ==================== TYPES ====================
 export interface DashboardData {
@@ -11,10 +11,13 @@ export interface DashboardData {
   totalNurses: number;
   todayRevenue: number;
   pendingInvoices: number;
+  monthlyRevenue: number;
+  monthlyPatients: number;
   servicesByCategory: { category: string; count: number }[];
   recentEmergencies: EmergencyItem[];
   recentPayments: PaymentItem[];
   topServices: { name: string; count: number }[];
+  dailyRevenue: { date: string; revenue: number }[];
 }
 
 export interface EmergencyItem {
@@ -25,6 +28,7 @@ export interface EmergencyItem {
   status: string;
   notes?: string;
   actions?: string;
+  procedures?: string;
   arrivalTime: string;
   patientName?: string;
   nurseName?: string;
@@ -97,6 +101,8 @@ export interface VisitItem {
   status: string;
   visitDate: string;
   notes?: string;
+  nurseId?: string;
+  nurseName?: string;
   vitalSigns?: {
     bloodPressure?: string;
     heartRate?: number;
@@ -104,15 +110,19 @@ export interface VisitItem {
     oxygenLevel?: number;
     sugarLevel?: number;
   };
+  medications?: string[];
   [key: string]: unknown;
 }
 
 export interface PatientServiceItem {
   id: string;
   serviceId?: string;
+  serviceName?: string;
+  price?: number;
   status: string;
   service?: { nameAr: string; price: number; duration: number };
   nurse?: { name: string };
+  nurseName?: string;
   createdAt?: string;
   [key: string]: unknown;
 }
@@ -140,9 +150,22 @@ export interface NurseItem {
   id: string;
   name: string;
   phone?: string;
-  email?: string;
+  password?: string;
   active: boolean;
   role: string;
+  [key: string]: unknown;
+}
+
+export interface ServiceItem {
+  id: string;
+  nameAr: string;
+  price: number;
+  duration: number;
+  category: string;
+  description: string;
+  active: boolean;
+  status: 'active' | 'paused' | 'deleted';
+  createdAt: string;
   [key: string]: unknown;
 }
 
@@ -168,25 +191,25 @@ export interface DefaultService {
 
 // ==================== DEFAULT SERVICES (14) ====================
 export const DEFAULT_SERVICES: DefaultService[] = [
-  { nameAr: 'قياس الضغط', price: 20, duration: 10, category: 'قياسات', description: 'قياس ضغط الدم' },
-  { nameAr: 'قياس السكر', price: 20, duration: 10, category: 'قياسات', description: 'قياس مستوى السكر في الدم' },
-  { nameAr: 'قياس الحرارة', price: 15, duration: 5, category: 'قياسات', description: 'قياس درجة حرارة الجسم' },
-  { nameAr: 'قياس الأكسجين', price: 25, duration: 10, category: 'قياسات', description: 'قياس مستوى الأكسجين في الدم' },
-  { nameAr: 'تضميد الجروح', price: 50, duration: 20, category: 'إسعافات', description: 'تنظيف وتضميد الجروح' },
-  { nameAr: 'الحروق', price: 60, duration: 25, category: 'إسعافات', description: 'علاج الحروق البسيطة والمتوسطة' },
-  { nameAr: 'الكسور البسيطة', price: 80, duration: 30, category: 'إسعافات', description: 'تثبيت وعلاج الكسور البسيطة' },
-  { nameAr: 'الأكسجين العلاجي', price: 40, duration: 30, category: 'علاج', description: 'إعطاء الأكسجين العلاجي' },
-  { nameAr: 'الحقن', price: 30, duration: 15, category: 'علاج', description: 'إعطاء الحقن العضلية والوريدية' },
-  { nameAr: 'المحاليل', price: 50, duration: 45, category: 'علاج', description: 'إعطاء المحاليل الوريدية' },
-  { nameAr: 'الأدوية', price: 25, duration: 10, category: 'علاج', description: 'صرف وتقديم الأدوية' },
-  { nameAr: 'الرذاذ الاستنشاقي', price: 30, duration: 15, category: 'علاج', description: 'علاج بالرذاذ والاستنشاق' },
-  { nameAr: 'تغيير الضمادات', price: 35, duration: 15, category: 'رعاية', description: 'تغيير وتجديد الضمادات' },
-  { nameAr: 'الإسعافات الأولية العامة', price: 100, duration: 30, category: 'إسعافات', description: 'إسعافات أولية شاملة' },
+  { nameAr: 'قياس الضغط', price: 500, duration: 10, category: 'قياسات', description: 'قياس ضغط الدم' },
+  { nameAr: 'قياس السكر', price: 500, duration: 10, category: 'قياسات', description: 'قياس مستوى السكر في الدم' },
+  { nameAr: 'قياس الحرارة', price: 300, duration: 5, category: 'قياسات', description: 'قياس درجة حرارة الجسم' },
+  { nameAr: 'قياس الأكسجين', price: 500, duration: 10, category: 'قياسات', description: 'قياس مستوى الأكسجين في الدم' },
+  { nameAr: 'تضميد الجروح', price: 1500, duration: 20, category: 'إسعافات', description: 'تنظيف وتضميد الجروح' },
+  { nameAr: 'الحروق', price: 2000, duration: 25, category: 'إسعافات', description: 'علاج الحروق البسيطة والمتوسطة' },
+  { nameAr: 'الكسور البسيطة', price: 3000, duration: 30, category: 'إسعافات', description: 'تثبيت وعلاج الكسور البسيطة' },
+  { nameAr: 'الأكسجين العلاجي', price: 1500, duration: 30, category: 'علاج', description: 'إعطاء الأكسجين العلاجي' },
+  { nameAr: 'الحقن', price: 800, duration: 15, category: 'علاج', description: 'إعطاء الحقن العضلية والوريدية' },
+  { nameAr: 'المحاليل', price: 1500, duration: 45, category: 'علاج', description: 'إعطاء المحاليل الوريدية' },
+  { nameAr: 'الأدوية', price: 500, duration: 10, category: 'علاج', description: 'صرف وتقديم الأدوية' },
+  { nameAr: 'الرذاذ الاستنشاقي', price: 800, duration: 15, category: 'علاج', description: 'علاج بالرذاذ والاستنشاق' },
+  { nameAr: 'تغيير الضمادات', price: 1000, duration: 15, category: 'رعاية', description: 'تغيير وتجديد الضمادات' },
+  { nameAr: 'الإسعافات الأولية العامة', price: 3000, duration: 30, category: 'إسعافات', description: 'إسعافات أولية شاملة' },
 ];
 
 // ==================== FORMAT HELPERS ====================
 export const formatCurrency = (amount: number): string =>
-  `${amount.toLocaleString('ar-SA')} ر.س`;
+  `${amount.toLocaleString('ar-YE')} ر.ي`;
 
 export const formatDate = (date: string | Date): string =>
   new Date(date).toLocaleDateString('ar-SA', { year: 'numeric', month: 'short', day: 'numeric' });
@@ -281,6 +304,18 @@ export const paymentMethodColors: Record<string, string> = {
   cash: 'bg-emerald-100 text-emerald-700 dark:bg-emerald-900/30 dark:text-emerald-400',
   card: 'bg-blue-100 text-blue-700 dark:bg-blue-900/30 dark:text-blue-400',
   transfer: 'bg-purple-100 text-purple-700 dark:bg-purple-900/30 dark:text-purple-400',
+};
+
+export const serviceStatusLabels: Record<string, string> = {
+  active: 'نشط',
+  paused: 'متوقف',
+  deleted: 'محذوف',
+};
+
+export const serviceStatusColors: Record<string, string> = {
+  active: 'bg-green-100 text-green-700 dark:bg-green-900/30 dark:text-green-400',
+  paused: 'bg-yellow-100 text-yellow-700 dark:bg-yellow-900/30 dark:text-yellow-400',
+  deleted: 'bg-red-100 text-red-700 dark:bg-red-900/30 dark:text-red-400',
 };
 
 export const notificationTypeIcons: Record<string, LucideIcon> = {

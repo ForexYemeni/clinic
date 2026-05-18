@@ -2,270 +2,267 @@
 
 import React, { useState } from 'react';
 import { motion } from 'framer-motion';
-import { Heart, AlertCircle, Eye, EyeOff, Phone, Building, User, CheckCircle } from 'lucide-react';
-import { Card, CardContent } from '@/components/ui/card';
-import { Button } from '@/components/ui/button';
-import { Input } from '@/components/ui/input';
-import { Label } from '@/components/ui/label';
+import { Heart, Phone, User, Building2, Lock, Eye, EyeOff, AlertCircle, ArrowLeft } from 'lucide-react';
 import { useAppStore } from '@/lib/store';
 import { toast } from 'sonner';
 
-const FirstSetupScreen = React.memo(function FirstSetupScreen() {
-  const { setUser, setScreen, setIsFirstSetup, setClinicName } = useAppStore();
-  const [step, setStep] = useState(1);
-  const [form, setForm] = useState({
-    adminName: '',
-    phone: '',
-    clinicName: '',
-    password: '',
-    confirmPassword: '',
-  });
-  const [showPassword, setShowPassword] = useState(false);
+export function FirstSetupScreen() {
+  const { setScreen, setUser, setClinicName } = useAppStore();
+  const [adminName, setAdminName] = useState('');
+  const [adminPhone, setAdminPhone] = useState('');
+  const [clinicNameInput, setClinicNameInput] = useState('');
+  const [password, setPassword] = useState('');
+  const [confirmPassword, setConfirmPassword] = useState('');
+  const [showPass, setShowPass] = useState(false);
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState('');
-
-  const totalSteps = 2;
-
-  const validateStep1 = () => {
-    if (!form.adminName.trim()) {
-      setError('يرجى إدخال اسم المدير');
-      return false;
-    }
-    const phoneClean = form.phone.replace(/\D/g, '');
-    if (phoneClean.length !== 9) {
-      setError('رقم الهاتف يجب أن يكون 9 أرقام');
-      return false;
-    }
-    if (!form.clinicName.trim()) {
-      setError('يرجى إدخال اسم العيادة');
-      return false;
-    }
-    return true;
-  };
-
-  const validateStep2 = () => {
-    if (form.password.length < 4) {
-      setError('كلمة المرور يجب أن تكون 4 أحرف على الأقل');
-      return false;
-    }
-    if (form.password !== form.confirmPassword) {
-      setError('كلمة المرور غير متطابقة');
-      return false;
-    }
-    return true;
-  };
+  const [step, setStep] = useState(1);
 
   const handleNext = () => {
-    setError('');
-    if (step === 1 && validateStep1()) {
+    if (step === 1) {
+      if (!adminName.trim()) { setError('أدخل اسم المدير'); return; }
+      if (adminPhone.length !== 9) { setError('رقم الهاتف يجب أن يكون 9 أرقام'); return; }
+      setError('');
       setStep(2);
     }
   };
 
-  const handleSetup = async () => {
+  const handleSetup = async (e: React.FormEvent) => {
+    e.preventDefault();
     setError('');
-    if (!validateStep2()) return;
+
+    if (!clinicNameInput.trim()) {
+      setError('أدخل اسم العيادة');
+      return;
+    }
+    if (password.length < 4) {
+      setError('كلمة المرور يجب أن تكون 4 أحرف على الأقل');
+      return;
+    }
+    if (password !== confirmPassword) {
+      setError('كلمتا المرور غير متطابقتين');
+      return;
+    }
 
     setLoading(true);
     try {
-      const phoneClean = form.phone.replace(/\D/g, '');
       const res = await fetch('/api/setup', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({
-          adminName: form.adminName,
-          phone: phoneClean,
-          clinicName: form.clinicName,
-          password: form.password,
+          adminName: adminName.trim(),
+          adminPhone,
+          clinicName: clinicNameInput.trim(),
+          password,
         }),
       });
       const data = await res.json();
+
       if (!res.ok) {
-        setError(data.error);
+        setError(data.error || 'خطأ في الإعداد');
         return;
       }
+
+      setClinicName(clinicNameInput.trim());
       setUser(data.user);
-      setClinicName(data.clinicName);
-      setIsFirstSetup(data.isFirstSetup !== undefined ? data.isFirstSetup : true);
-      toast.success('تم إعداد النظام بنجاح');
       setScreen('admin-dashboard');
+      toast.success('تم إعداد العيادة بنجاح!');
     } catch {
-      setError('خطأ في الاتصال');
+      setError('خطأ في الاتصال بالخادم');
     } finally {
       setLoading(false);
     }
   };
 
   return (
-    <div className="min-h-screen bg-gradient-to-br from-emerald-50 via-teal-50 to-emerald-50 dark:from-gray-900 dark:via-gray-800 dark:to-gray-900 flex flex-col">
-      <div className="absolute top-0 left-0 right-0 h-64 bg-gradient-to-br from-emerald-600/10 to-teal-600/10 dark:from-emerald-600/5 dark:to-teal-600/5 rounded-b-[40px]" />
-
-      <div className="flex-1 flex flex-col items-center justify-center px-6 pt-12 relative z-10">
-        <motion.div initial={{ y: -30, opacity: 0 }} animate={{ y: 0, opacity: 1 }} className="mb-6">
-          <div className="w-16 h-16 bg-gradient-to-br from-emerald-500 to-teal-600 rounded-2xl flex items-center justify-center shadow-lg shadow-emerald-500/25 mx-auto mb-3">
-            <CheckCircle className="w-8 h-8 text-white" />
-          </div>
-          <h1 className="text-xl font-bold text-center text-foreground">إعداد النظام</h1>
-          <p className="text-muted-foreground text-center text-sm mt-1">الخطوة الأولى لبدء الاستخدام</p>
-        </motion.div>
-
-        {/* Progress indicator */}
-        <div className="flex items-center gap-2 mb-6">
-          {Array.from({ length: totalSteps }).map((_, i) => (
-            <React.Fragment key={i}>
-              <div className={`w-8 h-8 rounded-full flex items-center justify-center text-xs font-bold transition-all duration-300 ${
-                i + 1 <= step ? 'bg-emerald-600 text-white' : 'bg-muted text-muted-foreground'
-              }`}>
-                {i + 1}
-              </div>
-              {i < totalSteps - 1 && (
-                <div className={`w-12 h-1 rounded-full transition-all duration-300 ${
-                  i + 1 < step ? 'bg-emerald-500' : 'bg-muted'
-                }`} />
-              )}
-            </React.Fragment>
-          ))}
+    <div className="min-h-screen flex flex-col bg-gradient-to-br from-emerald-50 via-white to-teal-50 dark:from-gray-950 dark:via-gray-900 dark:to-emerald-950">
+      {/* Header */}
+      <div className="flex flex-col items-center pt-10 pb-6">
+        <div className="w-16 h-16 bg-gradient-to-br from-emerald-500 to-teal-600 rounded-2xl flex items-center justify-center shadow-xl">
+          <Heart className="w-9 h-9 text-white" fill="currentColor" />
         </div>
+        <h1 className="text-lg font-bold mt-3 text-emerald-800 dark:text-emerald-300">إعداد العيادة لأول مرة</h1>
+        <p className="text-sm text-muted-foreground mt-1">يجب إعداد العيادة قبل البدء</p>
+        
+        {/* Step indicator */}
+        <div className="flex items-center gap-2 mt-4">
+          <div className={`w-8 h-1.5 rounded-full transition-all ${step >= 1 ? 'bg-emerald-500' : 'bg-gray-200 dark:bg-gray-700'}`} />
+          <div className={`w-8 h-1.5 rounded-full transition-all ${step >= 2 ? 'bg-emerald-500' : 'bg-gray-200 dark:bg-gray-700'}`} />
+        </div>
+      </div>
 
-        <motion.div
-          key={step}
-          initial={{ x: step === 1 ? -20 : 20, opacity: 0 }}
-          animate={{ x: 0, opacity: 1 }}
-          transition={{ duration: 0.3 }}
-          className="w-full max-w-sm"
-        >
-          <Card className="border-0 shadow-xl shadow-emerald-900/5 bg-white/80 dark:bg-gray-800/80 backdrop-blur-lg">
-            <CardContent className="p-6 space-y-4">
+      {/* Form */}
+      <div className="flex-1 px-6 pb-8">
+        {step === 1 ? (
+          <motion.div
+            key="step1"
+            initial={{ opacity: 0, x: 30 }}
+            animate={{ opacity: 1, x: 0 }}
+            exit={{ opacity: 0, x: -30 }}
+            className="space-y-4"
+          >
+            {/* Admin Name */}
+            <div className="space-y-2">
+              <label className="text-sm font-medium">اسم المدير</label>
+              <div className="relative">
+                <div className="absolute right-3 top-1/2 -translate-y-1/2 text-muted-foreground">
+                  <User className="w-5 h-5" />
+                </div>
+                <input
+                  type="text"
+                  value={adminName}
+                  onChange={(e) => { setAdminName(e.target.value); setError(''); }}
+                  placeholder="أدخل اسمك الكامل"
+                  className="w-full h-12 pr-10 pl-4 bg-white dark:bg-gray-800 border border-border rounded-xl text-base focus:outline-none focus:ring-2 focus:ring-emerald-500 transition-all"
+                />
+              </div>
+            </div>
+
+            {/* Admin Phone */}
+            <div className="space-y-2">
+              <label className="text-sm font-medium">رقم الهاتف</label>
+              <div className="relative">
+                <div className="absolute right-3 top-1/2 -translate-y-1/2 text-muted-foreground">
+                  <Phone className="w-5 h-5" />
+                </div>
+                <div className="absolute left-3 top-1/2 -translate-y-1/2 text-sm text-muted-foreground font-mono">
+                  967+
+                </div>
+                <input
+                  type="tel"
+                  value={adminPhone}
+                  onChange={(e) => {
+                    const val = e.target.value.replace(/\D/g, '').slice(0, 9);
+                    setAdminPhone(val);
+                    setError('');
+                  }}
+                  placeholder="7XXXXXXXX"
+                  className="w-full h-12 pr-10 pl-14 bg-white dark:bg-gray-800 border border-border rounded-xl text-base font-mono focus:outline-none focus:ring-2 focus:ring-emerald-500 transition-all"
+                  dir="ltr"
+                  inputMode="numeric"
+                />
+              </div>
+            </div>
+
+            {error && (
+              <motion.div
+                initial={{ opacity: 0, y: -5 }}
+                animate={{ opacity: 1, y: 0 }}
+                className="flex items-center gap-2 text-red-600 dark:text-red-400 text-sm bg-red-50 dark:bg-red-900/20 p-3 rounded-xl"
+              >
+                <AlertCircle className="w-4 h-4 shrink-0" />
+                <span>{error}</span>
+              </motion.div>
+            )}
+
+            <button
+              onClick={handleNext}
+              className="w-full h-12 bg-gradient-to-l from-emerald-600 to-teal-600 text-white font-bold rounded-xl shadow-lg shadow-emerald-200 dark:shadow-emerald-900/40 active:scale-[0.98] transition-all"
+            >
+              التالي
+            </button>
+          </motion.div>
+        ) : (
+          <motion.div
+            key="step2"
+            initial={{ opacity: 0, x: 30 }}
+            animate={{ opacity: 1, x: 0 }}
+            exit={{ opacity: 0, x: -30 }}
+          >
+            <form onSubmit={handleSetup} className="space-y-4">
+              {/* Clinic Name */}
+              <div className="space-y-2">
+                <label className="text-sm font-medium">اسم العيادة</label>
+                <div className="relative">
+                  <div className="absolute right-3 top-1/2 -translate-y-1/2 text-muted-foreground">
+                    <Building2 className="w-5 h-5" />
+                  </div>
+                  <input
+                    type="text"
+                    value={clinicNameInput}
+                    onChange={(e) => { setClinicNameInput(e.target.value); setError(''); }}
+                    placeholder="مثال: عيادة الأمل للإسعافات"
+                    className="w-full h-12 pr-10 pl-4 bg-white dark:bg-gray-800 border border-border rounded-xl text-base focus:outline-none focus:ring-2 focus:ring-emerald-500 transition-all"
+                  />
+                </div>
+              </div>
+
+              {/* Password */}
+              <div className="space-y-2">
+                <label className="text-sm font-medium">كلمة المرور</label>
+                <div className="relative">
+                  <div className="absolute right-3 top-1/2 -translate-y-1/2 text-muted-foreground">
+                    <Lock className="w-5 h-5" />
+                  </div>
+                  <input
+                    type={showPass ? 'text' : 'password'}
+                    value={password}
+                    onChange={(e) => { setPassword(e.target.value); setError(''); }}
+                    placeholder="أدخل كلمة المرور"
+                    className="w-full h-12 pr-10 pl-10 bg-white dark:bg-gray-800 border border-border rounded-xl text-base focus:outline-none focus:ring-2 focus:ring-emerald-500 transition-all"
+                  />
+                  <button
+                    type="button"
+                    onClick={() => setShowPass(!showPass)}
+                    className="absolute left-3 top-1/2 -translate-y-1/2 text-muted-foreground"
+                  >
+                    {showPass ? <EyeOff className="w-5 h-5" /> : <Eye className="w-5 h-5" />}
+                  </button>
+                </div>
+              </div>
+
+              {/* Confirm Password */}
+              <div className="space-y-2">
+                <label className="text-sm font-medium">تأكيد كلمة المرور</label>
+                <div className="relative">
+                  <div className="absolute right-3 top-1/2 -translate-y-1/2 text-muted-foreground">
+                    <Lock className="w-5 h-5" />
+                  </div>
+                  <input
+                    type="password"
+                    value={confirmPassword}
+                    onChange={(e) => { setConfirmPassword(e.target.value); setError(''); }}
+                    placeholder="أعد إدخال كلمة المرور"
+                    className="w-full h-12 pr-10 pl-4 bg-white dark:bg-gray-800 border border-border rounded-xl text-base focus:outline-none focus:ring-2 focus:ring-emerald-500 transition-all"
+                  />
+                </div>
+              </div>
+
               {error && (
                 <motion.div
                   initial={{ opacity: 0, y: -5 }}
                   animate={{ opacity: 1, y: 0 }}
-                  className="bg-red-50 dark:bg-red-900/20 text-red-600 dark:text-red-400 text-sm p-3 rounded-xl flex items-center gap-2 border border-red-200/50 dark:border-red-800/50"
+                  className="flex items-center gap-2 text-red-600 dark:text-red-400 text-sm bg-red-50 dark:bg-red-900/20 p-3 rounded-xl"
                 >
                   <AlertCircle className="w-4 h-4 shrink-0" />
-                  {error}
+                  <span>{error}</span>
                 </motion.div>
               )}
 
-              {step === 1 && (
-                <>
-                  <div className="space-y-2">
-                    <Label className="text-xs font-semibold flex items-center gap-1.5">
-                      <User className="w-3.5 h-3.5" /> اسم المدير *
-                    </Label>
-                    <Input
-                      value={form.adminName}
-                      onChange={(e) => setForm({ ...form, adminName: e.target.value })}
-                      className="h-12 rounded-xl bg-white/50 dark:bg-gray-700/50"
-                      placeholder="أدخل اسمك الكامل"
-                    />
-                  </div>
-                  <div className="space-y-2">
-                    <Label className="text-xs font-semibold flex items-center gap-1.5">
-                      <Phone className="w-3.5 h-3.5" /> رقم الهاتف *
-                    </Label>
-                    <Input
-                      type="tel"
-                      value={form.phone}
-                      onChange={(e) => {
-                        const val = e.target.value.replace(/\D/g, '');
-                        if (val.length <= 9) setForm({ ...form, phone: val });
-                      }}
-                      className="h-12 rounded-xl bg-white/50 dark:bg-gray-700/50"
-                      placeholder="050000000"
-                      dir="ltr"
-                      maxLength={9}
-                    />
-                    <p className="text-[10px] text-muted-foreground">9 أرقام بدون رمز الدولة</p>
-                  </div>
-                  <div className="space-y-2">
-                    <Label className="text-xs font-semibold flex items-center gap-1.5">
-                      <Building className="w-3.5 h-3.5" /> اسم العيادة *
-                    </Label>
-                    <Input
-                      value={form.clinicName}
-                      onChange={(e) => setForm({ ...form, clinicName: e.target.value })}
-                      className="h-12 rounded-xl bg-white/50 dark:bg-gray-700/50"
-                      placeholder="عيادة الإسعافات الأولية"
-                    />
-                  </div>
-                  <Button
-                    onClick={handleNext}
-                    className="w-full h-12 rounded-xl text-base font-semibold bg-gradient-to-r from-emerald-600 to-teal-600 hover:from-emerald-700 hover:to-teal-700 shadow-lg shadow-emerald-500/25"
-                  >
-                    التالي
-                  </Button>
-                </>
-              )}
+              <button
+                type="submit"
+                disabled={loading}
+                className="w-full h-12 bg-gradient-to-l from-emerald-600 to-teal-600 text-white font-bold rounded-xl shadow-lg shadow-emerald-200 dark:shadow-emerald-900/40 disabled:opacity-60 active:scale-[0.98] transition-all"
+              >
+                {loading ? (
+                  <div className="w-6 h-6 border-2 border-white/30 border-t-white rounded-full animate-spin mx-auto" />
+                ) : (
+                  'إنشاء العيادة'
+                )}
+              </button>
 
-              {step === 2 && (
-                <>
-                  <div className="bg-emerald-50 dark:bg-emerald-900/20 p-3 rounded-xl mb-2">
-                    <p className="text-xs text-emerald-700 dark:text-emerald-400 font-semibold">
-                      المدير: {form.adminName} | العيادة: {form.clinicName}
-                    </p>
-                  </div>
-                  <div className="space-y-2">
-                    <Label className="text-xs font-semibold">كلمة المرور الجديدة *</Label>
-                    <div className="relative">
-                      <Input
-                        type={showPassword ? 'text' : 'password'}
-                        value={form.password}
-                        onChange={(e) => setForm({ ...form, password: e.target.value })}
-                        className="h-12 rounded-xl bg-white/50 dark:bg-gray-700/50 pl-10"
-                        dir="ltr"
-                        placeholder="أدخل كلمة المرور"
-                      />
-                      <button
-                        type="button"
-                        onClick={() => setShowPassword(!showPassword)}
-                        className="absolute left-3 top-1/2 -translate-y-1/2 text-muted-foreground touch-feedback"
-                      >
-                        {showPassword ? <EyeOff className="w-4 h-4" /> : <Eye className="w-4 h-4" />}
-                      </button>
-                    </div>
-                  </div>
-                  <div className="space-y-2">
-                    <Label className="text-xs font-semibold">تأكيد كلمة المرور *</Label>
-                    <Input
-                      type="password"
-                      value={form.confirmPassword}
-                      onChange={(e) => setForm({ ...form, confirmPassword: e.target.value })}
-                      className="h-12 rounded-xl bg-white/50 dark:bg-gray-700/50"
-                      dir="ltr"
-                      placeholder="أعد إدخال كلمة المرور"
-                      onKeyDown={(e) => e.key === 'Enter' && handleSetup()}
-                    />
-                  </div>
-                  <div className="flex gap-2">
-                    <Button
-                      variant="outline"
-                      onClick={() => { setStep(1); setError(''); }}
-                      className="flex-1 h-12 rounded-xl font-semibold"
-                    >
-                      رجوع
-                    </Button>
-                    <Button
-                      onClick={handleSetup}
-                      disabled={loading}
-                      className="flex-1 h-12 rounded-xl text-base font-semibold bg-gradient-to-r from-emerald-600 to-teal-600 hover:from-emerald-700 hover:to-teal-700 shadow-lg shadow-emerald-500/25"
-                    >
-                      {loading ? (
-                        <div className="flex items-center gap-2">
-                          <div className="w-5 h-5 border-2 border-white/30 border-t-white rounded-full animate-spin" />
-                          جاري الإعداد...
-                        </div>
-                      ) : 'إعداد النظام'}
-                    </Button>
-                  </div>
-                </>
-              )}
-            </CardContent>
-          </Card>
-        </motion.div>
+              <button
+                type="button"
+                onClick={() => { setStep(1); setError(''); }}
+                className="w-full h-10 flex items-center justify-center gap-2 text-sm text-muted-foreground"
+              >
+                <ArrowLeft className="w-4 h-4" />
+                رجوع
+              </button>
+            </form>
+          </motion.div>
+        )}
       </div>
     </div>
   );
-});
-
-export { FirstSetupScreen };
+}

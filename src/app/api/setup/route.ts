@@ -1,97 +1,125 @@
 import { adminDb } from '@/lib/firebase-admin';
-import { NextResponse } from 'next/server';
+import { NextRequest, NextResponse } from 'next/server';
 
-export async function POST(request: Request) {
+const DEFAULT_SERVICES = [
+  { nameAr: 'قياس الضغط', price: 500, duration: 10, category: 'قياسات', description: 'قياس ضغط الدم', active: true, status: 'active' },
+  { nameAr: 'قياس السكر', price: 500, duration: 10, category: 'قياسات', description: 'قياس مستوى السكر في الدم', active: true, status: 'active' },
+  { nameAr: 'قياس الحرارة', price: 300, duration: 5, category: 'قياسات', description: 'قياس درجة حرارة الجسم', active: true, status: 'active' },
+  { nameAr: 'قياس الأكسجين', price: 500, duration: 10, category: 'قياسات', description: 'قياس مستوى الأكسجين في الدم', active: true, status: 'active' },
+  { nameAr: 'تضميد الجروح', price: 1500, duration: 20, category: 'إسعافات', description: 'تنظيف وتضميد الجروح', active: true, status: 'active' },
+  { nameAr: 'الحروق', price: 2000, duration: 25, category: 'إسعافات', description: 'علاج الحروق البسيطة والمتوسطة', active: true, status: 'active' },
+  { nameAr: 'الكسور البسيطة', price: 3000, duration: 30, category: 'إسعافات', description: 'تثبيت وعلاج الكسور البسيطة', active: true, status: 'active' },
+  { nameAr: 'الأكسجين العلاجي', price: 1500, duration: 30, category: 'علاج', description: 'إعطاء الأكسجين العلاجي', active: true, status: 'active' },
+  { nameAr: 'الحقن', price: 800, duration: 15, category: 'علاج', description: 'إعطاء الحقن العضلية والوريدية', active: true, status: 'active' },
+  { nameAr: 'المحاليل', price: 1500, duration: 45, category: 'علاج', description: 'إعطاء المحاليل الوريدية', active: true, status: 'active' },
+  { nameAr: 'الأدوية', price: 500, duration: 10, category: 'علاج', description: 'صرف وتقديم الأدوية', active: true, status: 'active' },
+  { nameAr: 'الرذاذ الاستنشاقي', price: 800, duration: 15, category: 'علاج', description: 'علاج بالرذاذ والاستنشاق', active: true, status: 'active' },
+  { nameAr: 'تغيير الضمادات', price: 1000, duration: 15, category: 'رعاية', description: 'تغيير وتجديد الضمادات', active: true, status: 'active' },
+  { nameAr: 'الإسعافات الأولية العامة', price: 3000, duration: 30, category: 'إسعافات', description: 'إسعافات أولية شاملة', active: true, status: 'active' },
+];
+
+// POST: First-time admin setup
+export async function POST(request: NextRequest) {
   try {
     const body = await request.json();
-    const { adminName, phone, clinicName, password } = body;
+    const { adminName, adminPhone, clinicName, password } = body;
 
-    if (!adminName || !phone || !clinicName || !password) {
-      return NextResponse.json({ error: 'يرجى ملء جميع الحقول' }, { status: 400 });
+    if (!adminName || !adminPhone || !clinicName || !password) {
+      return NextResponse.json(
+        { error: 'يرجى ملء جميع الحقول' },
+        { status: 400 }
+      );
     }
 
+    // Validate phone is exactly 9 digits
     const phoneRegex = /^\d{9}$/;
-    if (!phoneRegex.test(phone)) {
-      return NextResponse.json({ error: 'رقم الهاتف يجب أن يكون 9 أرقام' }, { status: 400 });
+    if (!phoneRegex.test(adminPhone)) {
+      return NextResponse.json(
+        { error: 'رقم الهاتف يجب أن يكون 9 أرقام' },
+        { status: 400 }
+      );
     }
 
     if (password.length < 4) {
-      return NextResponse.json({ error: 'كلمة المرور يجب أن تكون 4 أحرف على الأقل' }, { status: 400 });
+      return NextResponse.json(
+        { error: 'كلمة المرور يجب أن تكون 4 أحرف على الأقل' },
+        { status: 400 }
+      );
     }
 
-    // Delete all demo/default data
-    const collectionsToDelete = ['users', 'patients', 'services', 'emergencies', 'invoices', 'payments', 'notifications'];
+    // Delete all seed/default data first
+    const collectionsToDelete = [
+      'users',
+      'patients',
+      'services',
+      'visits',
+      'invoices',
+      'emergencies',
+      'notifications',
+      'clinic',
+    ];
+
     for (const col of collectionsToDelete) {
       const snapshot = await adminDb.collection(col).get();
-      const batch = adminDb.batch();
-      snapshot.docs.forEach((doc) => batch.delete(doc.ref));
-      if (snapshot.docs.length > 0) await batch.commit();
+      if (!snapshot.empty) {
+        const batch = adminDb.batch();
+        snapshot.docs.forEach((doc) => batch.delete(doc.ref));
+        await batch.commit();
+      }
     }
+
+    // Create clinic document
+    const clinicRef = await adminDb.collection('clinic').add({
+      name: clinicName,
+      adminPhone,
+      setupComplete: true,
+      createdAt: new Date().toISOString(),
+    });
 
     // Create admin user
     const adminRef = await adminDb.collection('users').add({
       name: adminName,
-      phone,
+      phone: adminPhone,
       password,
       role: 'admin',
       active: true,
       createdAt: new Date().toISOString(),
     });
 
-    // Seed the 14 default services
-    const defaultServices = [
-      { nameAr: 'قياس الضغط', price: 20, duration: 10, description: 'قياس ضغط الدم', category: 'قياسات', active: true, createdAt: new Date().toISOString() },
-      { nameAr: 'قياس السكر', price: 20, duration: 10, description: 'قياس مستوى السكر في الدم', category: 'قياسات', active: true, createdAt: new Date().toISOString() },
-      { nameAr: 'قياس الحرارة', price: 15, duration: 5, description: 'قياس درجة حرارة الجسم', category: 'قياسات', active: true, createdAt: new Date().toISOString() },
-      { nameAr: 'قياس الأكسجين', price: 25, duration: 10, description: 'قياس مستوى الأكسجين في الدم', category: 'قياسات', active: true, createdAt: new Date().toISOString() },
-      { nameAr: 'تضميد الجروح', price: 50, duration: 20, description: 'تنظيف وتضميد الجروح', category: 'إسعافات', active: true, createdAt: new Date().toISOString() },
-      { nameAr: 'الحروق', price: 60, duration: 25, description: 'علاج الحروق البسيطة والمتوسطة', category: 'إسعافات', active: true, createdAt: new Date().toISOString() },
-      { nameAr: 'الكسور البسيطة', price: 80, duration: 30, description: 'تثبيت وعلاج الكسور البسيطة', category: 'إسعافات', active: true, createdAt: new Date().toISOString() },
-      { nameAr: 'الأكسجين العلاجي', price: 40, duration: 30, description: 'إعطاء الأكسجين العلاجي', category: 'علاج', active: true, createdAt: new Date().toISOString() },
-      { nameAr: 'الحقن', price: 30, duration: 15, description: 'إعطاء الحقن العضلية والوريدية', category: 'علاج', active: true, createdAt: new Date().toISOString() },
-      { nameAr: 'المحاليل', price: 50, duration: 45, description: 'إعطاء المحاليل الوريدية', category: 'علاج', active: true, createdAt: new Date().toISOString() },
-      { nameAr: 'الأدوية', price: 25, duration: 10, description: 'صرف وتقديم الأدوية', category: 'علاج', active: true, createdAt: new Date().toISOString() },
-      { nameAr: 'الرذاذ الاستنشاقي', price: 30, duration: 15, description: 'علاج بالرذاذ والاستنشاق', category: 'علاج', active: true, createdAt: new Date().toISOString() },
-      { nameAr: 'تغيير الضمادات', price: 35, duration: 15, description: 'تغيير وتجديد الضمادات', category: 'رعاية', active: true, createdAt: new Date().toISOString() },
-      { nameAr: 'الإسعافات الأولية العامة', price: 100, duration: 30, description: 'إسعافات أولية شاملة', category: 'إسعافات', active: true, createdAt: new Date().toISOString() },
-    ];
-
+    // Create default 14 services
     const batch = adminDb.batch();
-    defaultServices.forEach((service) => {
-      batch.set(adminDb.collection('services').doc(), service);
+    DEFAULT_SERVICES.forEach((service) => {
+      const ref = adminDb.collection('services').doc();
+      batch.set(ref, {
+        ...service,
+        createdAt: new Date().toISOString(),
+      });
     });
     await batch.commit();
 
-    // Create/update clinic config
-    const configSnapshot = await adminDb.collection('clinicConfig').limit(1).get();
-    if (configSnapshot.empty) {
-      await adminDb.collection('clinicConfig').add({
-        name: clinicName,
-        adminPhone: phone,
-        isFirstSetup: true,
-        createdAt: new Date().toISOString(),
-      });
-    } else {
-      await configSnapshot.docs[0].ref.update({
-        name: clinicName,
-        adminPhone: phone,
-        isFirstSetup: true,
-      });
-    }
+    // Generate token
+    const token = Buffer.from(`${adminRef.id}:${Date.now()}`).toString('base64');
 
     return NextResponse.json({
+      success: true,
       user: {
         id: adminRef.id,
         name: adminName,
-        phone,
+        phone: adminPhone,
         role: 'admin',
         active: true,
       },
-      clinicName,
-      isFirstSetup: true,
+      token,
+      clinic: {
+        id: clinicRef.id,
+        name: clinicName,
+      },
     });
   } catch (error) {
     console.error('Setup error:', error);
-    return NextResponse.json({ error: 'خطأ في الإعداد' }, { status: 500 });
+    return NextResponse.json(
+      { error: 'خطأ في الإعداد' },
+      { status: 500 }
+    );
   }
 }

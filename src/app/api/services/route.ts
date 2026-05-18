@@ -1,33 +1,63 @@
 import { adminDb } from '@/lib/firebase-admin';
-import { NextResponse } from 'next/server';
+import { NextRequest, NextResponse } from 'next/server';
 
+// GET: List all active services (status != 'deleted')
 export async function GET() {
   try {
-    const snapshot = await adminDb.collection('services').orderBy('category').get();
-    const services = [];
-    for (const doc of snapshot.docs) {
-      const data = { id: doc.id, ...doc.data() };
-      const psSnap = await adminDb.collection('patientServices').where('serviceId', '==', doc.id).get();
-      (data as any)._count = { patientServices: psSnap.size };
-      services.push(data);
-    }
+    const snapshot = await adminDb
+      .collection('services')
+      .orderBy('category')
+      .get();
+
+    const services = snapshot.docs
+      .map((doc) => ({ id: doc.id, ...doc.data() }))
+      .filter((service: any) => service.status !== 'deleted');
+
     return NextResponse.json(services);
   } catch (error) {
-    return NextResponse.json({ error: 'Failed' }, { status: 500 });
+    console.error('Services list error:', error);
+    return NextResponse.json(
+      { error: 'خطأ في جلب الخدمات' },
+      { status: 500 }
+    );
   }
 }
 
-export async function POST(request: Request) {
+// POST: Add new service (admin only)
+export async function POST(request: NextRequest) {
   try {
     const body = await request.json();
-    const data = {
-      ...body,
-      active: body.active !== false,
+    const { nameAr, price, duration, category, description } = body;
+
+    if (!nameAr || price === undefined) {
+      return NextResponse.json(
+        { error: 'يرجى إدخال اسم الخدمة والسعر' },
+        { status: 400 }
+      );
+    }
+
+    const serviceData = {
+      nameAr,
+      price: Number(price),
+      duration: duration || 15,
+      category: category || 'أخرى',
+      description: description || '',
+      active: true,
+      status: 'active',
       createdAt: new Date().toISOString(),
     };
-    const docRef = await adminDb.collection('services').add(data);
-    return NextResponse.json({ id: docRef.id, ...data });
+
+    const docRef = await adminDb.collection('services').add(serviceData);
+
+    return NextResponse.json(
+      { id: docRef.id, ...serviceData },
+      { status: 201 }
+    );
   } catch (error) {
-    return NextResponse.json({ error: 'Failed' }, { status: 500 });
+    console.error('Create service error:', error);
+    return NextResponse.json(
+      { error: 'خطأ في إضافة الخدمة' },
+      { status: 500 }
+    );
   }
 }

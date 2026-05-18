@@ -1,84 +1,119 @@
 'use client';
 
-import React, { useState, useEffect } from 'react';
-import { AlertTriangle } from 'lucide-react';
-import { Card, CardContent } from '@/components/ui/card';
-import { Button } from '@/components/ui/button';
-import { Input } from '@/components/ui/input';
-import { Label } from '@/components/ui/label';
-import { Textarea } from '@/components/ui/textarea';
-import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
+import React, { useEffect, useState } from 'react';
+import { ArrowRight, AlertTriangle } from 'lucide-react';
 import { useAppStore } from '@/lib/store';
-import { useData } from '@/hooks/useData';
-import { PatientItem, severityLabels } from '@/lib/constants';
+import { severityLabels } from '@/lib/constants';
 import { toast } from 'sonner';
 
-const NurseAddCase = React.memo(function NurseAddCase() {
+export function NurseAddCase() {
   const { setScreen, user } = useAppStore();
-  const { data: patients } = useData<PatientItem[]>('/api/patients');
-  const [form, setForm] = useState({ patientId: '', severity: 'moderate', notes: '', actions: '' });
-  const [saving, setSaving] = useState(false);
+  const [loading, setLoading] = useState(false);
+  const [patients, setPatients] = useState<any[]>([]);
+  const [form, setForm] = useState({
+    patientId: '', severity: 'moderate', notes: '', actions: '', procedures: '',
+  });
 
-  const handleSave = async () => {
-    if (!form.patientId) { toast.error('يرجى اختيار المريض'); return; }
-    setSaving(true);
+  useEffect(() => {
+    fetch('/api/patients').then(r => r.json()).then(setPatients).catch(() => {});
+  }, []);
+
+  const handleSubmit = async (e: React.FormEvent) => {
+    e.preventDefault();
+    if (!form.notes && !form.patientId) { toast.error('أدخل معلومات الحالة'); return; }
+    setLoading(true);
     try {
       const res = await fetch('/api/emergencies', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ ...form, nurseId: user?.id, arrivalTime: new Date().toISOString() }),
+        body: JSON.stringify({ ...form, nurseId: user?.id }),
       });
-      if (res.ok) { toast.success('تم تسجيل حالة الطوارئ'); setScreen('nurse-emergencies'); }
-      else toast.error('خطأ في التسجيل');
-    } catch { toast.error('خطأ في الاتصال'); }
-    finally { setSaving(false); }
+      if (res.ok) {
+        toast.success('تمت إضافة حالة الطوارئ');
+        setScreen('nurse-emergencies');
+      } else {
+        const data = await res.json();
+        toast.error(data.error || 'خطأ');
+      }
+    } catch {
+      toast.error('خطأ في الاتصال');
+    } finally { setLoading(false); }
   };
 
   return (
-    <div className="px-4 pb-24 pt-2 space-y-4">
-      <div className="flex items-center gap-3">
-        <Button variant="ghost" size="icon" className="h-9 w-9 rounded-xl" onClick={() => setScreen('nurse-add-emergency')}>
-          <AlertTriangle className="w-5 h-5" />
-        </Button>
-        <h2 className="text-lg font-bold">تسجيل حالة طوارئ</h2>
-      </div>
-      <Card className="border-0 shadow-sm border-r-4 border-r-red-500 overflow-hidden">
-        <CardContent className="p-4 space-y-3">
-          <div className="space-y-1.5">
-            <Label className="text-xs font-semibold">المريض *</Label>
-            <Select value={form.patientId} onValueChange={(v) => setForm({...form, patientId: v})}>
-              <SelectTrigger className="h-11 rounded-xl"><SelectValue placeholder="اختر المريض" /></SelectTrigger>
-              <SelectContent>
-                {(patients || []).map((p) => <SelectItem key={p.id} value={p.id}>{p.name}</SelectItem>)}
-              </SelectContent>
-            </Select>
+    <div className="p-4 pb-24">
+      <button onClick={() => setScreen('nurse-emergencies')} className="flex items-center gap-1 text-sm text-muted-foreground mb-4">
+        <ArrowRight className="w-4 h-4" /> رجوع
+      </button>
+
+      <h2 className="text-lg font-bold mb-4 flex items-center gap-2">
+        <AlertTriangle className="w-5 h-5 text-red-500" />
+        إضافة حالة طوارئ
+      </h2>
+
+      <form onSubmit={handleSubmit} className="space-y-4">
+        <div className="space-y-1.5">
+          <label className="text-sm font-medium">المريض</label>
+          <select
+            value={form.patientId}
+            onChange={(e) => setForm(p => ({ ...p, patientId: e.target.value }))}
+            className="w-full h-11 px-3 bg-white dark:bg-gray-800 border border-border rounded-xl text-sm focus:outline-none focus:ring-2 focus:ring-red-500"
+          >
+            <option value="">اختر المريض</option>
+            {patients.map(p => <option key={p.id} value={p.id}>{p.name}</option>)}
+          </select>
+        </div>
+
+        <div className="space-y-1.5">
+          <label className="text-sm font-medium">مستوى الخطورة</label>
+          <div className="grid grid-cols-4 gap-2">
+            {Object.entries(severityLabels).map(([key, label]) => (
+              <button
+                key={key}
+                type="button"
+                onClick={() => setForm(p => ({ ...p, severity: key }))}
+                className={`py-2 rounded-xl text-xs font-medium ${
+                  form.severity === key
+                    ? key === 'critical' ? 'bg-red-600 text-white' : key === 'high' ? 'bg-orange-500 text-white' : key === 'moderate' ? 'bg-yellow-500 text-black' : 'bg-green-500 text-white'
+                    : 'bg-gray-100 dark:bg-gray-800 text-muted-foreground'
+                }`}
+              >
+                {label}
+              </button>
+            ))}
           </div>
-          <div className="space-y-1.5">
-            <Label className="text-xs font-semibold">مستوى الخطورة</Label>
-            <Select value={form.severity} onValueChange={(v) => setForm({...form, severity: v})}>
-              <SelectTrigger className="h-11 rounded-xl"><SelectValue /></SelectTrigger>
-              <SelectContent>
-                {Object.entries(severityLabels).map(([key, label]) => (
-                  <SelectItem key={key} value={key}>{label}</SelectItem>
-                ))}
-              </SelectContent>
-            </Select>
-          </div>
-          <div className="space-y-1.5">
-            <Label className="text-xs font-semibold">ملاحظات</Label>
-            <Textarea value={form.notes} onChange={(e) => setForm({...form, notes: e.target.value})} className="rounded-xl min-h-[80px]" placeholder="وصف الحالة..." />
-          </div>
-          <div className="space-y-1.5">
-            <Label className="text-xs font-semibold">الإجراءات المتخذة</Label>
-            <Textarea value={form.actions} onChange={(e) => setForm({...form, actions: e.target.value})} className="rounded-xl min-h-[80px]" placeholder="الإجراءات..." />
-          </div>
-          <Button onClick={handleSave} disabled={saving} className="w-full h-12 rounded-xl bg-gradient-to-r from-red-600 to-red-700 hover:from-red-700 hover:to-red-800 font-semibold shadow-sm">
-            {saving ? <div className="w-5 h-5 border-2 border-white/30 border-t-white rounded-full animate-spin" /> : <><AlertTriangle className="w-4 h-4 ml-1" /> تسجيل الحالة</>}
-          </Button>
-        </CardContent>
-      </Card>
+        </div>
+
+        <div className="space-y-1.5">
+          <label className="text-sm font-medium">ملاحظات</label>
+          <textarea
+            value={form.notes}
+            onChange={(e) => setForm(p => ({ ...p, notes: e.target.value }))}
+            placeholder="وصف الحالة..."
+            rows={3}
+            className="w-full px-3 py-2 bg-white dark:bg-gray-800 border border-border rounded-xl text-sm focus:outline-none focus:ring-2 focus:ring-red-500 resize-none"
+          />
+        </div>
+
+        <div className="space-y-1.5">
+          <label className="text-sm font-medium">الإجراءات المتخذة</label>
+          <textarea
+            value={form.actions}
+            onChange={(e) => setForm(p => ({ ...p, actions: e.target.value }))}
+            placeholder="الإجراءات..."
+            rows={2}
+            className="w-full px-3 py-2 bg-white dark:bg-gray-800 border border-border rounded-xl text-sm focus:outline-none focus:ring-2 focus:ring-red-500 resize-none"
+          />
+        </div>
+
+        <button
+          type="submit"
+          disabled={loading}
+          className="w-full h-12 bg-gradient-to-l from-red-600 to-red-700 text-white font-bold rounded-xl shadow-lg disabled:opacity-60 active:scale-[0.98] transition-transform"
+        >
+          {loading ? <div className="w-5 h-5 border-2 border-white/30 border-t-white rounded-full animate-spin mx-auto" /> : 'إضافة حالة الطوارئ'}
+        </button>
+      </form>
     </div>
   );
-});
-
-export { NurseAddCase };
+}

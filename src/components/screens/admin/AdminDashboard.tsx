@@ -1,189 +1,190 @@
 'use client';
 
-import React, { useMemo, useState, useCallback } from 'react';
+import React, { useEffect, useState, useMemo } from 'react';
 import { motion } from 'framer-motion';
-import { Users, AlertTriangle, DollarSign, Plus, Stethoscope, RefreshCw } from 'lucide-react';
-import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
-import { Button } from '@/components/ui/button';
-import { Badge } from '@/components/ui/badge';
+import { Users, AlertTriangle, Activity, DollarSign, TrendingUp, Clock, Stethoscope, ChevronLeft } from 'lucide-react';
 import { useAppStore } from '@/lib/store';
-import { useData } from '@/hooks/useData';
-import { StatCard } from '@/components/shared/StatCard';
-import { SkeletonLoader } from '@/components/shared/SkeletonLoader';
-import { EmptyState } from '@/components/shared/EmptyState';
-import {
-  DashboardData, formatCurrency, formatTime,
-  severityColors, severityLabels,
-  CHART_COLORS, statGradients,
-} from '@/lib/constants';
-import { BarChart, Bar, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer, PieChart, Pie, Cell } from 'recharts';
+import { formatCurrency, formatRelativeTime, severityLabels, severityColors, type DashboardData, type EmergencyItem } from '@/lib/constants';
 
-const AdminDashboard = React.memo(function AdminDashboard() {
+export function AdminDashboard() {
   const { setScreen } = useAppStore();
-  const { data, loading, refresh } = useData<DashboardData>('/api/dashboard');
-  const [lastUpdated, setLastUpdated] = useState(new Date());
+  const [data, setData] = useState<DashboardData | null>(null);
+  const [loading, setLoading] = useState(true);
 
-  const handleRefresh = useCallback(() => {
-    refresh();
-    setLastUpdated(new Date());
-  }, [refresh]);
+  useEffect(() => {
+    const fetchDashboard = async () => {
+      try {
+        const res = await fetch('/api/dashboard?role=admin');
+        if (res.ok) {
+          const d = await res.json();
+          setData(d);
+        }
+      } catch {} finally {
+        setLoading(false);
+      }
+    };
+    fetchDashboard();
+    const interval = setInterval(fetchDashboard, 30000);
+    return () => clearInterval(interval);
+  }, []);
 
-  const chartData = useMemo(() => {
-    if (!data) return [];
-    return data.servicesByCategory.map((s) => ({
-      name: s.category,
-      value: s.count,
-    }));
-  }, [data]);
+  const stats = useMemo(() => [
+    { label: 'إجمالي المرضى', value: data?.totalPatients || 0, icon: Users, gradient: 'from-emerald-500 to-emerald-600', onClick: () => setScreen('admin-patients') },
+    { label: 'طوارئ نشطة', value: data?.activeEmergencies || 0, icon: AlertTriangle, gradient: 'from-red-500 to-red-600', onClick: () => setScreen('admin-emergencies') },
+    { label: 'خدمات اليوم', value: data?.todayServices || 0, icon: Activity, gradient: 'from-teal-500 to-teal-600', onClick: () => setScreen('admin-services') },
+    { label: 'إيرادات اليوم', value: data?.todayRevenue || 0, icon: DollarSign, gradient: 'from-amber-500 to-amber-600', isCurrency: true, onClick: () => setScreen('admin-finance') },
+  ], [data, setScreen]);
 
-  const revenueData = useMemo(() => [
-    { name: 'السبت', revenue: 450 },
-    { name: 'الأحد', revenue: 680 },
-    { name: 'الاثنين', revenue: 520 },
-    { name: 'الثلاثاء', revenue: 890 },
-    { name: 'الأربعاء', revenue: 750 },
-    { name: 'الخميس', revenue: 960 },
-  ], []);
-
-  if (loading && !data) return <SkeletonLoader type="dashboard" />;
-  if (!data) return <EmptyState icon={AlertTriangle} title="خطأ في تحميل البيانات" description="اسحب للأسفل للتحديث" />;
+  if (loading) {
+    return (
+      <div className="p-4 space-y-4 pb-24">
+        {[1, 2, 3, 4].map(i => (
+          <div key={i} className="h-24 bg-gray-100 dark:bg-gray-800 rounded-2xl animate-pulse" />
+        ))}
+      </div>
+    );
+  }
 
   return (
-    <div className="px-4 pb-24 space-y-4 pt-2">
-      {/* Greeting */}
-      <div className="flex items-center justify-between">
-        <div>
-          <h2 className="text-lg font-bold">مرحباً بك 👋</h2>
-          <p className="text-sm text-muted-foreground">لوحة التحكم الرئيسية</p>
-        </div>
-        <div className="flex items-center gap-2">
-          <Button variant="ghost" size="icon" className="h-9 w-9 rounded-xl touch-feedback" onClick={handleRefresh}>
-            <RefreshCw className={`w-4 h-4 ${loading ? 'animate-spin' : ''}`} />
-          </Button>
-          <Button size="sm" className="rounded-xl bg-gradient-to-r from-emerald-600 to-teal-600 shadow-sm shadow-emerald-500/20" onClick={() => setScreen('admin-add-patient')}>
-            <Plus className="w-4 h-4 ml-1" /> مريض
-          </Button>
-        </div>
-      </div>
-
-      {/* Last updated */}
-      <p className="text-[10px] text-muted-foreground -mt-2">
-        آخر تحديث: {lastUpdated.toLocaleTimeString('ar-SA', { hour: '2-digit', minute: '2-digit' })}
-      </p>
-
-      {/* Stats Grid */}
+    <div className="p-4 space-y-5 pb-24">
+      {/* Quick Stats */}
       <div className="grid grid-cols-2 gap-3">
-        <StatCard icon={Users} label="إجمالي المرضى" value={data.totalPatients} color="text-white" gradient={statGradients.emerald} trend="+12%" />
-        <StatCard icon={AlertTriangle} label="حالات الطوارئ" value={data.activeEmergencies} color="text-white" gradient={statGradients.red} />
-        <StatCard icon={DollarSign} label="إيرادات اليوم" value={formatCurrency(data.todayRevenue)} color="text-white" gradient={statGradients.amber} trend="+8%" />
-        <StatCard icon={Stethoscope} label="الخدمات المقدمة" value={data.totalServices} color="text-white" gradient={statGradients.teal} />
+        {stats.map((stat, i) => (
+          <motion.button
+            key={stat.label}
+            initial={{ opacity: 0, y: 15 }}
+            animate={{ opacity: 1, y: 0 }}
+            transition={{ delay: i * 0.08 }}
+            onClick={stat.onClick}
+            className={`bg-gradient-to-br ${stat.gradient} rounded-2xl p-4 text-white text-right shadow-lg active:scale-[0.97] transition-transform`}
+          >
+            <div className="flex items-start justify-between">
+              <div className="w-10 h-10 bg-white/20 rounded-xl flex items-center justify-center">
+                <stat.icon className="w-5 h-5" />
+              </div>
+              <TrendingUp className="w-4 h-4 opacity-60" />
+            </div>
+            <p className="text-2xl font-bold mt-2">
+              {stat.isCurrency ? formatCurrency(stat.value) : stat.value}
+            </p>
+            <p className="text-xs opacity-80 mt-0.5">{stat.label}</p>
+          </motion.button>
+        ))}
       </div>
 
-      {/* Revenue Chart */}
-      <Card className="border-0 shadow-sm overflow-hidden">
-        <CardHeader className="pb-2 pt-4 px-4">
-          <CardTitle className="text-sm font-bold">الإيرادات الأسبوعية</CardTitle>
-        </CardHeader>
-        <CardContent className="px-2 pb-3">
-          <ResponsiveContainer width="100%" height={180}>
-            <BarChart data={revenueData}>
-              <CartesianGrid strokeDasharray="3 3" stroke="var(--border)" vertical={false} />
-              <XAxis dataKey="name" tick={{ fontSize: 10 }} stroke="var(--muted-foreground)" axisLine={false} tickLine={false} />
-              <YAxis tick={{ fontSize: 10 }} stroke="var(--muted-foreground)" axisLine={false} tickLine={false} />
-              <Tooltip
-                contentStyle={{ backgroundColor: 'var(--card)', border: '1px solid var(--border)', borderRadius: '12px', fontSize: '12px' }}
-                formatter={(v: number) => [formatCurrency(v), 'الإيرادات']}
-              />
-              <defs>
-                <linearGradient id="barGradient" x1="0" y1="0" x2="0" y2="1">
-                  <stop offset="0%" stopColor="#059669" />
-                  <stop offset="100%" stopColor="#0d9488" />
-                </linearGradient>
-              </defs>
-              <Bar dataKey="revenue" fill="url(#barGradient)" radius={[8, 8, 0, 0]} />
-            </BarChart>
-          </ResponsiveContainer>
-        </CardContent>
-      </Card>
-
-      {/* Services Distribution */}
-      <Card className="border-0 shadow-sm">
-        <CardHeader className="pb-2 pt-4 px-4">
-          <CardTitle className="text-sm font-bold">توزيع الخدمات</CardTitle>
-        </CardHeader>
-        <CardContent className="px-4 pb-3">
-          <div className="flex items-center gap-4">
-            <ResponsiveContainer width={120} height={120}>
-              <PieChart>
-                <Pie data={chartData} dataKey="value" nameKey="name" cx="50%" cy="50%" innerRadius={30} outerRadius={55} strokeWidth={0} paddingAngle={2}>
-                  {chartData.map((_, i) => (
-                    <Cell key={i} fill={CHART_COLORS[i % CHART_COLORS.length]} />
-                  ))}
-                </Pie>
-              </PieChart>
-            </ResponsiveContainer>
-            <div className="flex-1 space-y-1.5">
-              {chartData.map((item, i: number) => (
-                <div key={i} className="flex items-center gap-2 text-xs">
-                  <div className="w-2.5 h-2.5 rounded-full shrink-0" style={{ backgroundColor: CHART_COLORS[i % CHART_COLORS.length] }} />
-                  <span className="text-muted-foreground truncate">{item.name}</span>
-                  <span className="font-semibold mr-auto">{item.value}</span>
-                </div>
-              ))}
-            </div>
+      {/* Monthly Summary */}
+      <motion.div
+        initial={{ opacity: 0, y: 15 }}
+        animate={{ opacity: 1, y: 0 }}
+        transition={{ delay: 0.3 }}
+        className="bg-white dark:bg-gray-800 rounded-2xl p-4 shadow-sm border border-border"
+      >
+        <h3 className="font-bold text-sm mb-3 flex items-center gap-2">
+          <TrendingUp className="w-4 h-4 text-emerald-500" />
+          ملخص الشهر
+        </h3>
+        <div className="grid grid-cols-2 gap-3">
+          <div className="bg-emerald-50 dark:bg-emerald-900/20 rounded-xl p-3">
+            <p className="text-xs text-muted-foreground">الإيرادات</p>
+            <p className="text-lg font-bold text-emerald-700 dark:text-emerald-400">
+              {formatCurrency(data?.monthlyRevenue || 0)}
+            </p>
           </div>
-        </CardContent>
-      </Card>
+          <div className="bg-teal-50 dark:bg-teal-900/20 rounded-xl p-3">
+            <p className="text-xs text-muted-foreground">المرضى</p>
+            <p className="text-lg font-bold text-teal-700 dark:text-teal-400">
+              {data?.monthlyPatients || 0}
+            </p>
+          </div>
+        </div>
+      </motion.div>
 
-      {/* Most Used Services */}
-      {data.topServices && data.topServices.length > 0 && (
-        <Card className="border-0 shadow-sm">
-          <CardHeader className="pb-2 pt-4 px-4">
-            <CardTitle className="text-sm font-bold">الأكثر استخداماً</CardTitle>
-          </CardHeader>
-          <CardContent className="px-4 pb-3 space-y-2">
-            {data.topServices.slice(0, 5).map((s, i) => (
-              <div key={i} className="flex items-center gap-3 p-2 bg-muted/50 rounded-xl">
-                <div className="w-8 h-8 rounded-lg bg-gradient-to-br from-emerald-100 to-teal-50 dark:from-emerald-900/30 dark:to-teal-900/20 flex items-center justify-center">
-                  <span className="text-xs font-bold text-emerald-600 dark:text-emerald-400">{i + 1}</span>
+      {/* Top Services */}
+      {data?.topServices && data.topServices.length > 0 && (
+        <motion.div
+          initial={{ opacity: 0, y: 15 }}
+          animate={{ opacity: 1, y: 0 }}
+          transition={{ delay: 0.4 }}
+          className="bg-white dark:bg-gray-800 rounded-2xl p-4 shadow-sm border border-border"
+        >
+          <h3 className="font-bold text-sm mb-3 flex items-center gap-2">
+            <Stethoscope className="w-4 h-4 text-teal-500" />
+            الخدمات الأكثر طلباً
+          </h3>
+          <div className="space-y-2">
+            {data.topServices.slice(0, 5).map((svc, i) => (
+              <div key={i} className="flex items-center justify-between py-1.5">
+                <div className="flex items-center gap-2">
+                  <span className="w-6 h-6 bg-emerald-100 dark:bg-emerald-900/30 rounded-lg flex items-center justify-center text-xs font-bold text-emerald-700 dark:text-emerald-400">
+                    {i + 1}
+                  </span>
+                  <span className="text-sm">{svc.name}</span>
                 </div>
-                <span className="text-sm font-medium flex-1 truncate">{s.name}</span>
-                <Badge className="text-[9px] bg-emerald-100 text-emerald-700 dark:bg-emerald-900/30 dark:text-emerald-400">{s.count} مرة</Badge>
+                <span className="text-sm font-mono text-muted-foreground">{svc.count} مرة</span>
               </div>
             ))}
-          </CardContent>
-        </Card>
-      )}
-
-      {/* Active Emergencies */}
-      {data.recentEmergencies.length > 0 && (
-        <motion.div initial={{ opacity: 0, y: 10 }} animate={{ opacity: 1, y: 0 }}>
-          <Card className="border-0 shadow-sm border-r-4 border-r-red-500">
-            <CardHeader className="pb-2 pt-4 px-4">
-              <div className="flex items-center justify-between">
-                <CardTitle className="text-sm font-bold flex items-center gap-2">
-                  <AlertTriangle className="w-4 h-4 text-red-500" /> حالات الطوارئ النشطة
-                </CardTitle>
-                <Button variant="ghost" size="sm" className="text-xs h-7" onClick={() => setScreen('admin-emergencies')}>عرض الكل</Button>
-              </div>
-            </CardHeader>
-            <CardContent className="px-4 pb-3 space-y-2">
-              {data.recentEmergencies.slice(0, 3).map((em) => (
-                <div key={em.id} className="flex items-center gap-3 p-2.5 bg-red-50 dark:bg-red-900/10 rounded-xl touch-feedback border border-red-100/50 dark:border-red-800/20" onClick={() => { useAppStore.getState().setSelectedEmergencyId(em.id); setScreen('admin-emergencies'); }}>
-                  <div className="w-2.5 h-2.5 rounded-full bg-red-500 animate-pulse-slow" />
-                  <div className="flex-1 min-w-0">
-                    <p className="text-sm font-semibold truncate">{em.patient?.name}</p>
-                    <p className="text-xs text-muted-foreground truncate">{em.notes}</p>
-                  </div>
-                  <Badge className={`text-[10px] ${severityColors[em.severity]}`}>{severityLabels[em.severity]}</Badge>
-                </div>
-              ))}
-            </CardContent>
-          </Card>
+          </div>
         </motion.div>
       )}
+
+      {/* Recent Emergencies */}
+      {data?.recentEmergencies && data.recentEmergencies.length > 0 && (
+        <motion.div
+          initial={{ opacity: 0, y: 15 }}
+          animate={{ opacity: 1, y: 0 }}
+          transition={{ delay: 0.5 }}
+          className="bg-white dark:bg-gray-800 rounded-2xl p-4 shadow-sm border border-border"
+        >
+          <div className="flex items-center justify-between mb-3">
+            <h3 className="font-bold text-sm flex items-center gap-2">
+              <AlertTriangle className="w-4 h-4 text-red-500" />
+              آخر الطوارئ
+            </h3>
+            <button onClick={() => setScreen('admin-emergencies')} className="text-xs text-emerald-600 dark:text-emerald-400 flex items-center gap-1">
+              عرض الكل <ChevronLeft className="w-3 h-3" />
+            </button>
+          </div>
+          <div className="space-y-2">
+            {data.recentEmergencies.slice(0, 3).map((em: EmergencyItem) => (
+              <div key={em.id} className="flex items-center justify-between py-2 border-b border-border last:border-0">
+                <div className="flex items-center gap-2">
+                  <span className={`w-2 h-2 rounded-full ${em.severity === 'critical' ? 'bg-red-500' : em.severity === 'high' ? 'bg-orange-500' : 'bg-yellow-500'}`} />
+                  <div>
+                    <p className="text-sm font-medium">{em.patientName || 'غير محدد'}</p>
+                    <p className="text-xs text-muted-foreground">{formatRelativeTime(em.arrivalTime)}</p>
+                  </div>
+                </div>
+                <span className={`text-[10px] px-2 py-0.5 rounded-full font-medium ${severityColors[em.severity] || ''}`}>
+                  {severityLabels[em.severity] || em.severity}
+                </span>
+              </div>
+            ))}
+          </div>
+        </motion.div>
+      )}
+
+      {/* Quick Actions */}
+      <motion.div
+        initial={{ opacity: 0, y: 15 }}
+        animate={{ opacity: 1, y: 0 }}
+        transition={{ delay: 0.6 }}
+        className="grid grid-cols-2 gap-3"
+      >
+        <button
+          onClick={() => setScreen('admin-add-patient')}
+          className="bg-white dark:bg-gray-800 rounded-2xl p-4 shadow-sm border border-border text-center active:scale-[0.97] transition-transform"
+        >
+          <Users className="w-8 h-8 mx-auto text-emerald-500" />
+          <p className="text-sm font-medium mt-2">إضافة مريض</p>
+        </button>
+        <button
+          onClick={() => setScreen('admin-add-emergency')}
+          className="bg-white dark:bg-gray-800 rounded-2xl p-4 shadow-sm border border-border text-center active:scale-[0.97] transition-transform"
+        >
+          <AlertTriangle className="w-8 h-8 mx-auto text-red-500" />
+          <p className="text-sm font-medium mt-2">حالة طوارئ</p>
+        </button>
+      </motion.div>
     </div>
   );
-});
-
-export { AdminDashboard };
+}

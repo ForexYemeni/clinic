@@ -1,133 +1,164 @@
 'use client';
 
-import React, { useMemo } from 'react';
-import { DollarSign, Receipt, TrendingUp } from 'lucide-react';
-import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
-import { Button } from '@/components/ui/button';
-import { Badge } from '@/components/ui/badge';
-import { Progress } from '@/components/ui/progress';
+import React, { useEffect, useState } from 'react';
+import { motion } from 'framer-motion';
+import { DollarSign, TrendingUp, CreditCard, Clock, CheckCircle, AlertCircle } from 'lucide-react';
 import { useAppStore } from '@/lib/store';
-import { useData } from '@/hooks/useData';
-import { StatCard } from '@/components/shared/StatCard';
-import { SkeletonLoader } from '@/components/shared/SkeletonLoader';
-import {
-  PaymentItem, InvoiceItem, formatCurrency, formatDate,
-  statusColors, statusLabels, statGradients, paymentMethodLabels,
-} from '@/lib/constants';
-import { BarChart, Bar, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer } from 'recharts';
+import { formatCurrency, formatDate, statusColors, statusLabels, type InvoiceItem } from '@/lib/constants';
 
-const FinanceManagement = React.memo(function FinanceManagement() {
+export function FinanceManagement() {
   const { setScreen } = useAppStore();
-  const { data: payments, loading: pLoading } = useData<PaymentItem[]>('/api/payments');
-  const { data: invoices, loading: iLoading } = useData<InvoiceItem[]>('/api/invoices');
-  const [tab, setTab] = React.useState<'payments' | 'invoices'>('payments');
+  const [invoices, setInvoices] = useState<InvoiceItem[]>([]);
+  const [loading, setLoading] = useState(true);
+  const [filter, setFilter] = useState<'all' | 'unpaid' | 'partial' | 'paid'>('all');
+  const [stats, setStats] = useState({ totalRevenue: 0, paidAmount: 0, remainingAmount: 0, totalInvoices: 0 });
 
-  const loading = pLoading || iLoading;
+  useEffect(() => {
+    const fetchData = async () => {
+      try {
+        const [invRes, repRes] = await Promise.all([
+          fetch('/api/invoices'),
+          fetch('/api/reports?type=daily'),
+        ]);
+        if (invRes.ok) {
+          const invData = await invRes.json();
+          setInvoices(invData);
+          const totalRevenue = invData.reduce((s: number, i: InvoiceItem) => s + i.total, 0);
+          const paidAmount = invData.reduce((s: number, i: InvoiceItem) => s + i.paid, 0);
+          setStats({ totalRevenue, paidAmount, remainingAmount: totalRevenue - paidAmount, totalInvoices: invData.length });
+        }
+        if (repRes.ok) {
+          const repData = await repRes.json();
+          if (repData.todayRevenue) setStats(prev => ({ ...prev, totalRevenue: repData.todayRevenue }));
+        }
+      } catch {} finally {
+        setLoading(false);
+      }
+    };
+    fetchData();
+  }, []);
 
-  const totalRevenue = useMemo(() => (payments || []).reduce((sum, p) => sum + (p.type === 'payment' ? p.amount : -p.amount), 0), [payments]);
-  const unpaidTotal = useMemo(() => (invoices || []).filter((i) => i.status !== 'paid').reduce((sum, i) => sum + (i.total - i.paid), 0), [invoices]);
+  const handlePayInvoice = async (invoiceId: string, remaining: number) => {
+    const amount = prompt(`أدخل المبلغ المدفوع (المتبقي: ${formatCurrency(remaining)}):`);
+    if (!amount) return;
+    try {
+      const res = await fetch(`/api/invoices/${invoiceId}`, {
+        method: 'PUT',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ paid: Number(amount) }),
+      });
+      if (res.ok) {
+        setInvoices(prev => prev.map(inv => {
+          if (inv.id === invoiceId) {
+            const newPaid = inv.paid + Number(amount);
+            const newRemaining = inv.total - newPaid;
+            return { ...inv, paid: newPaid, remaining: newRemaining, status: newRemaining <= 0 ? 'paid' : newPaid > 0 ? 'partial' : 'unpaid' };
+          }
+          return inv;
+        }));
+      }
+    } catch {}
+  };
 
-  const revenueData = useMemo(() => [
-    { name: 'السبت', revenue: 450 },
-    { name: 'الأحد', revenue: 680 },
-    { name: 'الاثنين', revenue: 520 },
-    { name: 'الثلاثاء', revenue: 890 },
-    { name: 'الأربعاء', revenue: 750 },
-    { name: 'الخميس', revenue: 960 },
-  ], []);
+  const filteredInvoices = invoices.filter(i => filter === 'all' || i.status === filter);
 
-  if (loading && !payments && !invoices) return <SkeletonLoader type="chart" />;
+  if (loading) {
+    return <div className="p-4 space-y-3 pb-24">{[1,2,3].map(i => <div key={i} className="h-24 bg-gray-100 dark:bg-gray-800 rounded-2xl animate-pulse" />)}</div>;
+  }
 
   return (
-    <div className="px-4 pb-24 pt-2 space-y-3">
-      <div className="flex items-center gap-3">
-        <Button variant="ghost" size="icon" className="h-9 w-9 rounded-xl" onClick={() => setScreen('admin-more')}>
-          <DollarSign className="w-5 h-5" />
-        </Button>
-        <h2 className="text-lg font-bold">النظام المالي</h2>
+    <div className="p-4 pb-24">
+      <h2 className="text-lg font-bold mb-4">الإدارة المالية</h2>
+
+      {/* Stats */}
+      <div className="grid grid-cols-3 gap-2 mb-4">
+        <motion.div initial={{ opacity: 0, y: 10 }} animate={{ opacity: 1, y: 0 }} className="bg-gradient-to-br from-emerald-500 to-emerald-600 rounded-xl p-3 text-white text-center">
+          <DollarSign className="w-5 h-5 mx-auto mb-1" />
+          <p className="text-xs opacity-80">الإجمالي</p>
+          <p className="text-sm font-bold">{formatCurrency(stats.totalRevenue)}</p>
+        </motion.div>
+        <motion.div initial={{ opacity: 0, y: 10 }} animate={{ opacity: 1, y: 0 }} transition={{ delay: 0.1 }} className="bg-gradient-to-br from-green-500 to-green-600 rounded-xl p-3 text-white text-center">
+          <CheckCircle className="w-5 h-5 mx-auto mb-1" />
+          <p className="text-xs opacity-80">المدفوع</p>
+          <p className="text-sm font-bold">{formatCurrency(stats.paidAmount)}</p>
+        </motion.div>
+        <motion.div initial={{ opacity: 0, y: 10 }} animate={{ opacity: 1, y: 0 }} transition={{ delay: 0.2 }} className="bg-gradient-to-br from-red-500 to-red-600 rounded-xl p-3 text-white text-center">
+          <AlertCircle className="w-5 h-5 mx-auto mb-1" />
+          <p className="text-xs opacity-80">المتبقي</p>
+          <p className="text-sm font-bold">{formatCurrency(stats.remainingAmount)}</p>
+        </motion.div>
       </div>
 
-      {/* Summary cards */}
-      <div className="grid grid-cols-2 gap-3">
-        <StatCard icon={DollarSign} label="إجمالي الإيرادات" value={formatCurrency(totalRevenue)} color="text-white" gradient={statGradients.emerald} />
-        <StatCard icon={Receipt} label="مستحقات معلقة" value={formatCurrency(unpaidTotal)} color="text-white" gradient={statGradients.red} />
+      {/* Filter */}
+      <div className="flex items-center gap-2 mb-3 overflow-x-auto pb-1">
+        {[
+          { id: 'all' as const, label: 'الكل' },
+          { id: 'unpaid' as const, label: 'غير مدفوع' },
+          { id: 'partial' as const, label: 'جزئي' },
+          { id: 'paid' as const, label: 'مدفوع' },
+        ].map(f => (
+          <button
+            key={f.id}
+            onClick={() => setFilter(f.id)}
+            className={`px-3 py-1.5 rounded-full text-xs font-medium whitespace-nowrap ${
+              filter === f.id ? 'bg-emerald-600 text-white' : 'bg-gray-100 dark:bg-gray-800 text-muted-foreground'
+            }`}
+          >
+            {f.label}
+          </button>
+        ))}
       </div>
 
-      {/* Mini revenue chart */}
-      <Card className="border-0 shadow-sm">
-        <CardHeader className="pb-2 pt-3 px-4">
-          <CardTitle className="text-sm font-bold flex items-center gap-2">
-            <TrendingUp className="w-4 h-4 text-emerald-500" /> اتجاه الإيرادات
-          </CardTitle>
-        </CardHeader>
-        <CardContent className="px-2 pb-3">
-          <ResponsiveContainer width="100%" height={120}>
-            <BarChart data={revenueData}>
-              <CartesianGrid strokeDasharray="3 3" stroke="var(--border)" vertical={false} />
-              <XAxis dataKey="name" tick={{ fontSize: 9 }} stroke="var(--muted-foreground)" axisLine={false} tickLine={false} />
-              <Tooltip contentStyle={{ backgroundColor: 'var(--card)', border: '1px solid var(--border)', borderRadius: '8px', fontSize: '11px' }} formatter={(v: number) => [formatCurrency(v), 'الإيرادات']} />
-              <defs>
-                <linearGradient id="financeGradient" x1="0" y1="0" x2="0" y2="1">
-                  <stop offset="0%" stopColor="#059669" />
-                  <stop offset="100%" stopColor="#0d9488" />
-                </linearGradient>
-              </defs>
-              <Bar dataKey="revenue" fill="url(#financeGradient)" radius={[6, 6, 0, 0]} />
-            </BarChart>
-          </ResponsiveContainer>
-        </CardContent>
-      </Card>
-
-      <div className="flex gap-1 bg-muted/50 p-1 rounded-xl">
-        <button onClick={() => setTab('payments')} className={`flex-1 py-2.5 text-xs font-semibold rounded-lg transition-all ${tab === 'payments' ? 'bg-emerald-600 text-white shadow-sm' : 'text-muted-foreground'}`}>المدفوعات</button>
-        <button onClick={() => setTab('invoices')} className={`flex-1 py-2.5 text-xs font-semibold rounded-lg transition-all ${tab === 'invoices' ? 'bg-emerald-600 text-white shadow-sm' : 'text-muted-foreground'}`}>الفواتير</button>
+      {/* Invoices */}
+      <div className="space-y-2">
+        {filteredInvoices.map(inv => (
+          <div key={inv.id} className="bg-white dark:bg-gray-800 rounded-xl p-3 border border-border">
+            <div className="flex items-center justify-between mb-2">
+              <div>
+                <p className="text-sm font-medium">{inv.patient?.name || 'مريض'}</p>
+                <p className="text-[10px] text-muted-foreground">{formatDate(inv.createdAt)}</p>
+              </div>
+              <span className={`text-[10px] px-2 py-0.5 rounded-full ${statusColors[inv.status] || ''}`}>
+                {statusLabels[inv.status] || inv.status}
+              </span>
+            </div>
+            {inv.items && inv.items.length > 0 && (
+              <div className="space-y-1 mb-2">
+                {inv.items.map((item, i) => (
+                  <div key={i} className="flex justify-between text-xs">
+                    <span className="text-muted-foreground">{item.serviceName} × {item.quantity}</span>
+                    <span>{formatCurrency(item.price * item.quantity)}</span>
+                  </div>
+                ))}
+              </div>
+            )}
+            <div className="flex items-center justify-between border-t border-border pt-2">
+              <div className="text-xs space-y-0.5">
+                <div className="flex gap-3">
+                  <span>الإجمالي: <b>{formatCurrency(inv.total)}</b></span>
+                  <span className="text-emerald-600">المدفوع: {formatCurrency(inv.paid)}</span>
+                </div>
+                <span className="text-red-600">المتبقي: {formatCurrency(inv.remaining)}</span>
+              </div>
+              {inv.remaining > 0 && (
+                <button
+                  onClick={() => handlePayInvoice(inv.id, inv.remaining)}
+                  className="px-3 py-1.5 bg-emerald-600 text-white text-xs rounded-lg active:scale-[0.97] transition-transform"
+                >
+                  تسديد
+                </button>
+              )}
+            </div>
+          </div>
+        ))}
       </div>
 
-      {tab === 'payments' ? (
-        <div className="space-y-2">
-          {(payments || []).map((p) => (
-            <Card key={p.id} className="border-0 shadow-sm">
-              <CardContent className="p-3.5 flex items-center gap-3">
-                <div className={`w-10 h-10 rounded-xl flex items-center justify-center ${p.type === 'payment' ? 'bg-gradient-to-br from-emerald-100 to-teal-50 dark:from-emerald-900/30 dark:to-teal-900/20' : 'bg-gradient-to-br from-red-100 to-red-50 dark:from-red-900/30 dark:to-red-800/20'}`}>
-                  <DollarSign className={`w-5 h-5 ${p.type === 'payment' ? 'text-emerald-600 dark:text-emerald-400' : 'text-red-600 dark:text-red-400'}`} />
-                </div>
-                <div className="flex-1 min-w-0">
-                  <p className="text-sm font-semibold">{p.patient?.name}</p>
-                  <p className="text-xs text-muted-foreground truncate">{p.description} - {paymentMethodLabels[p.method || 'cash']}</p>
-                </div>
-                <div className="text-left shrink-0">
-                  <p className={`text-sm font-bold ${p.type === 'payment' ? 'text-emerald-600 dark:text-emerald-400' : 'text-red-600 dark:text-red-400'}`}>
-                    {p.type === 'payment' ? '+' : '-'}{formatCurrency(p.amount)}
-                  </p>
-                  <p className="text-[10px] text-muted-foreground">{formatDate(p.createdAt)}</p>
-                </div>
-              </CardContent>
-            </Card>
-          ))}
-        </div>
-      ) : (
-        <div className="space-y-2">
-          {(invoices || []).map((inv) => (
-            <Card key={inv.id} className="border-0 shadow-sm">
-              <CardContent className="p-3.5">
-                <div className="flex items-center justify-between mb-2">
-                  <p className="text-sm font-semibold">{inv.patient?.name}</p>
-                  <Badge className={`text-[9px] ${statusColors[inv.status]}`}>{statusLabels[inv.status]}</Badge>
-                </div>
-                <div className="flex items-center justify-between text-xs">
-                  <span className="text-muted-foreground">الإجمالي: {formatCurrency(inv.total)}</span>
-                  <span className="text-muted-foreground">المدفوع: {formatCurrency(inv.paid)}</span>
-                </div>
-                {inv.total > inv.paid && (
-                  <Progress value={(inv.paid / inv.total) * 100} className="h-1.5 mt-2" />
-                )}
-              </CardContent>
-            </Card>
-          ))}
+      {filteredInvoices.length === 0 && (
+        <div className="text-center py-8 text-muted-foreground">
+          <CreditCard className="w-10 h-10 mx-auto mb-2 opacity-30" />
+          <p className="text-sm">لا توجد فواتير</p>
         </div>
       )}
     </div>
   );
-});
-
-export { FinanceManagement };
+}

@@ -5,17 +5,15 @@ export type ScreenType =
   | 'admin-dashboard' | 'admin-patients' | 'admin-services' | 'admin-emergencies' | 'admin-more'
   | 'admin-nurses' | 'admin-finance' | 'admin-reports' | 'admin-notifications' | 'admin-settings'
   | 'admin-patient-detail' | 'admin-add-patient' | 'admin-add-nurse' | 'admin-add-emergency'
-  | 'admin-add-payment'
-  | 'nurse-dashboard' | 'nurse-patients' | 'nurse-emergencies' | 'nurse-reports'
-  | 'nurse-patient-detail' | 'nurse-add-emergency';
+  | 'admin-add-payment' | 'admin-add-service'
+  | 'nurse-patients' | 'nurse-emergencies' | 'nurse-reports'
+  | 'nurse-patient-detail' | 'nurse-add-emergency' | 'nurse-add-visit' | 'nurse-change-password';
 
 export interface User {
   id: string;
   name: string;
   phone: string;
   role: 'admin' | 'nurse';
-  email?: string;
-  avatar?: string;
   active: boolean;
 }
 

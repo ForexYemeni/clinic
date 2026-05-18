@@ -9,7 +9,6 @@ import { BottomNav } from '@/components/layout/BottomNav';
 import { SplashScreen } from '@/components/screens/SplashScreen';
 import { LoginScreen } from '@/components/screens/LoginScreen';
 import { FirstSetupScreen } from '@/components/screens/FirstSetupScreen';
-import { SkeletonLoader } from '@/components/shared/SkeletonLoader';
 
 // Lazy-loaded admin screens
 const AdminDashboard = dynamic(() => import('@/components/screens/admin/AdminDashboard').then(m => ({ default: m.AdminDashboard })), { ssr: false });
@@ -24,15 +23,23 @@ const NurseManagement = dynamic(() => import('@/components/screens/admin/NurseMa
 const NotificationsScreen = dynamic(() => import('@/components/screens/admin/NotificationsScreen').then(m => ({ default: m.NotificationsScreen })), { ssr: false });
 const SettingsScreen = dynamic(() => import('@/components/screens/admin/SettingsScreen').then(m => ({ default: m.SettingsScreen })), { ssr: false });
 const AdminMoreMenu = dynamic(() => import('@/components/screens/admin/AdminMoreMenu').then(m => ({ default: m.AdminMoreMenu })), { ssr: false });
+const AdminReports = dynamic(() => import('@/components/screens/admin/AdminReports').then(m => ({ default: m.AdminReports })), { ssr: false });
 
 // Lazy-loaded nurse screens
-const NurseDashboard = dynamic(() => import('@/components/screens/nurse/NurseDashboard').then(m => ({ default: m.NurseDashboard })), { ssr: false });
+const NurseAddVisit = dynamic(() => import('@/components/screens/nurse/NurseAddVisit').then(m => ({ default: m.NurseAddVisit })), { ssr: false });
 const NurseEmergencies = dynamic(() => import('@/components/screens/nurse/NurseEmergencies').then(m => ({ default: m.NurseEmergencies })), { ssr: false });
 const NurseReports = dynamic(() => import('@/components/screens/nurse/NurseReports').then(m => ({ default: m.NurseReports })), { ssr: false });
-const NurseAddEmergency = dynamic(() => import('@/components/screens/nurse/NurseAddCase').then(m => ({ default: m.NurseAddCase })), { ssr: false });
+const NurseAddCase = dynamic(() => import('@/components/screens/nurse/NurseAddCase').then(m => ({ default: m.NurseAddCase })), { ssr: false });
+const NurseChangePassword = dynamic(() => import('@/components/screens/nurse/NurseChangePassword').then(m => ({ default: m.NurseChangePassword })), { ssr: false });
 
 function ScreenFallback() {
-  return <SkeletonLoader type="dashboard" />;
+  return (
+    <div className="p-4 space-y-3">
+      {[1, 2, 3].map(i => (
+        <div key={i} className="h-20 bg-gray-100 dark:bg-gray-800 rounded-2xl animate-pulse" />
+      ))}
+    </div>
+  );
 }
 
 export default function ClinicApp() {
@@ -74,16 +81,18 @@ export default function ClinicApp() {
       case 'admin-more': return <AdminMoreMenu />;
       case 'admin-notifications': return <NotificationsScreen />;
       case 'admin-settings': return <SettingsScreen />;
+      case 'admin-reports': return <AdminReports />;
 
-      // Nurse screens
-      case 'nurse-dashboard': return <NurseDashboard />;
+      // Nurse screens (no dashboard, no appointments)
       case 'nurse-patients': return <PatientList role="nurse" />;
       case 'nurse-patient-detail': return <PatientDetail role="nurse" />;
+      case 'nurse-add-visit': return <NurseAddVisit />;
       case 'nurse-emergencies': return <NurseEmergencies />;
       case 'nurse-reports': return <NurseReports />;
-      case 'nurse-add-emergency': return <NurseAddEmergency />;
+      case 'nurse-add-emergency': return <NurseAddCase />;
+      case 'nurse-change-password': return <NurseChangePassword />;
 
-      default: return <AdminDashboard />;
+      default: return user?.role === 'admin' ? <AdminDashboard /> : <PatientList role="nurse" />;
     }
   };
 
