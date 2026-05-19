@@ -37,7 +37,7 @@ export async function POST(request: NextRequest) {
   try {
     const { auth, effectiveClinicId } = extractAuthAndClinicId(request);
     const body = await request.json();
-    const { patientId, nurseId, nurseName, reason, diagnosis, vitalSigns, medications, serviceIds, notes } = body;
+    const { patientId, nurseId, nurseName, reason, diagnosis, vitalSigns, medications, serviceIds, notes, paidAmount, paymentMethod, complaints } = body;
 
     if (!patientId) {
       return NextResponse.json({ error: 'يرجى تحديد المريض' }, { status: 400 });
@@ -72,10 +72,16 @@ export async function POST(request: NextRequest) {
       }
     }
 
+    // Calculate payment info
+    const paid = paidAmount ? Math.min(Number(paidAmount), totalPrice) : 0;
+    const remaining = totalPrice - paid;
+    const invoiceStatus = remaining <= 0 ? 'paid' : paid > 0 ? 'partial' : 'unpaid';
+
     // Create visit
     const visitData = {
       patientId, nurseId, nurseName: nurseName || '',
       reason: reason || '', diagnosis: diagnosis || '',
+      complaints: complaints || [],
       status: 'completed', visitDate: new Date().toISOString(),
       notes: notes || '',
       vitalSigns: vitalSigns || { bloodPressure: '', heartRate: '', temperature: '', oxygenLevel: '', sugarLevel: '' },
@@ -91,8 +97,10 @@ export async function POST(request: NextRequest) {
     if (items.length > 0) {
       const invoice = {
         patientId, visitId: visitRef.id, clinicId: effectiveClinicId,
-        items, total: totalPrice, paid: 0, remaining: totalPrice,
-        status: 'unpaid', createdAt: new Date().toISOString(),
+        items, total: totalPrice, paid, remaining,
+        status: invoiceStatus,
+        paymentMethod: paymentMethod || 'cash',
+        createdAt: new Date().toISOString(),
       };
       const invoiceRef = await adminDb.collection('invoices').add(invoice);
       invoiceData = { id: invoiceRef.id, ...invoice };

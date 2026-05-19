@@ -122,16 +122,47 @@ export async function setClinicSubscription(
     type: SubscriptionType;
     days?: number;
     status?: SubscriptionStatus;
+    extendFromExisting?: boolean;
   }
 ): Promise<ClinicSubscription> {
   const now = new Date();
   const days = options.days || 30;
-  const endDate = new Date(now.getTime() + days * 24 * 60 * 60 * 1000);
+
+  // Determine start point for calculation
+  let startFrom = now;
+  let originalStartDate = now.toISOString();
+
+  if (options.extendFromExisting) {
+    // When extending, add days to the existing end date (if still in the future)
+    try {
+      const clinicDoc = await adminDb.collection('clinics').doc(clinicId).get();
+      if (clinicDoc.exists) {
+        const existingSub = clinicDoc.data()?.subscription as ClinicSubscription;
+        if (existingSub) {
+          // Preserve original start date
+          if (existingSub.startDate) {
+            originalStartDate = existingSub.startDate;
+          }
+          // If existing end date is in the future, extend from there
+          if (existingSub.endDate && existingSub.type !== 'lifetime') {
+            const existingEndDate = new Date(existingSub.endDate);
+            if (existingEndDate > now) {
+              startFrom = existingEndDate;
+            }
+          }
+        }
+      }
+    } catch (error) {
+      console.error('Error reading existing subscription for extension:', error);
+    }
+  }
+
+  const endDate = new Date(startFrom.getTime() + days * 24 * 60 * 60 * 1000);
 
   const subscription: ClinicSubscription = {
     status: options.status || (options.type === 'trial' ? 'trial' : 'active'),
     type: options.type,
-    startDate: now.toISOString(),
+    startDate: options.extendFromExisting ? originalStartDate : now.toISOString(),
     endDate: options.type === 'lifetime' ? '9999-12-31T23:59:59.999Z' : endDate.toISOString(),
     trialDays: options.type === 'trial' ? days : undefined,
   };

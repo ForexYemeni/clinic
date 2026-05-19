@@ -124,12 +124,19 @@ export function PatientDetail({ role = 'admin' }: Props) {
           <div className="flex-1">
             <h2 className="text-lg font-bold">{patient.name}</h2>
             <div className="flex items-center gap-3 mt-1 text-sm opacity-90">
-              <span>{patient.age} سنة</span>
+              <span>{(patient as any).ageCategory === 'infant' ? 'رضيع' : (patient as any).ageCategory === 'child' ? 'طفل' : patient.age ? `${patient.age} سنة` : 'بالغ'}</span>
               <span>{genderLabels[patient.gender]}</span>
               {patient.bloodType && (
                 <span className="flex items-center gap-1"><Droplets className="w-3 h-3" />{patient.bloodType}</span>
               )}
             </div>
+            {(patient as any).complaints && (patient as any).complaints.length > 0 && (
+              <div className="flex flex-wrap gap-1 mt-2">
+                {(patient as any).complaints.map((c: string, i: number) => (
+                  <span key={i} className="text-[10px] bg-white/20 px-1.5 py-0.5 rounded-full">{c}</span>
+                ))}
+              </div>
+            )}
             {patient.phone && (
               <p className="text-xs opacity-80 mt-0.5 flex items-center gap-1" dir="ltr">
                 <Phone className="w-3 h-3" />{patient.phone}
@@ -200,6 +207,13 @@ export function PatientDetail({ role = 'admin' }: Props) {
                           {statusLabels[visit.status] || visit.status}
                         </span>
                       </div>
+                      {(visit as any).complaints && (visit as any).complaints.length > 0 && (
+                        <div className="flex flex-wrap gap-1 mb-2">
+                          {(visit as any).complaints.map((c: string, i: number) => (
+                            <span key={i} className="text-[10px] bg-clinic-50 dark:bg-clinic-900/20 text-clinic-700 dark:text-clinic-400 px-2 py-0.5 rounded-full">{c}</span>
+                          ))}
+                        </div>
+                      )}
                       {visit.diagnosis && (
                         <div className="bg-blue-50 dark:bg-blue-900/20 rounded-lg p-2 mb-2">
                           <p className="text-xs text-blue-700 dark:text-blue-300 font-medium">التشخيص: {visit.diagnosis}</p>

@@ -9,9 +9,11 @@ interface PatientCardProps {
     id: string;
     name: string;
     age: number;
+    ageCategory?: string;
     gender: string;
     phone?: string | null;
     bloodType?: string | null;
+    complaints?: string[];
     createdAt: string;
     _count?: {
       visits?: number;
@@ -47,7 +49,7 @@ export function PatientCard({ patient, onClick }: PatientCardProps) {
             )}
           </div>
           <div className="flex items-center gap-3 text-sm text-muted-foreground">
-            <span>{patient.age} سنة</span>
+            <span>{patient.ageCategory === 'infant' ? 'رضيع' : patient.ageCategory === 'child' ? 'طفل' : patient.age ? `${patient.age} سنة` : 'بالغ'}</span>
             <span>•</span>
             <span>{patient.gender === 'male' ? 'ذكر' : 'أنثى'}</span>
           </div>

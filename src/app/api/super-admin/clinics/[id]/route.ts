@@ -95,10 +95,11 @@ export async function PUT(
 
     switch (action) {
       case 'extend_subscription': {
-        // Extend subscription by N days
+        // Extend subscription by N days (from existing end date if active)
         const days = data.days || 30;
-        const type = data.subscriptionType || 'monthly';
-        const subscription = await setClinicSubscription(id, { type, days });
+        const type = data.subscriptionType || clinic.subscription?.type || 'monthly';
+        const subscription = await setClinicSubscription(id, { type, days, extendFromExisting: true });
+        await createAuditLog({ clinicId: id, userId: auth.userId, action: 'extend_subscription', details: `Extended ${clinic.name} subscription by ${days} days` });
         return NextResponse.json({ success: true, subscription });
       }
 
@@ -114,9 +115,10 @@ export async function PUT(
         const currentSub = clinic.subscription;
         const days = data.days || 30;
         const subscription = await setClinicSubscription(id, {
-          type: currentSub?.type || 'monthly',
+          type: data.subscriptionType || currentSub?.type || 'monthly',
           days,
           status: 'active',
+          extendFromExisting: true,
         });
         await createAuditLog({ clinicId: id, userId: auth.userId, action: 'activate_clinic', details: `Activated clinic: ${clinic.name}` });
         return NextResponse.json({ success: true, subscription });

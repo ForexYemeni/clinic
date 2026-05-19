@@ -49,7 +49,7 @@ export async function POST(request: NextRequest) {
   try {
     const { auth, effectiveClinicId } = extractAuthAndClinicId(request);
     const body = await request.json();
-    const { name, age, gender, phone, emergencyPhone, address, bloodType, chronicDiseases, allergies, medicalHistory, notes } = body;
+    const { name, age, ageCategory, gender, phone, emergencyPhone, address, bloodType, chronicDiseases, allergies, medicalHistory, notes, complaints } = body;
 
     if (!name) {
       return NextResponse.json({ error: 'يرجى إدخال اسم المريض' }, { status: 400 });
@@ -62,6 +62,7 @@ export async function POST(request: NextRequest) {
     const patientData = {
       name,
       age: age || null,
+      ageCategory: ageCategory || 'adult',
       gender: gender || '',
       phone: phone || '',
       emergencyPhone: emergencyPhone || '',
@@ -71,6 +72,7 @@ export async function POST(request: NextRequest) {
       allergies: allergies || '',
       medicalHistory: medicalHistory || '',
       notes: notes || '',
+      complaints: complaints || [],
       clinicId: effectiveClinicId,
       createdAt: new Date().toISOString(),
     };
