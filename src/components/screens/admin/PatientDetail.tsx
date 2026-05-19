@@ -58,9 +58,12 @@ export function PatientDetail({ role = 'admin' }: Props) {
       <div className="p-4 pb-24">
         <button
           onClick={() => setScreen(role === 'admin' ? 'admin-patients' : 'nurse-patients')}
-          className="flex items-center gap-1 text-sm text-muted-foreground mb-6"
+          className="flex items-center gap-2 mb-6 px-3 py-2 bg-white dark:bg-gray-800 rounded-xl border border-border shadow-sm active:scale-[0.97] transition-all"
         >
-          <ArrowRight className="w-4 h-4" /> رجوع
+          <div className="w-7 h-7 rounded-lg bg-gray-100 dark:bg-gray-700 flex items-center justify-center">
+            <ArrowRight className="w-4 h-4 text-foreground" />
+          </div>
+          <span className="text-sm font-medium">رجوع</span>
         </button>
         <div className="text-center py-16">
           <div className="w-20 h-20 bg-red-50 dark:bg-red-900/20 rounded-full flex items-center justify-center mx-auto mb-4">
@@ -106,8 +109,11 @@ export function PatientDetail({ role = 'admin' }: Props) {
       {/* Patient Header */}
       <div className="bg-gradient-to-l to-clinic-600 to-teal-600 text-white p-4 pb-6">
         <div className="flex items-center justify-between mb-3">
-          <button onClick={() => setScreen(role === 'admin' ? 'admin-patients' : 'nurse-patients')} className="flex items-center gap-1 text-white/80 text-sm">
-            <ArrowRight className="w-4 h-4" /> رجوع
+          <button onClick={() => setScreen(role === 'admin' ? 'admin-patients' : 'nurse-patients')} className="flex items-center gap-2 px-3 py-2 bg-white/10 backdrop-blur-sm rounded-xl border border-white/20 text-white/80 text-sm font-medium active:scale-[0.97] transition-all">
+            <div className="w-7 h-7 rounded-lg bg-white/10 flex items-center justify-center">
+              <ArrowRight className="w-4 h-4" />
+            </div>
+            <span>رجوع</span>
           </button>
           <button
             onClick={() => setScreen('nurse-add-visit')}

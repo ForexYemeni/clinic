@@ -3,7 +3,7 @@
 import React, { useEffect, Suspense } from 'react';
 import dynamic from 'next/dynamic';
 import { motion, AnimatePresence } from 'framer-motion';
-import { Shield, Building2, ScrollText, Settings } from 'lucide-react';
+import { Shield, Building2, ScrollText, Settings, LogOut } from 'lucide-react';
 import { useAppStore } from '@/lib/store';
 import { installGlobalApiFetch } from '@/lib/api';
 import { TopHeader } from '@/components/layout/TopHeader';
@@ -12,6 +12,7 @@ import { SplashScreen } from '@/components/screens/SplashScreen';
 import { LoginScreen } from '@/components/screens/LoginScreen';
 import { FirstSetupScreen } from '@/components/screens/FirstSetupScreen';
 import { ThemeUpdater } from '@/components/shared/ThemeUpdater';
+import { PwaInstallPrompt } from '@/components/shared/PwaInstallPrompt';
 import { SubscriptionExpired } from '@/components/screens/SubscriptionExpired';
 import { SuperAdminSetup } from '@/components/screens/SuperAdminSetup';
 
@@ -94,16 +95,12 @@ function SuperAdminBottomNav() {
         })}
         <button
           onClick={logout}
-          className="flex flex-col items-center justify-center py-1 px-2 rounded-xl text-muted-foreground touch-feedback"
+          className="flex flex-col items-center justify-center py-1 px-2 rounded-xl touch-feedback"
         >
-          <div className="p-1.5 rounded-xl">
-            <svg xmlns="http://www.w3.org/2000/svg" className="w-5 h-5" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
-              <path d="M9 21H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h4" />
-              <polyline points="16 17 21 12 16 7" />
-              <line x1="21" y1="12" x2="9" y2="12" />
-            </svg>
+          <div className="p-1.5 rounded-xl bg-red-50 dark:bg-red-900/20">
+            <LogOut className="w-5 h-5 text-red-500 dark:text-red-400" />
           </div>
-          <span className="text-[10px] mt-0.5">خروج</span>
+          <span className="text-[10px] mt-0.5 text-red-500 dark:text-red-400 font-medium">خروج</span>
         </button>
       </div>
     </nav>
@@ -125,6 +122,13 @@ export default function ClinicApp() {
     const savedToken = localStorage.getItem('clinic-token');
     if (savedToken) {
       useAppStore.getState().setToken(savedToken);
+    }
+
+    // Register service worker for PWA
+    if ('serviceWorker' in navigator) {
+      navigator.serviceWorker.register('/sw.js').catch(() => {
+        // SW registration failed, not critical
+      });
     }
   }, []);
 
@@ -176,6 +180,7 @@ export default function ClinicApp() {
     return (
       <div className="min-h-screen bg-background max-w-lg mx-auto relative">
         <ThemeUpdater />
+        <PwaInstallPrompt />
         <main>
           <AnimatePresence mode="wait">
             <motion.div key={currentScreen} initial={{ opacity: 0, y: 4 }} animate={{ opacity: 1, y: 0 }} exit={{ opacity: 0, y: -4 }} transition={{ duration: 0.18, ease: 'easeOut' }}>
@@ -225,6 +230,7 @@ export default function ClinicApp() {
   return (
     <div className="min-h-screen bg-background max-w-lg mx-auto relative">
       <ThemeUpdater />
+      <PwaInstallPrompt />
       {needsShell && <TopHeader />}
       <main>
         <AnimatePresence mode="wait">

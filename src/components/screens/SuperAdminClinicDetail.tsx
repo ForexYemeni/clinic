@@ -194,7 +194,9 @@ export function SuperAdminClinicDetail() {
       <div className="p-4 text-center py-12">
         <Building2 className="w-10 h-10 mx-auto mb-2 text-muted-foreground opacity-30" />
         <p className="text-sm text-muted-foreground">العيادة غير موجودة</p>
-        <button onClick={() => setScreen('super-admin-clinics')} className="text-purple-600 text-sm font-bold mt-2">العودة للعيادات</button>
+        <button onClick={() => setScreen('super-admin-clinics')} className="mt-3 flex items-center gap-2 px-4 py-2.5 bg-purple-50 dark:bg-purple-900/20 text-purple-700 dark:text-purple-300 rounded-xl border border-purple-200 dark:border-purple-800 text-sm font-bold active:scale-[0.97] transition-all">
+          <ChevronLeft className="w-4 h-4 rotate-180" /> العودة للعيادات
+        </button>
       </div>
     );
   }

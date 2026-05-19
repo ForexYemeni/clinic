@@ -153,8 +153,8 @@ export function PatientList({ role = 'admin' }: Props) {
         <div className="text-center py-12">
           <UserIcon className="w-12 h-12 mx-auto text-muted-foreground/30" />
           <p className="text-muted-foreground mt-3">لا يوجد مرضى</p>
-          <button onClick={handleAddPatient} className="mt-3 text-clinic-600 text-sm font-medium">
-            إضافة أول مريض
+          <button onClick={handleAddPatient} className="mt-3 flex items-center gap-2 px-4 py-2.5 bg-clinic-50 dark:bg-clinic-900/20 text-clinic-700 dark:text-clinic-300 rounded-xl border border-clinic-200 dark:border-clinic-800 text-sm font-bold active:scale-[0.97] transition-all">
+            <Plus className="w-4 h-4" /> إضافة أول مريض
           </button>
         </div>
       )}

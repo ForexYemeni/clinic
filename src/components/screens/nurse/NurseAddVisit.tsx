@@ -4,7 +4,7 @@ import React, { useEffect, useState, useCallback } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
 import {
   ArrowRight, Plus, Search, User as UserIcon, Stethoscope, Check, AlertCircle,
-  Heart, X, CreditCard, Banknote, Receipt, Loader2, Baby, UserCheck, Sparkles
+  Heart, X, CreditCard, Banknote, Receipt, Loader2, Baby, UserCheck, Sparkles, Syringe
 } from 'lucide-react';
 import { useAppStore } from '@/lib/store';
 import { formatCurrency, type PatientItem, type ServiceItem, BLOOD_TYPES } from '@/lib/constants';
@@ -63,6 +63,40 @@ const COMPLAINT_CATEGORIES = [
   },
 ];
 
+// ═══ Medication Tags ═══
+const MEDICATION_CATEGORIES = [
+  {
+    name: 'المحاليل الوريدية', icon: '💉',
+    color: 'bg-cyan-50 text-cyan-700 border-cyan-200 dark:bg-cyan-900/20 dark:text-cyan-300 dark:border-cyan-800',
+    activeColor: 'bg-cyan-500 text-white border-cyan-500',
+    items: ['نورمال سلاين', 'دكستروز 5%', 'دكستروز 10%', 'رنجر لاكتات', 'هارتمن', 'محلول جلوكوز'],
+  },
+  {
+    name: 'المهدئات', icon: '💤',
+    color: 'bg-violet-50 text-violet-700 border-violet-200 dark:bg-violet-900/20 dark:text-violet-300 dark:border-violet-800',
+    activeColor: 'bg-violet-500 text-white border-violet-500',
+    items: ['ديازيبام', 'ميدازولام', 'لورازيبام', 'بروميثازين', 'كلوربرومازين'],
+  },
+  {
+    name: 'المضادات الحيوية', icon: '🦠',
+    color: 'bg-amber-50 text-amber-700 border-amber-200 dark:bg-amber-900/20 dark:text-amber-300 dark:border-amber-800',
+    activeColor: 'bg-amber-500 text-white border-amber-500',
+    items: ['أموكسيسيلين', 'أزيثرومايسين', 'سيبروفلوكساسين', 'سيفترياكسون', 'ميترونيدازول', 'سيفيكسيم', 'كلاريثرومايسين', 'دوكسيسايكلين'],
+  },
+  {
+    name: 'الفيتمينات', icon: '💊',
+    color: 'bg-lime-50 text-lime-700 border-lime-200 dark:bg-lime-900/20 dark:text-lime-300 dark:border-lime-800',
+    activeColor: 'bg-lime-500 text-white border-lime-500',
+    items: ['فيتامين C', 'فيتامين D', 'فيتامين B12', 'فيتامين B-complex', 'حديد', 'كالسيوم', 'فوليك أسيد', 'أوميغا 3'],
+  },
+  {
+    name: 'مسكنات الألم', icon: '🩹',
+    color: 'bg-rose-50 text-rose-700 border-rose-200 dark:bg-rose-900/20 dark:text-rose-300 dark:border-rose-800',
+    activeColor: 'bg-rose-500 text-white border-rose-500',
+    items: ['باراسيتامول', 'إيبوبروفين', 'ديكلوفيناك', 'كيتورولاك', 'ترامادول', 'أسبرين'],
+  },
+];
+
 const PAYMENT_METHODS = [
   { value: 'cash', label: 'نقدي', icon: Banknote },
   { value: 'card', label: 'بطاقة', icon: CreditCard },
@@ -100,6 +134,8 @@ export function NurseAddVisit() {
   const [selectedServices, setSelectedServices] = useState<string[]>([]);
   const [selectedComplaints, setSelectedComplaints] = useState<string[]>([]);
   const [customComplaint, setCustomComplaint] = useState('');
+  const [selectedMedications, setSelectedMedications] = useState<string[]>([]);
+  const [customMedication, setCustomMedication] = useState('');
   const [visitForm, setVisitForm] = useState({
     diagnosis: '',
     notes: '',
@@ -116,7 +152,7 @@ export function NurseAddVisit() {
   const [paymentMethod, setPaymentMethod] = useState('cash');
 
   // Sub-step in add-visit
-  const [visitSubStep, setVisitSubStep] = useState<'complaints' | 'services' | 'vitals'>('complaints');
+  const [visitSubStep, setVisitSubStep] = useState<'complaints' | 'services' | 'medications' | 'vitals'>('complaints');
 
   useEffect(() => {
     const fetchData = async () => {
@@ -201,6 +237,19 @@ export function NurseAddVisit() {
     }
   }, [customComplaint, selectedComplaints]);
 
+  const toggleMedication = useCallback((medication: string) => {
+    setSelectedMedications(prev =>
+      prev.includes(medication) ? prev.filter(m => m !== medication) : [...prev, medication]
+    );
+  }, []);
+
+  const addCustomMedication = useCallback(() => {
+    if (customMedication.trim() && !selectedMedications.includes(customMedication.trim())) {
+      setSelectedMedications(prev => [...prev, customMedication.trim()]);
+      setCustomMedication('');
+    }
+  }, [customMedication, selectedMedications]);
+
   const handleSelectPatient = (id: string, name: string) => {
     setActivePatientId(id);
     setSelectedPatientName(name);
@@ -213,6 +262,12 @@ export function NurseAddVisit() {
     setSubmitting(true);
     try {
       const token = useAppStore.getState().token;
+      // Combine selected medications with the text field medications
+      const allMedications = [
+        ...selectedMedications,
+        ...(visitForm.medications ? visitForm.medications.split('،').map(m => m.trim()).filter(Boolean) : []),
+      ];
+
       const res = await fetch('/api/visits', {
         method: 'POST',
         headers: {
@@ -234,7 +289,7 @@ export function NurseAddVisit() {
             oxygenLevel: visitForm.oxygenLevel ? Number(visitForm.oxygenLevel) : undefined,
             sugarLevel: visitForm.sugarLevel ? Number(visitForm.sugarLevel) : undefined,
           },
-          medications: visitForm.medications ? visitForm.medications.split('،').map(m => m.trim()).filter(Boolean) : [],
+          medications: allMedications,
           serviceIds: selectedServices,
           paidAmount: paidNum,
           paymentMethod,
@@ -277,6 +332,7 @@ export function NurseAddVisit() {
   const visitSubSteps = [
     { key: 'complaints', label: 'الشكوى', icon: Heart },
     { key: 'services', label: 'الخدمات', icon: Stethoscope },
+    { key: 'medications', label: 'الأدوية', icon: Syringe },
     { key: 'vitals', label: 'القراءات', icon: UserIcon },
   ] as const;
 
@@ -305,9 +361,12 @@ export function NurseAddVisit() {
             setScreen(isAdmin ? 'admin-patients' : 'nurse-patients');
           }
         }}
-        className="flex items-center gap-1 text-sm text-muted-foreground mb-4"
+        className="flex items-center gap-2 mb-4 px-3 py-2 bg-white dark:bg-gray-800 rounded-xl border border-border shadow-sm active:scale-[0.97] transition-all"
       >
-        <ArrowRight className="w-4 h-4" /> رجوع
+        <div className="w-7 h-7 rounded-lg bg-gray-100 dark:bg-gray-700 flex items-center justify-center">
+          <ArrowRight className="w-4 h-4 text-foreground" />
+        </div>
+        <span className="text-sm font-medium">رجوع</span>
       </button>
 
       {step === 'select-patient' ? (
@@ -334,9 +393,9 @@ export function NurseAddVisit() {
               <p className="text-muted-foreground text-sm">لا يوجد مرضى</p>
               <button
                 onClick={() => setScreen('admin-add-patient')}
-                className="mt-3 text-clinic-600 text-sm font-medium"
+                className="mt-3 flex items-center gap-2 px-4 py-2.5 bg-clinic-50 dark:bg-clinic-900/20 text-clinic-700 dark:text-clinic-300 rounded-xl border border-clinic-200 dark:border-clinic-800 text-sm font-bold active:scale-[0.97] transition-all"
               >
-                إضافة مريض جديد
+                <Plus className="w-4 h-4" /> إضافة مريض جديد
               </button>
             </div>
           ) : (
@@ -390,7 +449,7 @@ export function NurseAddVisit() {
           </div>
 
           {/* Sub-step tabs */}
-          <div className="flex gap-2 mb-4">
+          <div className="flex gap-1.5 mb-4">
             {visitSubSteps.map(s => {
               const Icon = s.icon;
               const isActive = visitSubStep === s.key;
@@ -398,7 +457,7 @@ export function NurseAddVisit() {
                 <button
                   key={s.key}
                   onClick={() => setVisitSubStep(s.key)}
-                  className={`flex-1 flex items-center justify-center gap-1.5 py-2 rounded-xl text-xs font-bold transition-all ${
+                  className={`flex-1 flex items-center justify-center gap-1 py-2 rounded-xl text-[11px] font-bold transition-all ${
                     isActive
                       ? 'bg-clinic-500 text-white shadow-sm'
                       : 'bg-gray-100 dark:bg-gray-800 text-muted-foreground'
@@ -411,6 +470,9 @@ export function NurseAddVisit() {
                   )}
                   {s.key === 'services' && selectedServices.length > 0 && (
                     <span className="w-4 h-4 rounded-full bg-white/30 text-[10px] flex items-center justify-center">{selectedServices.length}</span>
+                  )}
+                  {s.key === 'medications' && selectedMedications.length > 0 && (
+                    <span className="w-4 h-4 rounded-full bg-white/30 text-[10px] flex items-center justify-center">{selectedMedications.length}</span>
                   )}
                 </button>
               );
@@ -576,6 +638,72 @@ export function NurseAddVisit() {
 
                 <div className="flex gap-2">
                   <button onClick={() => setVisitSubStep('complaints')} className="h-10 px-4 bg-gray-100 dark:bg-gray-800 font-bold rounded-xl text-xs">رجوع</button>
+                  <button onClick={() => setVisitSubStep('medications')} className="flex-1 h-10 bg-gradient-to-l from-clinic-500 to-clinic-600 text-white font-bold rounded-xl text-xs active:scale-[0.98] transition-transform flex items-center justify-center gap-1">
+                    التالي: الأدوية <ArrowRight className="w-3 h-3 rotate-180" />
+                  </button>
+                </div>
+              </motion.div>
+            )}
+
+            {/* ═══ MEDICATIONS SUB-STEP ═══ */}
+            {visitSubStep === 'medications' && (
+              <motion.div key="medications" initial={{ opacity: 0 }} animate={{ opacity: 1 }} exit={{ opacity: 0 }} className="space-y-4">
+                {/* Selected medications */}
+                {selectedMedications.length > 0 && (
+                  <div className="bg-cyan-50 dark:bg-cyan-900/20 rounded-xl p-3">
+                    <div className="flex items-center justify-between mb-2">
+                      <span className="text-xs font-bold text-cyan-700 dark:text-cyan-300">الأدوية المختارة ({selectedMedications.length})</span>
+                      <button onClick={() => setSelectedMedications([])} className="text-xs text-red-500">مسح</button>
+                    </div>
+                    <div className="flex flex-wrap gap-1.5">
+                      {selectedMedications.map((m, i) => (
+                        <span key={i} className="inline-flex items-center gap-1 px-2.5 py-1 bg-cyan-500 text-white rounded-lg text-xs font-medium">
+                          {m}
+                          <button onClick={() => toggleMedication(m)}><X className="w-3 h-3" /></button>
+                        </span>
+                      ))}
+                    </div>
+                  </div>
+                )}
+
+                {MEDICATION_CATEGORIES.map((cat, catIdx) => (
+                  <div key={catIdx} className="space-y-1.5">
+                    <h4 className="text-xs font-bold text-muted-foreground flex items-center gap-1.5">
+                      <span>{cat.icon}</span> {cat.name}
+                    </h4>
+                    <div className="flex flex-wrap gap-1.5">
+                      {cat.items.map(medication => {
+                        const isActive = selectedMedications.includes(medication);
+                        return (
+                          <button key={medication} type="button" onClick={() => toggleMedication(medication)}
+                            className={`px-2.5 py-1 rounded-lg text-[11px] font-bold border transition-all active:scale-95 ${isActive ? cat.activeColor : cat.color}`}
+                          >
+                            {medication}
+                          </button>
+                        );
+                      })}
+                    </div>
+                  </div>
+                ))}
+
+                {/* Custom medication input */}
+                <div className="flex gap-2">
+                  <input type="text" value={customMedication} onChange={e => setCustomMedication(e.target.value)}
+                    onKeyDown={e => { if (e.key === 'Enter') { e.preventDefault(); addCustomMedication(); }}}
+                    placeholder="دواء آخر..." className="flex-1 h-10 px-3 bg-white dark:bg-gray-800 border border-border rounded-xl text-sm focus:outline-none focus:ring-2 focus:ring-cyan-500" />
+                  <button onClick={addCustomMedication} disabled={!customMedication.trim()}
+                    className="h-10 px-3 bg-cyan-500 text-white rounded-xl text-xs font-bold disabled:opacity-40">+</button>
+                </div>
+
+                {/* Additional medications text field */}
+                <div className="space-y-1.5">
+                  <label className="text-sm font-medium">أدوية إضافية</label>
+                  <input type="text" value={visitForm.medications} onChange={e => setVisitForm(p => ({ ...p, medications: e.target.value }))}
+                    placeholder="مفصولة بفاصلة (،)" className="w-full h-10 px-3 bg-white dark:bg-gray-800 border border-border rounded-xl text-sm focus:outline-none focus:ring-2 focus:ring-clinic-500" />
+                </div>
+
+                <div className="flex gap-2">
+                  <button onClick={() => setVisitSubStep('services')} className="h-10 px-4 bg-gray-100 dark:bg-gray-800 font-bold rounded-xl text-xs">رجوع</button>
                   <button onClick={() => setVisitSubStep('vitals')} className="flex-1 h-10 bg-gradient-to-l from-clinic-500 to-clinic-600 text-white font-bold rounded-xl text-xs active:scale-[0.98] transition-transform flex items-center justify-center gap-1">
                     التالي: القراءات <ArrowRight className="w-3 h-3 rotate-180" />
                   </button>
@@ -602,18 +730,13 @@ export function NurseAddVisit() {
                   </div>
                 </div>
                 <div className="space-y-1.5">
-                  <label className="text-sm font-medium">الأدوية</label>
-                  <input type="text" value={visitForm.medications} onChange={e => setVisitForm(p => ({ ...p, medications: e.target.value }))}
-                    placeholder="مفصولة بفاصلة (،)" className="w-full h-10 px-3 bg-white dark:bg-gray-800 border border-border rounded-xl text-sm focus:outline-none focus:ring-2 focus:ring-clinic-500" />
-                </div>
-                <div className="space-y-1.5">
                   <label className="text-sm font-medium">ملاحظات</label>
                   <textarea value={visitForm.notes} onChange={e => setVisitForm(p => ({ ...p, notes: e.target.value }))}
                     placeholder="ملاحظات" rows={2} className="w-full px-3 py-2 bg-white dark:bg-gray-800 border border-border rounded-xl text-sm focus:outline-none focus:ring-2 focus:ring-clinic-500 resize-none" />
                 </div>
 
                 <div className="flex gap-2">
-                  <button onClick={() => setVisitSubStep('services')} className="h-10 px-4 bg-gray-100 dark:bg-gray-800 font-bold rounded-xl text-xs">رجوع</button>
+                  <button onClick={() => setVisitSubStep('medications')} className="h-10 px-4 bg-gray-100 dark:bg-gray-800 font-bold rounded-xl text-xs">رجوع</button>
                   <button onClick={handleSubmit} disabled={submitting || (selectedServices.length === 0)}
                     className="flex-1 h-12 bg-gradient-to-l from-clinic-500 to-clinic-600 text-white font-bold rounded-xl shadow-lg disabled:opacity-60 active:scale-[0.98] transition-transform flex items-center justify-center gap-2">
                     {submitting ? (

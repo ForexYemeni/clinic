@@ -50,10 +50,6 @@ export function AdminReports() {
     const fetchReport = async () => {
       setLoading(true);
       try {
-        const token = useAppStore.getState().token;
-        const headers: Record<string, string> = {};
-        if (token) headers['Authorization'] = `Bearer ${token}`;
-
         if (reportType === 'services') {
           const data = await apiGet<ServicesReport>('/api/reports?type=services');
           setServicesData(data);
@@ -81,8 +77,11 @@ export function AdminReports() {
     <div className="p-4 pb-24">
       {/* Header */}
       <div className="flex items-center gap-3 mb-4">
-        <button onClick={() => setScreen('admin-dashboard')} className="flex items-center gap-1 text-sm text-muted-foreground">
-          <ArrowRight className="w-4 h-4" /> رجوع
+        <button onClick={() => setScreen('admin-more')} className="flex items-center gap-2 px-3 py-2 bg-white dark:bg-gray-800 rounded-xl border border-border shadow-sm active:scale-[0.97] transition-all">
+          <div className="w-7 h-7 rounded-lg bg-gray-100 dark:bg-gray-700 flex items-center justify-center">
+            <ArrowRight className="w-4 h-4 text-foreground" />
+          </div>
+          <span className="text-sm font-medium">رجوع</span>
         </button>
       </div>
       <h2 className="text-lg font-bold mb-1 flex items-center gap-2">

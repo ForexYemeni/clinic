@@ -367,7 +367,9 @@ export function SuperAdminDashboard({ initialTab = 'dashboard' }: Props) {
             <div className="text-center py-8 text-muted-foreground">
               <Building2 className="w-10 h-10 mx-auto mb-2 opacity-30" />
               <p className="text-sm">لا توجد عيادات بعد</p>
-              <button onClick={() => setScreen('super-admin-add-clinic')} className="text-purple-600 text-sm font-bold mt-2">إضافة عيادة جديدة</button>
+              <button onClick={() => setScreen('super-admin-add-clinic')} className="mt-3 flex items-center gap-2 px-4 py-2.5 bg-purple-50 dark:bg-purple-900/20 text-purple-700 dark:text-purple-300 rounded-xl border border-purple-200 dark:border-purple-800 text-sm font-bold active:scale-[0.97] transition-all">
+                <Plus className="w-4 h-4" /> إضافة عيادة جديدة
+              </button>
             </div>
           )}
         </div>
