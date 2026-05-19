@@ -1,6 +1,6 @@
 /// <reference lib="webworker" />
 
-const CACHE_NAME = 'clinic-app-v2';
+const CACHE_NAME = 'clinic-app-v3';
 const STATIC_ASSETS = [
   '/',
   '/manifest.json',
@@ -16,27 +16,30 @@ self.addEventListener('install', (event) => {
   self.skipWaiting();
 });
 
-// Activate event - clean old caches
+// Activate event - clean ALL old caches aggressively
 self.addEventListener('activate', (event) => {
   event.waitUntil(
     caches.keys().then((cacheNames) => {
       return Promise.all(
         cacheNames
           .filter((name) => name !== CACHE_NAME)
-          .map((name) => caches.delete(name))
+          .map((name) => {
+            console.log('[SW] Deleting old cache:', name);
+            return caches.delete(name);
+          })
       );
     })
   );
   self.clients.claim();
 });
 
-// Fetch event - Network first with cache fallback for navigation
+// Fetch event - Network first for ALL requests to ensure fresh content
 self.addEventListener('fetch', (event) => {
   // Skip non-GET requests
   if (event.request.method !== 'GET') return;
 
-  // Skip API calls and Firebase
-  if (event.request.url.includes('/api/') || 
+  // Skip API calls and Firebase - always go to network
+  if (event.request.url.includes('/api/') ||
       event.request.url.includes('firebaseio.com') ||
       event.request.url.includes('googleapis.com')) return;
 
@@ -60,12 +63,12 @@ self.addEventListener('fetch', (event) => {
     return;
   }
 
-  // For static assets (JS, CSS, images), use cache first then network
+  // For static assets (JS, CSS, images) - Network first, cache fallback
+  // This ensures users always get the latest code after updates
   if (event.request.url.match(/\.(js|css|png|jpg|jpeg|svg|ico|woff2?)$/)) {
     event.respondWith(
-      caches.match(event.request).then((cachedResponse) => {
-        if (cachedResponse) return cachedResponse;
-        return fetch(event.request).then((response) => {
+      fetch(event.request)
+        .then((response) => {
           if (response.ok) {
             const responseClone = response.clone();
             caches.open(CACHE_NAME).then((cache) => {
@@ -73,8 +76,12 @@ self.addEventListener('fetch', (event) => {
             });
           }
           return response;
-        });
-      })
+        })
+        .catch(() => {
+          return caches.match(event.request).then((cachedResponse) => {
+            return cachedResponse || new Response('Offline', { status: 503 });
+          });
+        })
     );
     return;
   }

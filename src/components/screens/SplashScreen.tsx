@@ -1,25 +1,50 @@
 'use client';
 
-import React, { useEffect } from 'react';
+import React, { useEffect, useState } from 'react';
 import { motion } from 'framer-motion';
-import { Heart, Shield } from 'lucide-react';
+import { Heart, RefreshCw, WifiOff } from 'lucide-react';
 import { useAppStore } from '@/lib/store';
+
+// Timeout wrapper for fetch calls - ensures they never hang forever
+function fetchWithTimeout(url: string, options: RequestInit = {}, timeoutMs = 6000): Promise<Response> {
+  const controller = new AbortController();
+  const timeoutId = setTimeout(() => controller.abort(), timeoutMs);
+
+  return fetch(url, {
+    ...options,
+    signal: controller.signal,
+  }).finally(() => {
+    clearTimeout(timeoutId);
+  });
+}
 
 export function SplashScreen() {
   const { setSplashDone, setIsFirstSetup, setClinicSettings, clinicName, clinicSettings } = useAppStore();
   const logo = clinicSettings.logo;
   const primaryColor = clinicSettings.primaryColor || 'emerald';
+  const [error, setError] = useState(false);
 
   useEffect(() => {
+    let isMounted = true;
+    let hardTimeoutId: NodeJS.Timeout;
+
+    // HARD TIMEOUT: Force splash to complete after 10 seconds no matter what
+    hardTimeoutId = setTimeout(() => {
+      if (isMounted) {
+        console.warn('[Splash] Hard timeout reached - forcing splash done');
+        setSplashDone(true);
+      }
+    }, 10000);
+
     const checkSetup = async () => {
       const savedToken = typeof window !== 'undefined' ? localStorage.getItem('clinic-token') : null;
 
       // If we have a saved token, try to restore session
       if (savedToken) {
         try {
-          const res = await fetch('/api/auth', {
+          const res = await fetchWithTimeout('/api/auth', {
             headers: { 'Authorization': `Bearer ${savedToken}` },
-          });
+          }, 6000);
           if (res.ok) {
             const data = await res.json();
             if (data.user) {
@@ -34,11 +59,11 @@ export function SplashScreen() {
                 useAppStore.getState().setClinicId(data.user.clinicId);
               }
 
-              // Load clinic settings
+              // Load clinic settings (with timeout)
               try {
-                const cRes = await fetch('/api/clinic', {
+                const cRes = await fetchWithTimeout('/api/clinic', {
                   headers: { 'Authorization': `Bearer ${savedToken}` },
-                });
+                }, 5000);
                 if (cRes.ok) {
                   const cData = await cRes.json();
                   useAppStore.getState().setClinicSettings({
@@ -63,7 +88,10 @@ export function SplashScreen() {
                 useAppStore.getState().setScreen('nurse-patients');
               }
 
-              setTimeout(() => setSplashDone(true), 1800);
+              clearTimeout(hardTimeoutId);
+              if (isMounted) {
+                setTimeout(() => setSplashDone(true), 1800);
+              }
               return;
             }
           } else {
@@ -72,7 +100,12 @@ export function SplashScreen() {
             useAppStore.getState().setToken(null);
           }
         } catch {
-          // Network error, continue with setup check
+          // Network error or timeout, continue with setup check
+          // Clear potentially corrupt token on network error too
+          try {
+            localStorage.removeItem('clinic-token');
+            useAppStore.getState().setToken(null);
+          } catch {}
         }
       }
 
@@ -80,14 +113,17 @@ export function SplashScreen() {
       try {
         // First, check if a super_admin exists (for migration from old system)
         try {
-          const migrateRes = await fetch('/api/platform/migrate');
+          const migrateRes = await fetchWithTimeout('/api/platform/migrate', {}, 5000);
           if (migrateRes.ok) {
             const migrateData = await migrateRes.json();
             if (migrateData.migrationNeeded) {
               // No super_admin exists - show migration/upgrade screen
               setIsFirstSetup(true);
               useAppStore.getState().setScreen('super-admin-setup');
-              setTimeout(() => setSplashDone(true), 1800);
+              clearTimeout(hardTimeoutId);
+              if (isMounted) {
+                setTimeout(() => setSplashDone(true), 1800);
+              }
               return;
             }
           }
@@ -98,7 +134,7 @@ export function SplashScreen() {
 
         // Check regular setup status
         try {
-          const res = await fetch('/api/auth');
+          const res = await fetchWithTimeout('/api/auth', {}, 5000);
           if (res.ok) {
             const data = await res.json();
             if (data.setupNeeded) {
@@ -116,9 +152,9 @@ export function SplashScreen() {
         }
       } catch {}
 
-      // Load clinic settings
+      // Load clinic settings (with timeout)
       try {
-        const cRes = await fetch('/api/clinic');
+        const cRes = await fetchWithTimeout('/api/clinic', {}, 4000);
         if (cRes.ok) {
           const cData = await cRes.json();
           useAppStore.getState().setClinicSettings({
@@ -132,9 +168,26 @@ export function SplashScreen() {
         }
       } catch {}
 
-      setTimeout(() => setSplashDone(true), 1800);
+      clearTimeout(hardTimeoutId);
+      if (isMounted) {
+        setTimeout(() => setSplashDone(true), 1800);
+      }
     };
-    checkSetup();
+
+    checkSetup().catch(() => {
+      // If checkSetup itself throws (shouldn't happen with all the try/catch inside),
+      // still make sure splash completes
+      clearTimeout(hardTimeoutId);
+      if (isMounted) {
+        setError(true);
+        setTimeout(() => setSplashDone(true), 2000);
+      }
+    });
+
+    return () => {
+      isMounted = false;
+      clearTimeout(hardTimeoutId);
+    };
   }, [setSplashDone, setIsFirstSetup]);
 
   return (
@@ -175,7 +228,14 @@ export function SplashScreen() {
         transition={{ delay: 1 }}
         className="mt-12"
       >
-        <div className="w-8 h-8 border-3 border-white/30 border-t-white rounded-full animate-spin" />
+        {error ? (
+          <div className="flex flex-col items-center gap-3">
+            <WifiOff className="w-8 h-8 text-white/60" />
+            <p className="text-white/60 text-xs">جاري المحاولة...</p>
+          </div>
+        ) : (
+          <div className="w-8 h-8 border-3 border-white/30 border-t-white rounded-full animate-spin" />
+        )}
       </motion.div>
     </div>
   );

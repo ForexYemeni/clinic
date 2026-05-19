@@ -18,6 +18,18 @@ interface SubscriptionErrorInfo {
   clinicName: string;
 }
 
+// Timeout wrapper for fetch - prevents hanging requests
+function fetchWithTimeout(url: string, options: RequestInit = {}, timeoutMs = 10000): Promise<Response> {
+  const controller = new AbortController();
+  const timeoutId = setTimeout(() => controller.abort(), timeoutMs);
+  return fetch(url, {
+    ...options,
+    signal: controller.signal,
+  }).finally(() => {
+    clearTimeout(timeoutId);
+  });
+}
+
 export function LoginScreen() {
   const { setScreen, setUser, setIsFirstSetup, clinicName, clinicSettings, setClinicId, setToken, setSubscription } = useAppStore();
   const logo = clinicSettings.logo;
@@ -36,7 +48,7 @@ export function LoginScreen() {
   useEffect(() => {
     const fetchContact = async () => {
       try {
-        const res = await fetch('/api/platform');
+        const res = await fetchWithTimeout('/api/platform', {}, 5000);
         if (res.ok) {
           const data = await res.json();
           setContact({
@@ -68,12 +80,12 @@ export function LoginScreen() {
 
     setLoading(true);
     try {
-      // Use raw fetch directly for maximum reliability - bypasses any interceptors
-      const res = await fetch('/api/auth', {
+      // Use fetch with timeout for maximum reliability - prevents hanging on slow connections
+      const res = await fetchWithTimeout('/api/auth', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ phone, password }),
-      });
+      }, 10000);
 
       // Safely parse JSON response
       let data: any;
@@ -112,9 +124,9 @@ export function LoginScreen() {
 
       // Fetch and update clinic settings on login
       try {
-        const cRes = await fetch('/api/clinic', {
+        const cRes = await fetchWithTimeout('/api/clinic', {
           headers: { 'Authorization': `Bearer ${data.token}` },
-        });
+        }, 5000);
         if (cRes.ok) {
           const cData = await cRes.json();
           useAppStore.getState().setClinicSettings({

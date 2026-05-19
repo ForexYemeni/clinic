@@ -1,9 +1,9 @@
 'use client';
 
-import React, { useEffect, Suspense } from 'react';
+import React, { useEffect, Suspense, Component, ReactNode } from 'react';
 import dynamic from 'next/dynamic';
 import { motion, AnimatePresence } from 'framer-motion';
-import { Shield, Building2, ScrollText, Settings, LogOut } from 'lucide-react';
+import { Shield, Building2, ScrollText, Settings, LogOut, RefreshCw, AlertTriangle } from 'lucide-react';
 import { useAppStore } from '@/lib/store';
 import { installGlobalApiFetch } from '@/lib/api';
 import '@/lib/pwa-install'; // Initialize PWA install prompt listener early
@@ -16,6 +16,55 @@ import { ThemeUpdater } from '@/components/shared/ThemeUpdater';
 import { PwaInstallPrompt } from '@/components/shared/PwaInstallPrompt';
 import { SubscriptionExpired } from '@/components/screens/SubscriptionExpired';
 import { SuperAdminSetup } from '@/components/screens/SuperAdminSetup';
+
+// Error Boundary - catches runtime errors and shows recovery UI
+class ErrorBoundary extends Component<{ children: ReactNode }, { hasError: boolean; error: Error | null }> {
+  constructor(props: { children: ReactNode }) {
+    super(props);
+    this.state = { hasError: false, error: null };
+  }
+
+  static getDerivedStateFromError(error: Error) {
+    return { hasError: true, error };
+  }
+
+  componentDidCatch(error: Error, errorInfo: React.ErrorInfo) {
+    console.error('[App ErrorBoundary]', error, errorInfo);
+  }
+
+  handleReset = () => {
+    // Clear potentially corrupt state
+    try {
+      localStorage.removeItem('clinic-token');
+    } catch {}
+    this.setState({ hasError: false, error: null });
+    window.location.reload();
+  };
+
+  render() {
+    if (this.state.hasError) {
+      return (
+        <div className="min-h-screen flex flex-col items-center justify-center bg-gray-50 dark:bg-gray-950 p-6">
+          <div className="w-16 h-16 bg-red-100 dark:bg-red-900/30 rounded-2xl flex items-center justify-center mb-4">
+            <AlertTriangle className="w-8 h-8 text-red-500" />
+          </div>
+          <h2 className="text-lg font-bold text-foreground mb-2">حدث خطأ غير متوقع</h2>
+          <p className="text-sm text-muted-foreground text-center mb-6 max-w-xs">
+            يرجى إعادة تحميل الصفحة. إذا استمرت المشكلة، امسح بيانات التطبيق من إعدادات المتصفح.
+          </p>
+          <button
+            onClick={this.handleReset}
+            className="flex items-center gap-2 h-12 px-6 bg-emerald-600 text-white font-bold rounded-xl active:scale-[0.98] transition-transform"
+          >
+            <RefreshCw className="w-5 h-5" />
+            إعادة التحميل
+          </button>
+        </div>
+      );
+    }
+    return this.props.children;
+  }
+}
 
 // Lazy-loaded admin screens
 const AdminDashboard = dynamic(() => import('@/components/screens/admin/AdminDashboard').then(m => ({ default: m.AdminDashboard })), { ssr: false });
@@ -110,7 +159,15 @@ function SuperAdminBottomNav() {
   );
 }
 
-export default function ClinicApp() {
+export default function ClinicAppWrapper() {
+  return (
+    <ErrorBoundary>
+      <ClinicApp />
+    </ErrorBoundary>
+  );
+}
+
+function ClinicApp() {
   const { currentScreen, isSplashDone, user, theme, subscription } = useAppStore();
 
   // Initialize theme and token from localStorage
@@ -127,9 +184,12 @@ export default function ClinicApp() {
       useAppStore.getState().setToken(savedToken);
     }
 
-    // Register service worker for PWA
+    // Register service worker for PWA - force update check
     if ('serviceWorker' in navigator) {
-      navigator.serviceWorker.register('/sw.js').catch(() => {
+      navigator.serviceWorker.register('/sw.js').then((registration) => {
+        // Force check for service worker updates on every page load
+        registration.update().catch(() => {});
+      }).catch(() => {
         // SW registration failed, not critical
       });
     }
