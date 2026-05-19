@@ -67,6 +67,25 @@ export async function GET(request: NextRequest) {
           }
         } catch {}
       }
+      // Extract nurse name from visit if available
+      if (data.visitId) {
+        try {
+          const visitDoc = await adminDb.collection('visits').doc(data.visitId).get();
+          if (visitDoc.exists) {
+            const vData = visitDoc.data();
+            data.nurseName = vData?.nurseName || '';
+          }
+        } catch {}
+      }
+      // Also check items for nurse names
+      if (!data.nurseName && data.items && Array.isArray(data.items)) {
+        const nurseNames = data.items
+          .map((item: any) => item.nurseName)
+          .filter(Boolean);
+        if (nurseNames.length > 0) {
+          data.nurseName = nurseNames[0]; // Use first nurse name
+        }
+      }
       invoices.push(data);
     }
 

@@ -6,7 +6,7 @@ import {
   Plus, Search, X, Check, Clock, DollarSign,
   Pause, Play, Trash2, Edit3, RefreshCw, Stethoscope,
   ChevronDown, Activity, ToggleLeft, ToggleRight, Loader2,
-  Package, Eye, EyeOff, Tag
+  Package, Eye, EyeOff, Tag, AlertTriangle, ChevronLeft
 } from 'lucide-react';
 import { useAppStore } from '@/lib/store';
 import { formatCurrency, type ServiceItem } from '@/lib/constants';
@@ -130,6 +130,10 @@ export function ServiceManagement() {
 
   // Form
   const [form, setForm] = useState<ServiceFormData>(emptyForm);
+
+  // Confirm dialogs
+  const [showReseedConfirm, setShowReseedConfirm] = useState(false);
+  const [showResetConfirm, setShowResetConfirm] = useState(false);
 
   // Ref for tabs scroll container
   const tabsRef = useRef<HTMLDivElement>(null);
@@ -317,9 +321,9 @@ export function ServiceManagement() {
 
   // ─── Re-seed Defaults (add missing services) ──────────
   const handleReseedDefaults = async () => {
-    if (!confirm('سيتم إضافة الخدمات المفقودة فقط دون حذف الخدمات الموجودة. هل أنت متأكد؟')) return;
     try {
       setSubmitting(true);
+      setShowReseedConfirm(false);
       const res = await fetch('/api/services/reseed', { method: 'POST' });
       const data = await res.json();
       if (res.ok && data.success) {
@@ -338,9 +342,9 @@ export function ServiceManagement() {
 
   // ─── Full Reset Services (delete all + re-seed) ───────
   const handleFullResetServices = async () => {
-    if (!confirm('⚠️ سيتم حذف جميع الخدمات الحالية وإعادة تحميل الخدمات الافتراضية. هذا الإجراء لا يمكن التراجع عنه!')) return;
     try {
       setSubmitting(true);
+      setShowResetConfirm(false);
       const res = await fetch('/api/services/reseed', { method: 'DELETE' });
       const data = await res.json();
       if (res.ok && data.success) {
@@ -469,39 +473,124 @@ export function ServiceManagement() {
       </div>
 
       {/* ═══════ Service Actions ═══════ */}
-      <div className="grid grid-cols-2 gap-3 mb-4">
-        <motion.button
-          initial={{ opacity: 0, y: 8 }}
-          animate={{ opacity: 1, y: 0 }}
-          transition={{ delay: 0.15 }}
-          onClick={handleReseedDefaults}
-          disabled={submitting}
-          className="bg-white dark:bg-gray-800 rounded-2xl p-3.5 border border-blue-200 dark:border-blue-900/40 flex items-center gap-3 active:scale-[0.98] transition-transform shadow-sm disabled:opacity-60"
-        >
-          <div className="w-10 h-10 bg-blue-100 dark:bg-blue-900/30 rounded-xl flex items-center justify-center flex-shrink-0">
-            <RefreshCw className={`w-5 h-5 text-blue-600 dark:text-blue-400 ${submitting ? 'animate-spin' : ''}`} />
-          </div>
-          <div className="text-right">
-            <p className="text-xs font-bold text-blue-700 dark:text-blue-300">تحميل الخدمات</p>
-            <p className="text-[9px] text-muted-foreground">إضافة المفقودة</p>
-          </div>
-        </motion.button>
-        <motion.button
-          initial={{ opacity: 0, y: 8 }}
-          animate={{ opacity: 1, y: 0 }}
-          transition={{ delay: 0.2 }}
-          onClick={handleFullResetServices}
-          disabled={submitting}
-          className="bg-white dark:bg-gray-800 rounded-2xl p-3.5 border border-amber-200 dark:border-amber-900/40 flex items-center gap-3 active:scale-[0.98] transition-transform shadow-sm disabled:opacity-60"
-        >
-          <div className="w-10 h-10 bg-amber-100 dark:bg-amber-900/30 rounded-xl flex items-center justify-center flex-shrink-0">
-            <Package className="w-5 h-5 text-amber-600 dark:text-amber-400" />
-          </div>
-          <div className="text-right">
-            <p className="text-xs font-bold text-amber-700 dark:text-amber-300">إعادة تعيين</p>
-            <p className="text-[9px] text-muted-foreground">حذف وإعادة تحميل</p>
-          </div>
-        </motion.button>
+      <div className="space-y-3 mb-4">
+        {/* Reseed Services Card */}
+        <AnimatePresence mode="wait">
+          {showReseedConfirm ? (
+            <motion.div
+              key="reseed-confirm"
+              initial={{ opacity: 0, scale: 0.95 }}
+              animate={{ opacity: 1, scale: 1 }}
+              exit={{ opacity: 0, scale: 0.95 }}
+              className="bg-gradient-to-br from-blue-500 to-blue-600 rounded-2xl p-4 shadow-lg shadow-blue-500/20"
+            >
+              <div className="flex items-center gap-3 mb-3">
+                <div className="w-11 h-11 bg-white/20 rounded-xl flex items-center justify-center backdrop-blur-sm">
+                  <RefreshCw className="w-6 h-6 text-white" />
+                </div>
+                <div>
+                  <p className="text-sm font-bold text-white">تحميل الخدمات المفقودة</p>
+                  <p className="text-[10px] text-white/80">سيتم إضافة الخدمات المفقودة فقط دون حذف الموجودة</p>
+                </div>
+              </div>
+              <div className="flex gap-2">
+                <button
+                  onClick={handleReseedDefaults}
+                  disabled={submitting}
+                  className="flex-1 h-10 bg-white text-blue-600 rounded-xl text-sm font-bold active:scale-[0.97] transition-transform shadow-sm disabled:opacity-60 flex items-center justify-center gap-1.5"
+                >
+                  {submitting ? <Loader2 className="w-4 h-4 animate-spin" /> : <Check className="w-4 h-4" />}
+                  نعم، تحميل
+                </button>
+                <button
+                  onClick={() => setShowReseedConfirm(false)}
+                  className="flex-1 h-10 bg-white/20 text-white rounded-xl text-sm font-medium backdrop-blur-sm active:scale-[0.97] transition-transform"
+                >
+                  إلغاء
+                </button>
+              </div>
+            </motion.div>
+          ) : (
+            <motion.button
+              key="reseed-card"
+              initial={{ opacity: 0, y: 8 }}
+              animate={{ opacity: 1, y: 0 }}
+              exit={{ opacity: 0, y: 8 }}
+              transition={{ delay: 0.15 }}
+              onClick={() => setShowReseedConfirm(true)}
+              disabled={submitting}
+              className="w-full bg-white dark:bg-gray-800 rounded-2xl p-4 border border-blue-200 dark:border-blue-900/40 flex items-center gap-3 active:scale-[0.98] transition-transform shadow-sm disabled:opacity-60"
+            >
+              <div className="w-12 h-12 bg-blue-100 dark:bg-blue-900/30 rounded-xl flex items-center justify-center flex-shrink-0">
+                <RefreshCw className={`w-6 h-6 text-blue-600 dark:text-blue-400 ${submitting ? 'animate-spin' : ''}`} />
+              </div>
+              <div className="flex-1 text-right">
+                <p className="text-sm font-bold text-blue-700 dark:text-blue-300">تحميل الخدمات</p>
+                <p className="text-[11px] text-muted-foreground">إضافة الخدمات المفقودة فقط دون حذف الموجودة</p>
+              </div>
+              <ChevronLeft className="w-4 h-4 text-blue-400" />
+            </motion.button>
+          )}
+        </AnimatePresence>
+
+        {/* Full Reset Services Card */}
+        <AnimatePresence mode="wait">
+          {showResetConfirm ? (
+            <motion.div
+              key="reset-confirm"
+              initial={{ opacity: 0, scale: 0.95 }}
+              animate={{ opacity: 1, scale: 1 }}
+              exit={{ opacity: 0, scale: 0.95 }}
+              className="bg-gradient-to-br from-amber-500 to-red-500 rounded-2xl p-4 shadow-lg shadow-amber-500/20"
+            >
+              <div className="flex items-center gap-3 mb-3">
+                <div className="w-11 h-11 bg-white/20 rounded-xl flex items-center justify-center backdrop-blur-sm">
+                  <AlertTriangle className="w-6 h-6 text-white" />
+                </div>
+                <div>
+                  <p className="text-sm font-bold text-white">إعادة تعيين جميع الخدمات</p>
+                  <p className="text-[10px] text-white/80">سيتم حذف جميع الخدمات الحالية وإعادة تحميل الافتراضية</p>
+                </div>
+              </div>
+              <div className="flex gap-2">
+                <button
+                  onClick={handleFullResetServices}
+                  disabled={submitting}
+                  className="flex-1 h-10 bg-white text-red-600 rounded-xl text-sm font-bold active:scale-[0.97] transition-transform shadow-sm disabled:opacity-60 flex items-center justify-center gap-1.5"
+                >
+                  {submitting ? <Loader2 className="w-4 h-4 animate-spin" /> : <AlertTriangle className="w-4 h-4" />}
+                  نعم، إعادة تعيين
+                </button>
+                <button
+                  onClick={() => setShowResetConfirm(false)}
+                  className="flex-1 h-10 bg-white/20 text-white rounded-xl text-sm font-medium backdrop-blur-sm active:scale-[0.97] transition-transform"
+                >
+                  إلغاء
+                </button>
+              </div>
+            </motion.div>
+          ) : (
+            <motion.button
+              key="reset-card"
+              initial={{ opacity: 0, y: 8 }}
+              animate={{ opacity: 1, y: 0 }}
+              exit={{ opacity: 0, y: 8 }}
+              transition={{ delay: 0.2 }}
+              onClick={() => setShowResetConfirm(true)}
+              disabled={submitting}
+              className="w-full bg-white dark:bg-gray-800 rounded-2xl p-4 border border-amber-200 dark:border-amber-900/40 flex items-center gap-3 active:scale-[0.98] transition-transform shadow-sm disabled:opacity-60"
+            >
+              <div className="w-12 h-12 bg-amber-100 dark:bg-amber-900/30 rounded-xl flex items-center justify-center flex-shrink-0">
+                <Package className="w-6 h-6 text-amber-600 dark:text-amber-400" />
+              </div>
+              <div className="flex-1 text-right">
+                <p className="text-sm font-bold text-amber-700 dark:text-amber-300">إعادة تعيين</p>
+                <p className="text-[11px] text-muted-foreground">حذف جميع الخدمات وإعادة تحميل الافتراضية</p>
+              </div>
+              <ChevronLeft className="w-4 h-4 text-amber-400" />
+            </motion.button>
+          )}
+        </AnimatePresence>
       </div>
 
       {/* ═══════ Search ═══════ */}

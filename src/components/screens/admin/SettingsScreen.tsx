@@ -2,9 +2,14 @@
 
 import React, { useState } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
-import { Building2, Moon, Sun, Lock, LogOut, Shield, Info, ChevronLeft, AlertTriangle } from 'lucide-react';
+import { Building2, Moon, Sun, Lock, LogOut, Shield, Info, ChevronLeft, AlertTriangle, Download, Smartphone } from 'lucide-react';
 import { useAppStore } from '@/lib/store';
 import { toast } from 'sonner';
+
+interface BeforeInstallPromptEvent extends Event {
+  prompt: () => Promise<void>;
+  userChoice: Promise<{ outcome: 'accepted' | 'dismissed' }>;
+}
 
 export function SettingsScreen() {
   const { user, theme, toggleTheme, clinicName, setClinicName, logout } = useAppStore();
@@ -13,6 +18,47 @@ export function SettingsScreen() {
   const [changingPassword, setChangingPassword] = useState(false);
   const [passwords, setPasswords] = useState({ current: '', newPassword: '', confirm: '' });
   const [showLogoutConfirm, setShowLogoutConfirm] = useState(false);
+  const [deferredPrompt, setDeferredPrompt] = useState<BeforeInstallPromptEvent | null>(null);
+  const [isInstalled, setIsInstalled] = useState(false);
+  const [installing, setInstalling] = useState(false);
+
+  // PWA install support
+  React.useEffect(() => {
+    if (typeof window === 'undefined') return;
+    if (window.matchMedia('(display-mode: standalone)').matches) {
+      setIsInstalled(true);
+      return;
+    }
+    const handler = (e: Event) => {
+      e.preventDefault();
+      setDeferredPrompt(e as BeforeInstallPromptEvent);
+    };
+    window.addEventListener('beforeinstallprompt', handler);
+    window.addEventListener('appinstalled', () => {
+      setIsInstalled(true);
+      setDeferredPrompt(null);
+      toast.success('تم تثبيت التطبيق بنجاح!');
+    });
+    return () => {
+      window.removeEventListener('beforeinstallprompt', handler);
+    };
+  }, []);
+
+  const handleInstallApp = async () => {
+    if (!deferredPrompt) return;
+    setInstalling(true);
+    try {
+      await deferredPrompt.prompt();
+      const { outcome } = await deferredPrompt.userChoice;
+      if (outcome === 'accepted') {
+        setIsInstalled(true);
+      }
+    } catch {
+      toast.error('خطأ في تثبيت التطبيق');
+    }
+    setDeferredPrompt(null);
+    setInstalling(false);
+  };
 
   const handleSaveName = async () => {
     if (!newClinicName.trim()) return;
@@ -175,6 +221,52 @@ export function SettingsScreen() {
           </button>
         )}
       </motion.div>
+
+      {/* Install App Card */}
+      {!isInstalled && deferredPrompt && (
+        <motion.div
+          initial={{ opacity: 0, y: 8 }}
+          animate={{ opacity: 1, y: 0 }}
+          transition={{ delay: 0.15 }}
+          className="bg-gradient-to-br from-emerald-50 to-green-50 dark:from-emerald-900/20 dark:to-green-900/20 rounded-2xl p-4 border border-emerald-200 dark:border-emerald-800/50 mb-3 shadow-sm"
+        >
+          <div className="flex items-center gap-3 mb-3">
+            <div className="w-12 h-12 bg-gradient-to-br from-emerald-400 to-green-600 rounded-xl flex items-center justify-center flex-shrink-0 shadow-lg shadow-green-500/25">
+              <Smartphone className="w-6 h-6 text-white" />
+            </div>
+            <div className="flex-1 text-right">
+              <p className="text-sm font-bold text-emerald-800 dark:text-emerald-300">تثبيت التطبيق</p>
+              <p className="text-[11px] text-muted-foreground">أضف التطبيق إلى شاشتك الرئيسية للوصول السريع</p>
+            </div>
+          </div>
+          <button
+            onClick={handleInstallApp}
+            disabled={installing}
+            className="w-full h-11 bg-gradient-to-l from-green-500 to-emerald-600 text-white rounded-xl text-sm font-bold shadow-md shadow-green-500/25 active:scale-[0.97] transition-transform disabled:opacity-60 flex items-center justify-center gap-2"
+          >
+            <Download className="w-4 h-4" />
+            {installing ? 'جاري التثبيت...' : 'تثبيت التطبيق'}
+          </button>
+        </motion.div>
+      )}
+
+      {/* Already installed badge */}
+      {isInstalled && (
+        <motion.div
+          initial={{ opacity: 0, y: 8 }}
+          animate={{ opacity: 1, y: 0 }}
+          transition={{ delay: 0.15 }}
+          className="bg-green-50 dark:bg-green-900/20 rounded-2xl p-3 border border-green-200 dark:border-green-800/50 mb-3 flex items-center gap-2"
+        >
+          <div className="w-8 h-8 bg-green-100 dark:bg-green-900/30 rounded-lg flex items-center justify-center">
+            <Shield className="w-4 h-4 text-green-600" />
+          </div>
+          <div>
+            <p className="text-xs font-medium text-green-700 dark:text-green-400">التطبيق مثبت</p>
+            <p className="text-[10px] text-muted-foreground">التطبيق يعمل كتطبيق أصلي</p>
+          </div>
+        </motion.div>
+      )}
 
       {/* Logout - Professional Danger Card */}
       <motion.div
