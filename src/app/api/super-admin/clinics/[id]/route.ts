@@ -5,8 +5,9 @@
 
 import { adminDb } from '@/lib/firebase-admin';
 import { NextRequest, NextResponse } from 'next/server';
-import { extractAuthFromRequest } from '@/lib/auth';
+import { extractAuthFromRequest, verifyPassword } from '@/lib/auth';
 import { getClinicById, setClinicSubscription, createAuditLog, checkClinicSubscription } from '@/lib/multi-tenant';
+import { DEFAULT_SERVICES } from '@/lib/services-data';
 
 // GET: Get single clinic details
 export async function GET(
@@ -131,6 +132,92 @@ export async function PUT(
         if (data.primaryColor) updateData.primaryColor = data.primaryColor;
         await adminDb.collection('clinics').doc(id).update(updateData);
         return NextResponse.json({ success: true });
+      }
+
+      case 'reset_data': {
+        // Reset all clinic data but keep the clinic and admin user
+        // Requires super_admin password verification
+        if (!data.superAdminPassword) {
+          return NextResponse.json({ error: 'يرجى إدخال كلمة المرور' }, { status: 400 });
+        }
+
+        // Verify super_admin password
+        const superAdminDoc = await adminDb.collection('users').doc(auth.userId).get();
+        if (!superAdminDoc.exists) {
+          return NextResponse.json({ error: 'حساب المدير غير موجود' }, { status: 401 });
+        }
+        const superAdminData = superAdminDoc.data();
+        const passwordValid = await verifyPassword(data.superAdminPassword, superAdminData.password);
+        if (!passwordValid) {
+          return NextResponse.json({ error: 'كلمة المرور غير صحيحة' }, { status: 401 });
+        }
+
+        const BATCH_LIMIT = 450;
+        const collectionsToDelete = ['patients', 'visits', 'invoices', 'emergencies', 'notifications'];
+
+        // Delete nurses (keep admin)
+        const nursesSnapshot = await adminDb.collection('users')
+          .where('clinicId', '==', id)
+          .where('role', '==', 'nurse')
+          .get();
+        for (let i = 0; i < nursesSnapshot.docs.length; i += BATCH_LIMIT) {
+          const batch = adminDb.batch();
+          const chunk = nursesSnapshot.docs.slice(i, i + BATCH_LIMIT);
+          chunk.forEach(doc => batch.delete(doc.ref));
+          await batch.commit();
+        }
+
+        // Delete operational data
+        for (const col of collectionsToDelete) {
+          try {
+            const snapshot = await adminDb.collection(col).where('clinicId', '==', id).get();
+            for (let i = 0; i < snapshot.docs.length; i += BATCH_LIMIT) {
+              const batch = adminDb.batch();
+              const chunk = snapshot.docs.slice(i, i + BATCH_LIMIT);
+              chunk.forEach(doc => batch.delete(doc.ref));
+              await batch.commit();
+            }
+          } catch {}
+        }
+
+        // Delete old services and re-seed defaults
+        try {
+          const servicesSnapshot = await adminDb.collection('services').where('clinicId', '==', id).get();
+          for (let i = 0; i < servicesSnapshot.docs.length; i += BATCH_LIMIT) {
+            const batch = adminDb.batch();
+            const chunk = servicesSnapshot.docs.slice(i, i + BATCH_LIMIT);
+            chunk.forEach(doc => batch.delete(doc.ref));
+            await batch.commit();
+          }
+        } catch {}
+
+        // Re-seed default services
+        const servicesWithClinicId = DEFAULT_SERVICES.map(s => ({
+          ...s,
+          clinicId: id,
+          active: true,
+          status: 'active',
+          createdAt: new Date().toISOString(),
+        }));
+        for (let i = 0; i < servicesWithClinicId.length; i += BATCH_LIMIT) {
+          const batch = adminDb.batch();
+          const chunk = servicesWithClinicId.slice(i, i + BATCH_LIMIT);
+          chunk.forEach(service => {
+            const ref = adminDb.collection('services').doc();
+            batch.set(ref, service);
+          });
+          await batch.commit();
+        }
+
+        await createAuditLog({
+          clinicId: id,
+          userId: auth.userId,
+          action: 'reset_clinic_data',
+          details: `Reset all data for clinic: ${clinic.name}`,
+          severity: 'critical',
+        });
+
+        return NextResponse.json({ success: true, message: 'تم إعادة تعيين بيانات العيادة بنجاح' });
       }
 
       default:
