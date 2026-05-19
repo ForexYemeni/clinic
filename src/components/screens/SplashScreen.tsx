@@ -6,7 +6,9 @@ import { Heart } from 'lucide-react';
 import { useAppStore } from '@/lib/store';
 
 export function SplashScreen() {
-  const { setSplashDone, setIsFirstSetup, setClinicSettings, clinicName } = useAppStore();
+  const { setSplashDone, setIsFirstSetup, setClinicSettings, clinicName, clinicSettings } = useAppStore();
+  const logo = clinicSettings.logo;
+  const primaryColor = clinicSettings.primaryColor || 'emerald';
 
   useEffect(() => {
     const checkSetup = async () => {
@@ -41,15 +43,19 @@ export function SplashScreen() {
   }, [setSplashDone, setIsFirstSetup]);
 
   return (
-    <div className="min-h-screen flex flex-col items-center justify-center bg-gradient-to-br from-emerald-600 via-teal-600 to-emerald-700">
+    <div className={`min-h-screen flex flex-col items-center justify-center bg-gradient-to-br from-clinic-600 via-clinic-500 to-clinic-700`}>
       <motion.div
         initial={{ scale: 0, opacity: 0 }}
         animate={{ scale: 1, opacity: 1 }}
         transition={{ type: 'spring', stiffness: 200, damping: 15 }}
         className="relative"
       >
-        <div className="w-24 h-24 bg-white/20 backdrop-blur-xl rounded-3xl flex items-center justify-center shadow-2xl">
-          <Heart className="w-14 h-14 text-white" fill="currentColor" />
+        <div className="w-24 h-24 bg-white/20 backdrop-blur-xl rounded-3xl flex items-center justify-center shadow-2xl overflow-hidden">
+          {logo ? (
+            <img src={logo} alt="شعار" className="w-16 h-16 object-contain" />
+          ) : (
+            <Heart className="w-14 h-14 text-white" fill="currentColor" />
+          )}
         </div>
         <motion.div
           className="absolute -top-2 -right-2 w-6 h-6 bg-red-400 rounded-full"
@@ -65,7 +71,7 @@ export function SplashScreen() {
         className="mt-8 text-center"
       >
         <h1 className="text-2xl font-bold text-white">{clinicName}</h1>
-        <p className="text-emerald-100 text-sm mt-2">إدارة طبية احترافية</p>
+        <p className="text-white/70 text-sm mt-2">إدارة طبية احترافية</p>
       </motion.div>
 
       <motion.div

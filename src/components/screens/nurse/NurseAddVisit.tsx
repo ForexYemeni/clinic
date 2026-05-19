@@ -214,7 +214,7 @@ export function NurseAddVisit() {
               value={search}
               onChange={(e) => setSearch(e.target.value)}
               placeholder="بحث بالاسم أو رقم الهاتف..."
-              className="w-full h-10 pr-9 pl-4 bg-white dark:bg-gray-800 border border-border rounded-xl text-sm focus:outline-none focus:ring-2 focus:ring-emerald-500"
+              className="w-full h-10 pr-9 pl-4 bg-white dark:bg-gray-800 border border-border rounded-xl text-sm focus:outline-none focus:ring-2 focus:ring-clinic-500"
             />
           </div>
 
@@ -226,7 +226,7 @@ export function NurseAddVisit() {
               <p className="text-muted-foreground text-sm">لا يوجد مرضى</p>
               <button
                 onClick={() => setScreen('admin-add-patient')}
-                className="mt-3 text-emerald-600 text-sm font-medium"
+                className="mt-3 text-clinic-600 text-sm font-medium"
               >
                 إضافة مريض جديد
               </button>
@@ -239,8 +239,8 @@ export function NurseAddVisit() {
                   onClick={() => handleSelectPatient(patient.id, patient.name)}
                   className="w-full bg-white dark:bg-gray-800 rounded-xl p-3 border border-border text-right active:scale-[0.98] transition-transform flex items-center gap-3"
                 >
-                  <div className="w-10 h-10 bg-emerald-100 dark:bg-emerald-900/30 rounded-xl flex items-center justify-center">
-                    <UserIcon className="w-5 h-5 text-emerald-600" />
+                  <div className="w-10 h-10 bg-clinic-100 dark:bg-clinic-900/30 rounded-xl flex items-center justify-center">
+                    <UserIcon className="w-5 h-5 text-clinic-600" />
                   </div>
                   <div>
                     <p className="font-medium text-sm">{patient.name}</p>
@@ -254,7 +254,7 @@ export function NurseAddVisit() {
           {/* Add new patient */}
           <button
             onClick={() => setScreen('admin-add-patient')}
-            className="w-full mt-4 flex items-center justify-center gap-2 h-12 border-2 border-dashed border-emerald-300 dark:border-emerald-700 rounded-xl text-emerald-600 text-sm font-medium active:scale-[0.98] transition-transform"
+            className="w-full mt-4 flex items-center justify-center gap-2 h-12 border-2 border-dashed border-clinic-300 dark:border-clinic-700 rounded-xl text-clinic-600 text-sm font-medium active:scale-[0.98] transition-transform"
           >
             <Plus className="w-4 h-4" />
             إضافة مريض جديد
@@ -265,15 +265,15 @@ export function NurseAddVisit() {
           <h2 className="text-lg font-bold mb-2">تسجيل زيارة</h2>
 
           {/* Selected Patient */}
-          <div className="bg-emerald-50 dark:bg-emerald-900/20 rounded-xl p-3 mb-4 flex items-center justify-between">
+          <div className="bg-clinic-50 dark:bg-clinic-900/20 rounded-xl p-3 mb-4 flex items-center justify-between">
             <div className="flex items-center gap-2">
-              <UserIcon className="w-5 h-5 text-emerald-600" />
-              <span className="text-sm font-medium text-emerald-800 dark:text-emerald-300">{selectedPatientName}</span>
+              <UserIcon className="w-5 h-5 text-clinic-600" />
+              <span className="text-sm font-medium text-clinic-800 dark:text-clinic-300">{selectedPatientName}</span>
             </div>
             {!preselectedPatientId && (
               <button
                 onClick={() => setStep('select-patient')}
-                className="text-xs text-emerald-600 font-medium"
+                className="text-xs text-clinic-600 font-medium"
               >
                 تغيير
               </button>
@@ -283,7 +283,7 @@ export function NurseAddVisit() {
           {/* Services Selection */}
           <div className="mb-4">
             <h3 className="font-bold text-sm mb-2 flex items-center gap-2">
-              <Stethoscope className="w-4 h-4 text-emerald-500" />
+              <Stethoscope className="w-4 h-4 text-clinic-500" />
               الخدمات المقدمة *
             </h3>
 
@@ -312,13 +312,13 @@ export function NurseAddVisit() {
                         onClick={() => toggleService(svc.id)}
                         className={`w-full flex items-center justify-between p-3 rounded-xl border transition-all mb-1.5 ${
                           selectedServices.includes(svc.id)
-                            ? 'border-emerald-500 bg-emerald-50 dark:bg-emerald-900/20 shadow-sm'
+                            ? 'border-clinic-500 bg-clinic-50 dark:bg-clinic-900/20 shadow-sm'
                             : 'border-border bg-white dark:bg-gray-800'
                         }`}
                       >
                         <div className="flex items-center gap-2">
                           <div className={`w-7 h-7 rounded-lg flex items-center justify-center transition-all ${
-                            selectedServices.includes(svc.id) ? 'bg-emerald-500 text-white shadow-sm' : 'bg-gray-100 dark:bg-gray-700'
+                            selectedServices.includes(svc.id) ? 'bg-clinic-500 text-white shadow-sm' : 'bg-gray-100 dark:bg-gray-700'
                           }`}>
                             {selectedServices.includes(svc.id) ? <Check className="w-4 h-4" /> : <span className="text-[10px]">{services.indexOf(svc) + 1}</span>}
                           </div>
@@ -327,7 +327,7 @@ export function NurseAddVisit() {
                             <p className="text-[10px] text-muted-foreground">{svc.duration} دقيقة</p>
                           </div>
                         </div>
-                        <span className="text-sm font-bold text-emerald-600 dark:text-emerald-400">{formatCurrency(svc.price)}</span>
+                        <span className="text-sm font-bold text-clinic-600 dark:text-clinic-400">{formatCurrency(svc.price)}</span>
                       </button>
                     ))}
                   </div>
@@ -338,7 +338,7 @@ export function NurseAddVisit() {
 
           {/* Total */}
           {selectedServices.length > 0 && (
-            <div className="bg-gradient-to-l from-emerald-600 to-teal-600 text-white rounded-2xl p-4 mb-4 shadow-lg shadow-emerald-500/20">
+            <div className="bg-gradient-to-l to-clinic-600 to-teal-600 text-white rounded-2xl p-4 mb-4 shadow-lg shadow-clinic-500/20">
               <div className="flex items-center justify-between">
                 <div>
                   <p className="text-xs opacity-80">الإجمالي</p>
@@ -360,7 +360,7 @@ export function NurseAddVisit() {
                 value={visitForm.bloodPressure}
                 onChange={(e) => setVisitForm(p => ({ ...p, bloodPressure: e.target.value }))}
                 placeholder="الضغط (120/80)"
-                className="h-10 px-3 bg-white dark:bg-gray-800 border border-border rounded-xl text-sm focus:outline-none focus:ring-2 focus:ring-emerald-500"
+                className="h-10 px-3 bg-white dark:bg-gray-800 border border-border rounded-xl text-sm focus:outline-none focus:ring-2 focus:ring-clinic-500"
                 dir="ltr"
               />
               <input
@@ -368,7 +368,7 @@ export function NurseAddVisit() {
                 value={visitForm.heartRate}
                 onChange={(e) => setVisitForm(p => ({ ...p, heartRate: e.target.value }))}
                 placeholder="معدل النبض"
-                className="h-10 px-3 bg-white dark:bg-gray-800 border border-border rounded-xl text-sm focus:outline-none focus:ring-2 focus:ring-emerald-500"
+                className="h-10 px-3 bg-white dark:bg-gray-800 border border-border rounded-xl text-sm focus:outline-none focus:ring-2 focus:ring-clinic-500"
                 dir="ltr"
               />
               <input
@@ -376,7 +376,7 @@ export function NurseAddVisit() {
                 value={visitForm.temperature}
                 onChange={(e) => setVisitForm(p => ({ ...p, temperature: e.target.value }))}
                 placeholder="الحرارة (°C)"
-                className="h-10 px-3 bg-white dark:bg-gray-800 border border-border rounded-xl text-sm focus:outline-none focus:ring-2 focus:ring-emerald-500"
+                className="h-10 px-3 bg-white dark:bg-gray-800 border border-border rounded-xl text-sm focus:outline-none focus:ring-2 focus:ring-clinic-500"
                 dir="ltr"
               />
               <input
@@ -384,7 +384,7 @@ export function NurseAddVisit() {
                 value={visitForm.oxygenLevel}
                 onChange={(e) => setVisitForm(p => ({ ...p, oxygenLevel: e.target.value }))}
                 placeholder="الأكسجين (%)"
-                className="h-10 px-3 bg-white dark:bg-gray-800 border border-border rounded-xl text-sm focus:outline-none focus:ring-2 focus:ring-emerald-500"
+                className="h-10 px-3 bg-white dark:bg-gray-800 border border-border rounded-xl text-sm focus:outline-none focus:ring-2 focus:ring-clinic-500"
                 dir="ltr"
               />
               <input
@@ -392,7 +392,7 @@ export function NurseAddVisit() {
                 value={visitForm.sugarLevel}
                 onChange={(e) => setVisitForm(p => ({ ...p, sugarLevel: e.target.value }))}
                 placeholder="السكر"
-                className="h-10 px-3 bg-white dark:bg-gray-800 border border-border rounded-xl text-sm focus:outline-none focus:ring-2 focus:ring-emerald-500"
+                className="h-10 px-3 bg-white dark:bg-gray-800 border border-border rounded-xl text-sm focus:outline-none focus:ring-2 focus:ring-clinic-500"
                 dir="ltr"
               />
             </div>
@@ -407,7 +407,7 @@ export function NurseAddVisit() {
                 value={visitForm.diagnosis}
                 onChange={(e) => setVisitForm(p => ({ ...p, diagnosis: e.target.value }))}
                 placeholder="التشخيص"
-                className="w-full h-10 px-3 bg-white dark:bg-gray-800 border border-border rounded-xl text-sm focus:outline-none focus:ring-2 focus:ring-emerald-500"
+                className="w-full h-10 px-3 bg-white dark:bg-gray-800 border border-border rounded-xl text-sm focus:outline-none focus:ring-2 focus:ring-clinic-500"
               />
             </div>
             <div className="space-y-1.5">
@@ -417,7 +417,7 @@ export function NurseAddVisit() {
                 value={visitForm.medications}
                 onChange={(e) => setVisitForm(p => ({ ...p, medications: e.target.value }))}
                 placeholder="الأدوية مفصولة بفاصلة (،)"
-                className="w-full h-10 px-3 bg-white dark:bg-gray-800 border border-border rounded-xl text-sm focus:outline-none focus:ring-2 focus:ring-emerald-500"
+                className="w-full h-10 px-3 bg-white dark:bg-gray-800 border border-border rounded-xl text-sm focus:outline-none focus:ring-2 focus:ring-clinic-500"
               />
             </div>
             <div className="space-y-1.5">
@@ -427,7 +427,7 @@ export function NurseAddVisit() {
                 onChange={(e) => setVisitForm(p => ({ ...p, notes: e.target.value }))}
                 placeholder="ملاحظات إضافية"
                 rows={2}
-                className="w-full px-3 py-2 bg-white dark:bg-gray-800 border border-border rounded-xl text-sm focus:outline-none focus:ring-2 focus:ring-emerald-500 resize-none"
+                className="w-full px-3 py-2 bg-white dark:bg-gray-800 border border-border rounded-xl text-sm focus:outline-none focus:ring-2 focus:ring-clinic-500 resize-none"
               />
             </div>
           </div>
@@ -435,7 +435,7 @@ export function NurseAddVisit() {
           <button
             onClick={handleSubmit}
             disabled={submitting || services.length === 0}
-            className="w-full h-12 bg-gradient-to-l from-emerald-600 to-teal-600 text-white font-bold rounded-xl shadow-lg shadow-emerald-500/20 disabled:opacity-60 active:scale-[0.98] transition-transform"
+            className="w-full h-12 bg-gradient-to-l to-clinic-600 to-teal-600 text-white font-bold rounded-xl shadow-lg shadow-clinic-500/20 disabled:opacity-60 active:scale-[0.98] transition-transform"
           >
             {submitting ? (
               <div className="w-5 h-5 border-2 border-white/30 border-t-white rounded-full animate-spin mx-auto" />

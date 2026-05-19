@@ -57,10 +57,10 @@ export function AdminReports() {
             <div key={i} className="bg-white dark:bg-gray-800 rounded-xl p-3 border border-border">
               <div className="flex items-center justify-between">
                 <span className="text-sm font-medium">{s.name}</span>
-                <span className="text-sm text-emerald-600 font-bold">{s.count} مرة</span>
+                <span className="text-sm text-clinic-600 font-bold">{s.count} مرة</span>
               </div>
               <div className="mt-2 bg-gray-100 dark:bg-gray-700 rounded-full h-2">
-                <div className="bg-emerald-500 h-2 rounded-full" style={{ width: `${Math.min((s.count / (reportData.maxCount || 1)) * 100, 100)}%` }} />
+                <div className="bg-clinic-500 h-2 rounded-full" style={{ width: `${Math.min((s.count / (reportData.maxCount || 1)) * 100, 100)}%` }} />
               </div>
               <div className="flex justify-between mt-1 text-xs text-muted-foreground">
                 <span>الإيرادات: {formatCurrency(s.revenue || 0)}</span>
@@ -73,9 +73,9 @@ export function AdminReports() {
           {/* Summary Stats */}
           <div className="grid grid-cols-2 gap-3">
             <div className="bg-white dark:bg-gray-800 rounded-xl p-4 border border-border text-center">
-              <DollarSign className="w-6 h-6 mx-auto text-emerald-500 mb-1" />
+              <DollarSign className="w-6 h-6 mx-auto text-clinic-500 mb-1" />
               <p className="text-xs text-muted-foreground">{reportType === 'daily' ? 'إيرادات اليوم' : 'إيرادات الشهر'}</p>
-              <p className="text-lg font-bold text-emerald-600">{formatCurrency(reportData?.totalRevenue || 0)}</p>
+              <p className="text-lg font-bold text-clinic-600">{formatCurrency(reportData?.totalRevenue || 0)}</p>
             </div>
             <div className="bg-white dark:bg-gray-800 rounded-xl p-4 border border-border text-center">
               <Users className="w-6 h-6 mx-auto text-blue-500 mb-1" />
@@ -104,7 +104,7 @@ export function AdminReports() {
                     <span className="text-xs text-muted-foreground">{d.date}</span>
                     <div className="flex items-center gap-4">
                       <span className="text-xs">{d.patients} مريض</span>
-                      <span className="text-xs font-bold text-emerald-600">{formatCurrency(d.revenue)}</span>
+                      <span className="text-xs font-bold text-clinic-600">{formatCurrency(d.revenue)}</span>
                     </div>
                   </div>
                 ))}

@@ -14,8 +14,8 @@ export function NurseMoreMenu() {
       label: 'المالية',
       subtitle: 'عرض الفواتير والمدفوعات',
       icon: DollarSign,
-      color: 'text-emerald-600 dark:text-emerald-400',
-      bg: 'bg-emerald-50 dark:bg-emerald-900/20',
+      color: 'text-clinic-600 dark:text-clinic-400',
+      bg: 'bg-clinic-50 dark:bg-clinic-900/20',
       action: () => setScreen('nurse-finance'),
     },
     {
@@ -32,7 +32,7 @@ export function NurseMoreMenu() {
   return (
     <div className="p-4 pb-24">
       {/* Nurse Info Card */}
-      <div className="bg-gradient-to-l from-emerald-600 to-teal-600 rounded-2xl p-4 text-white mb-6 shadow-lg shadow-emerald-500/20">
+      <div className="bg-gradient-to-l to-clinic-600 to-teal-600 rounded-2xl p-4 text-white mb-6 shadow-lg shadow-clinic-500/20">
         <div className="flex items-center gap-3">
           <div className="w-14 h-14 bg-white/20 rounded-2xl flex items-center justify-center backdrop-blur-sm">
             <UserIcon className="w-7 h-7" />

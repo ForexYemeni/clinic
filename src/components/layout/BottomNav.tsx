@@ -27,7 +27,6 @@ const BottomNav = React.memo(function BottomNav() {
 
   const activeTab = useMemo(() => {
     const screen = currentScreen as string;
-    // For nurse, handle special cases
     if (!isAdmin && (screen === 'nurse-add-visit' || screen === 'nurse-add-emergency')) {
       return 'nurse-patients';
     }
@@ -42,7 +41,7 @@ const BottomNav = React.memo(function BottomNav() {
 
   return (
     <nav className="fixed bottom-0 left-0 right-0 z-40 glass-nav border-t border-border pb-safe">
-      <div className={`flex items-center justify-around h-16 max-w-lg mx-auto`}>
+      <div className="flex items-center justify-around h-16 max-w-lg mx-auto">
         {tabs.map((tab) => {
           const isActive = activeTab === tab.id;
           return (
@@ -50,10 +49,10 @@ const BottomNav = React.memo(function BottomNav() {
               key={tab.id}
               onClick={() => setScreen(tab.id as ScreenType)}
               className={`flex flex-col items-center justify-center py-1 px-3 rounded-xl transition-all duration-200 touch-feedback ${
-                isActive ? 'text-emerald-600 dark:text-emerald-400' : 'text-muted-foreground'
+                isActive ? 'text-clinic-600 dark:text-clinic-400' : 'text-muted-foreground'
               }`}
             >
-              <div className={`p-1.5 rounded-xl transition-all duration-200 ${isActive ? 'bg-emerald-50 dark:bg-emerald-900/30 scale-110' : ''}`}>
+              <div className={`p-1.5 rounded-xl transition-all duration-200 ${isActive ? 'bg-clinic-50 dark:bg-clinic-900/30 scale-110' : ''}`}>
                 <tab.icon className="w-5 h-5" />
               </div>
               <span className={`text-[10px] mt-0.5 transition-all duration-200 ${isActive ? 'font-bold' : ''}`}>{tab.label}</span>

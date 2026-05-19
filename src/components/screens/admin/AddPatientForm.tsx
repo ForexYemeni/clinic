@@ -64,7 +64,7 @@ export function AddPatientForm() {
               value={form.name}
               onChange={(e) => setForm(p => ({ ...p, name: e.target.value }))}
               placeholder="الاسم الكامل"
-              className="w-full h-11 pr-10 pl-3 bg-white dark:bg-gray-800 border border-border rounded-xl text-sm focus:outline-none focus:ring-2 focus:ring-emerald-500"
+              className="w-full h-11 pr-10 pl-3 bg-white dark:bg-gray-800 border border-border rounded-xl text-sm focus:outline-none focus:ring-2 focus:ring-clinic-500"
             />
           </div>
         </div>
@@ -78,7 +78,7 @@ export function AddPatientForm() {
               value={form.age}
               onChange={(e) => setForm(p => ({ ...p, age: e.target.value }))}
               placeholder="العمر"
-              className="w-full h-11 px-3 bg-white dark:bg-gray-800 border border-border rounded-xl text-sm focus:outline-none focus:ring-2 focus:ring-emerald-500"
+              className="w-full h-11 px-3 bg-white dark:bg-gray-800 border border-border rounded-xl text-sm focus:outline-none focus:ring-2 focus:ring-clinic-500"
               dir="ltr"
             />
           </div>
@@ -87,7 +87,7 @@ export function AddPatientForm() {
             <select
               value={form.gender}
               onChange={(e) => setForm(p => ({ ...p, gender: e.target.value }))}
-              className="w-full h-11 px-3 bg-white dark:bg-gray-800 border border-border rounded-xl text-sm focus:outline-none focus:ring-2 focus:ring-emerald-500"
+              className="w-full h-11 px-3 bg-white dark:bg-gray-800 border border-border rounded-xl text-sm focus:outline-none focus:ring-2 focus:ring-clinic-500"
             >
               {Object.entries(genderLabels).map(([k, v]) => <option key={k} value={k}>{v}</option>)}
             </select>
@@ -104,7 +104,7 @@ export function AddPatientForm() {
               value={form.phone}
               onChange={(e) => setForm(p => ({ ...p, phone: e.target.value }))}
               placeholder="رقم الهاتف"
-              className="w-full h-11 pr-10 pl-3 bg-white dark:bg-gray-800 border border-border rounded-xl text-sm focus:outline-none focus:ring-2 focus:ring-emerald-500"
+              className="w-full h-11 pr-10 pl-3 bg-white dark:bg-gray-800 border border-border rounded-xl text-sm focus:outline-none focus:ring-2 focus:ring-clinic-500"
               dir="ltr"
             />
           </div>
@@ -120,7 +120,7 @@ export function AddPatientForm() {
               value={form.emergencyPhone}
               onChange={(e) => setForm(p => ({ ...p, emergencyPhone: e.target.value }))}
               placeholder="رقم هاتف للطوارئ"
-              className="w-full h-11 pr-10 pl-3 bg-white dark:bg-gray-800 border border-border rounded-xl text-sm focus:outline-none focus:ring-2 focus:ring-emerald-500"
+              className="w-full h-11 pr-10 pl-3 bg-white dark:bg-gray-800 border border-border rounded-xl text-sm focus:outline-none focus:ring-2 focus:ring-clinic-500"
               dir="ltr"
             />
           </div>
@@ -132,7 +132,7 @@ export function AddPatientForm() {
           <select
             value={form.bloodType}
             onChange={(e) => setForm(p => ({ ...p, bloodType: e.target.value }))}
-            className="w-full h-11 px-3 bg-white dark:bg-gray-800 border border-border rounded-xl text-sm focus:outline-none focus:ring-2 focus:ring-emerald-500"
+            className="w-full h-11 px-3 bg-white dark:bg-gray-800 border border-border rounded-xl text-sm focus:outline-none focus:ring-2 focus:ring-clinic-500"
           >
             <option value="">غير محدد</option>
             {BLOOD_TYPES.map(bt => <option key={bt} value={bt}>{bt}</option>)}
@@ -149,7 +149,7 @@ export function AddPatientForm() {
               onChange={(e) => setForm(p => ({ ...p, address: e.target.value }))}
               placeholder="العنوان"
               rows={2}
-              className="w-full pr-10 pl-3 py-2 bg-white dark:bg-gray-800 border border-border rounded-xl text-sm focus:outline-none focus:ring-2 focus:ring-emerald-500 resize-none"
+              className="w-full pr-10 pl-3 py-2 bg-white dark:bg-gray-800 border border-border rounded-xl text-sm focus:outline-none focus:ring-2 focus:ring-clinic-500 resize-none"
             />
           </div>
         </div>
@@ -162,7 +162,7 @@ export function AddPatientForm() {
             value={form.chronicDiseases}
             onChange={(e) => setForm(p => ({ ...p, chronicDiseases: e.target.value }))}
             placeholder="مثال: السكري، الضغط"
-            className="w-full h-11 px-3 bg-white dark:bg-gray-800 border border-border rounded-xl text-sm focus:outline-none focus:ring-2 focus:ring-emerald-500"
+            className="w-full h-11 px-3 bg-white dark:bg-gray-800 border border-border rounded-xl text-sm focus:outline-none focus:ring-2 focus:ring-clinic-500"
           />
         </div>
 
@@ -174,7 +174,7 @@ export function AddPatientForm() {
             value={form.allergies}
             onChange={(e) => setForm(p => ({ ...p, allergies: e.target.value }))}
             placeholder="مثال: بنسلين، غبار"
-            className="w-full h-11 px-3 bg-white dark:bg-gray-800 border border-border rounded-xl text-sm focus:outline-none focus:ring-2 focus:ring-emerald-500"
+            className="w-full h-11 px-3 bg-white dark:bg-gray-800 border border-border rounded-xl text-sm focus:outline-none focus:ring-2 focus:ring-clinic-500"
           />
         </div>
 
@@ -186,7 +186,7 @@ export function AddPatientForm() {
             onChange={(e) => setForm(p => ({ ...p, medicalHistory: e.target.value }))}
             placeholder="التاريخ المرضي"
             rows={2}
-            className="w-full px-3 py-2 bg-white dark:bg-gray-800 border border-border rounded-xl text-sm focus:outline-none focus:ring-2 focus:ring-emerald-500 resize-none"
+            className="w-full px-3 py-2 bg-white dark:bg-gray-800 border border-border rounded-xl text-sm focus:outline-none focus:ring-2 focus:ring-clinic-500 resize-none"
           />
         </div>
 
@@ -198,14 +198,14 @@ export function AddPatientForm() {
             onChange={(e) => setForm(p => ({ ...p, notes: e.target.value }))}
             placeholder="ملاحظات إضافية"
             rows={2}
-            className="w-full px-3 py-2 bg-white dark:bg-gray-800 border border-border rounded-xl text-sm focus:outline-none focus:ring-2 focus:ring-emerald-500 resize-none"
+            className="w-full px-3 py-2 bg-white dark:bg-gray-800 border border-border rounded-xl text-sm focus:outline-none focus:ring-2 focus:ring-clinic-500 resize-none"
           />
         </div>
 
         <button
           type="submit"
           disabled={loading}
-          className="w-full h-12 bg-gradient-to-l from-emerald-600 to-teal-600 text-white font-bold rounded-xl shadow-lg disabled:opacity-60 active:scale-[0.98] transition-transform"
+          className="w-full h-12 bg-gradient-to-l to-clinic-600 to-teal-600 text-white font-bold rounded-xl shadow-lg disabled:opacity-60 active:scale-[0.98] transition-transform"
         >
           {loading ? <div className="w-5 h-5 border-2 border-white/30 border-t-white rounded-full animate-spin mx-auto" /> : 'إضافة المريض'}
         </button>

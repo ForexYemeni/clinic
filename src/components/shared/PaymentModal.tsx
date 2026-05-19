@@ -58,7 +58,7 @@ export function PaymentModal({
   };
 
   const paymentMethods = [
-    { id: 'cash', label: 'نقدي', icon: Banknote, color: 'bg-emerald-50 dark:bg-emerald-900/20 text-emerald-700 dark:text-emerald-400 border-emerald-300 dark:border-emerald-700' },
+    { id: 'cash', label: 'نقدي', icon: Banknote, color: 'bg-clinic-50 dark:bg-clinic-900/20 text-clinic-700 dark:text-clinic-400 border-clinic-300 dark:border-clinic-700' },
     { id: 'card', label: 'بطاقة', icon: CreditCard, color: 'bg-blue-50 dark:bg-blue-900/20 text-blue-700 dark:text-blue-400 border-blue-300 dark:border-blue-700' },
     { id: 'transfer', label: 'تحويل', icon: DollarSign, color: 'bg-purple-50 dark:bg-purple-900/20 text-purple-700 dark:text-purple-400 border-purple-300 dark:border-purple-700' },
   ];
@@ -126,7 +126,7 @@ export function PaymentModal({
                   onClick={() => handleQuickAmount('full')}
                   className={`py-2.5 rounded-xl text-sm font-bold transition-all ${
                     quickAmount === 'full'
-                      ? 'bg-emerald-600 text-white shadow-sm shadow-emerald-500/20'
+                      ? 'bg-clinic-600 text-white shadow-sm shadow-clinic-500/20'
                       : 'bg-gray-100 dark:bg-gray-700 text-muted-foreground'
                   }`}
                 >
@@ -138,7 +138,7 @@ export function PaymentModal({
                   onClick={() => handleQuickAmount('half')}
                   className={`py-2.5 rounded-xl text-sm font-bold transition-all ${
                     quickAmount === 'half'
-                      ? 'bg-emerald-600 text-white shadow-sm shadow-emerald-500/20'
+                      ? 'bg-clinic-600 text-white shadow-sm shadow-clinic-500/20'
                       : 'bg-gray-100 dark:bg-gray-700 text-muted-foreground'
                   }`}
                 >
@@ -156,7 +156,7 @@ export function PaymentModal({
                   value={amount}
                   onChange={(e) => handleAmountChange(e.target.value)}
                   placeholder="أدخل مبلغ آخر"
-                  className="w-full h-12 px-4 bg-gray-50 dark:bg-gray-700 border border-border rounded-xl text-center text-lg font-bold focus:outline-none focus:ring-2 focus:ring-emerald-500 focus:bg-white dark:focus:bg-gray-600"
+                  className="w-full h-12 px-4 bg-gray-50 dark:bg-gray-700 border border-border rounded-xl text-center text-lg font-bold focus:outline-none focus:ring-2 focus:ring-clinic-500 focus:bg-white dark:focus:bg-gray-600"
                   dir="ltr"
                 />
                 {amount && (
@@ -194,7 +194,7 @@ export function PaymentModal({
               <button
                 onClick={handleConfirm}
                 disabled={!amount || Number(amount) <= 0 || loading}
-                className="w-full h-12 bg-gradient-to-l from-emerald-600 to-teal-600 text-white font-bold rounded-xl shadow-lg shadow-emerald-500/20 disabled:opacity-50 active:scale-[0.98] transition-transform flex items-center justify-center gap-2"
+                className="w-full h-12 bg-gradient-to-l to-clinic-600 to-clinic-600 text-white font-bold rounded-xl shadow-lg shadow-clinic-500/20 disabled:opacity-50 active:scale-[0.98] transition-transform flex items-center justify-center gap-2"
               >
                 {loading ? (
                   <div className="w-5 h-5 border-2 border-white/30 border-t-white rounded-full animate-spin" />

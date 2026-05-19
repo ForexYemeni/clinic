@@ -1,20 +1,24 @@
 'use client';
 
-import React, { useMemo, useCallback } from 'react';
-import { Heart, Moon, Sun, Lock, LogOut } from 'lucide-react';
+import React from 'react';
+import { Heart, Moon, Sun, Lock } from 'lucide-react';
 import { useAppStore } from '@/lib/store';
-import { toast } from 'sonner';
 
 const TopHeader = React.memo(function TopHeader() {
-  const { user, theme, toggleTheme, setScreen, clinicName } = useAppStore();
+  const { user, theme, toggleTheme, setScreen, clinicName, clinicSettings } = useAppStore();
   const isAdmin = user?.role === 'admin';
+  const logo = clinicSettings.logo;
 
   return (
     <header className="sticky top-0 z-40 glass-header border-b border-border">
       <div className="flex items-center justify-between px-4 h-14 max-w-lg mx-auto">
         <div className="flex items-center gap-3">
-          <div className="w-9 h-9 bg-gradient-to-br from-emerald-500 to-teal-600 rounded-xl flex items-center justify-center shadow-sm">
-            <Heart className="w-5 h-5 text-white" fill="currentColor" />
+          <div className="w-9 h-9 bg-gradient-to-br from-clinic-500 to-clinic-600 rounded-xl flex items-center justify-center shadow-sm overflow-hidden">
+            {logo ? (
+              <img src={logo} alt="شعار" className="w-6 h-6 object-contain" />
+            ) : (
+              <Heart className="w-5 h-5 text-white" fill="currentColor" />
+            )}
           </div>
           <div>
             <h1 className="text-sm font-bold leading-tight">{clinicName}</h1>

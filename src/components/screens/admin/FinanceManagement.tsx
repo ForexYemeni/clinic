@@ -72,7 +72,7 @@ export function FinanceManagement() {
 
       {/* Stats */}
       <div className="grid grid-cols-3 gap-2 mb-4">
-        <motion.div initial={{ opacity: 0, y: 10 }} animate={{ opacity: 1, y: 0 }} className="bg-gradient-to-br from-emerald-500 to-emerald-600 rounded-xl p-3 text-white text-center">
+        <motion.div initial={{ opacity: 0, y: 10 }} animate={{ opacity: 1, y: 0 }} className="bg-gradient-to-br from-clinic-500 to-clinic-600 rounded-xl p-3 text-white text-center">
           <DollarSign className="w-5 h-5 mx-auto mb-1" />
           <p className="text-xs opacity-80">الإجمالي</p>
           <p className="text-sm font-bold">{formatCurrency(stats.totalRevenue)}</p>
@@ -101,7 +101,7 @@ export function FinanceManagement() {
             key={f.id}
             onClick={() => setFilter(f.id)}
             className={`px-3 py-1.5 rounded-full text-xs font-medium whitespace-nowrap ${
-              filter === f.id ? 'bg-emerald-600 text-white' : 'bg-gray-100 dark:bg-gray-800 text-muted-foreground'
+              filter === f.id ? 'bg-clinic-600 text-white' : 'bg-gray-100 dark:bg-gray-800 text-muted-foreground'
             }`}
           >
             {f.label}
@@ -136,14 +136,14 @@ export function FinanceManagement() {
               <div className="text-xs space-y-0.5">
                 <div className="flex gap-3">
                   <span>الإجمالي: <b>{formatCurrency(inv.total)}</b></span>
-                  <span className="text-emerald-600">المدفوع: {formatCurrency(inv.paid)}</span>
+                  <span className="text-clinic-600">المدفوع: {formatCurrency(inv.paid)}</span>
                 </div>
                 <span className="text-red-600">المتبقي: {formatCurrency(inv.remaining)}</span>
               </div>
               {inv.remaining > 0 && (
                 <button
                   onClick={() => handlePayInvoice(inv.id, inv.remaining)}
-                  className="px-3 py-1.5 bg-emerald-600 text-white text-xs rounded-lg active:scale-[0.97] transition-transform"
+                  className="px-3 py-1.5 bg-clinic-600 text-white text-xs rounded-lg active:scale-[0.97] transition-transform"
                 >
                   تسديد
                 </button>

@@ -103,8 +103,8 @@ export function NurseEmergencies() {
                 )}
                 {em.actions && (
                   <div className="mt-1.5 flex items-start gap-1.5">
-                    <span className="text-[10px] bg-emerald-100 dark:bg-emerald-900/30 text-emerald-700 dark:text-emerald-400 px-2 py-0.5 rounded-full font-medium">الإجراءات</span>
-                    <p className="text-xs text-emerald-700 dark:text-emerald-400">{em.actions}</p>
+                    <span className="text-[10px] bg-clinic-100 dark:bg-clinic-900/30 text-clinic-700 dark:text-clinic-400 px-2 py-0.5 rounded-full font-medium">الإجراءات</span>
+                    <p className="text-xs text-clinic-700 dark:text-clinic-400">{em.actions}</p>
                   </div>
                 )}
                 {em.nurseName && (

@@ -38,7 +38,7 @@ const colorCircleMap: Record<string, string> = {
   cyan: 'bg-cyan-100 dark:bg-cyan-900/30',
   rose: 'bg-rose-100 dark:bg-rose-900/30',
   violet: 'bg-violet-100 dark:bg-violet-900/30',
-  emerald: 'bg-emerald-100 dark:bg-emerald-900/30',
+  emerald: 'bg-clinic-100 dark:bg-clinic-900/30',
   sky: 'bg-sky-100 dark:bg-sky-900/30',
   teal: 'bg-teal-100 dark:bg-teal-900/30',
   indigo: 'bg-indigo-100 dark:bg-indigo-900/30',
@@ -53,7 +53,7 @@ const colorBorderMap: Record<string, string> = {
   cyan: 'border-r-cyan-400',
   rose: 'border-r-rose-400',
   violet: 'border-r-violet-400',
-  emerald: 'border-r-emerald-400',
+  emerald: 'border-r-clinic-400',
   sky: 'border-r-sky-400',
   teal: 'border-r-teal-400',
   indigo: 'border-r-indigo-400',
@@ -68,7 +68,7 @@ const colorBadgeBg: Record<string, string> = {
   cyan: 'bg-cyan-100 text-cyan-700 dark:bg-cyan-900/30 dark:text-cyan-300',
   rose: 'bg-rose-100 text-rose-700 dark:bg-rose-900/30 dark:text-rose-300',
   violet: 'bg-violet-100 text-violet-700 dark:bg-violet-900/30 dark:text-violet-300',
-  emerald: 'bg-emerald-100 text-emerald-700 dark:bg-emerald-900/30 dark:text-emerald-300',
+  emerald: 'bg-clinic-100 text-clinic-700 dark:bg-clinic-900/30 dark:text-clinic-300',
   sky: 'bg-sky-100 text-sky-700 dark:bg-sky-900/30 dark:text-sky-300',
   teal: 'bg-teal-100 text-teal-700 dark:bg-teal-900/30 dark:text-teal-300',
   indigo: 'bg-indigo-100 text-indigo-700 dark:bg-indigo-900/30 dark:text-indigo-300',
@@ -83,7 +83,7 @@ const colorTabActive: Record<string, string> = {
   cyan: 'bg-cyan-600 text-white shadow-cyan-200 dark:shadow-cyan-900/40',
   rose: 'bg-rose-600 text-white shadow-rose-200 dark:shadow-rose-900/40',
   violet: 'bg-violet-600 text-white shadow-violet-200 dark:shadow-violet-900/40',
-  emerald: 'bg-emerald-600 text-white shadow-emerald-200 dark:shadow-emerald-900/40',
+  emerald: 'bg-clinic-600 text-white shadow-clinic-200 dark:shadow-clinic-900/40',
   sky: 'bg-sky-600 text-white shadow-sky-200 dark:shadow-sky-900/40',
   teal: 'bg-teal-600 text-white shadow-teal-200 dark:shadow-teal-900/40',
   indigo: 'bg-indigo-600 text-white shadow-indigo-200 dark:shadow-indigo-900/40',
@@ -409,8 +409,8 @@ export function ServiceManagement() {
       {/* ═══════ Header ═══════ */}
       <div className="flex items-center justify-between mb-4">
         <div className="flex items-center gap-2">
-          <div className="w-9 h-9 rounded-xl bg-emerald-100 dark:bg-emerald-900/30 flex items-center justify-center">
-            <Stethoscope className="w-5 h-5 text-emerald-600 dark:text-emerald-400" />
+          <div className="w-9 h-9 rounded-xl bg-clinic-100 dark:bg-clinic-900/30 flex items-center justify-center">
+            <Stethoscope className="w-5 h-5 text-clinic-600 dark:text-clinic-400" />
           </div>
           <div>
             <h2 className="text-lg font-bold leading-tight">إدارة الخدمات</h2>
@@ -429,7 +429,7 @@ export function ServiceManagement() {
           </button>
           <button
             onClick={() => { setForm(emptyForm); setShowAddSheet(true); }}
-            className="flex items-center gap-1.5 bg-emerald-600 hover:bg-emerald-700 text-white px-4 py-2.5 rounded-xl text-sm font-medium active:scale-[0.97] transition-all shadow-lg shadow-emerald-600/20"
+            className="flex items-center gap-1.5 bg-clinic-600 hover:bg-clinic-700 text-white px-4 py-2.5 rounded-xl text-sm font-medium active:scale-[0.97] transition-all shadow-lg shadow-clinic-600/20"
           >
             <Plus className="w-4 h-4" />
             إضافة خدمة
@@ -443,7 +443,7 @@ export function ServiceManagement() {
           initial={{ opacity: 0, y: 10 }}
           animate={{ opacity: 1, y: 0 }}
           transition={{ delay: 0 }}
-          className="bg-gradient-to-br from-emerald-500 to-emerald-600 rounded-2xl p-3 text-white shadow-lg shadow-emerald-600/20"
+          className="bg-gradient-to-br from-clinic-500 to-clinic-600 rounded-2xl p-3 text-white shadow-lg shadow-clinic-600/20"
         >
           <div className="flex items-center gap-1.5 mb-1">
             <Package className="w-3.5 h-3.5 opacity-80" />
@@ -487,7 +487,7 @@ export function ServiceManagement() {
           value={search}
           onChange={(e) => setSearch(e.target.value)}
           placeholder="ابحث عن خدمة بالاسم أو التصنيف..."
-          className="w-full h-11 pr-10 pl-10 bg-white dark:bg-gray-800 border border-gray-200 dark:border-gray-700 rounded-2xl text-sm focus:outline-none focus:ring-2 focus:ring-emerald-500 focus:border-transparent shadow-sm transition-all"
+          className="w-full h-11 pr-10 pl-10 bg-white dark:bg-gray-800 border border-gray-200 dark:border-gray-700 rounded-2xl text-sm focus:outline-none focus:ring-2 focus:ring-clinic-500 focus:border-transparent shadow-sm transition-all"
         />
         {search && (
           <button
@@ -510,7 +510,7 @@ export function ServiceManagement() {
           onClick={() => setActiveCategory('الكل')}
           className={`flex items-center gap-1.5 px-3.5 py-2 rounded-xl text-xs font-medium whitespace-nowrap transition-all flex-shrink-0 ${
             activeCategory === 'الكل'
-              ? 'bg-emerald-600 text-white shadow-lg shadow-emerald-600/20'
+              ? 'bg-clinic-600 text-white shadow-lg shadow-clinic-600/20'
               : 'bg-gray-100 dark:bg-gray-800 text-muted-foreground hover:bg-gray-200 dark:hover:bg-gray-700'
           }`}
         >
@@ -535,7 +535,7 @@ export function ServiceManagement() {
               onClick={() => setActiveCategory(cat.key)}
               className={`flex items-center gap-1.5 px-3.5 py-2 rounded-xl text-xs font-medium whitespace-nowrap transition-all flex-shrink-0 ${
                 isActive
-                  ? colorTabActive[cat.color] || 'bg-emerald-600 text-white'
+                  ? colorTabActive[cat.color] || 'bg-clinic-600 text-white'
                   : 'bg-gray-100 dark:bg-gray-800 text-muted-foreground hover:bg-gray-200 dark:hover:bg-gray-700'
               } ${isActive ? 'shadow-lg' : ''}`}
             >
@@ -581,7 +581,7 @@ export function ServiceManagement() {
             {!search && (
               <button
                 onClick={() => { setForm(emptyForm); setShowAddSheet(true); }}
-                className="mt-4 inline-flex items-center gap-1.5 bg-emerald-600 text-white px-5 py-2.5 rounded-xl text-sm font-medium active:scale-[0.97] transition-transform"
+                className="mt-4 inline-flex items-center gap-1.5 bg-clinic-600 text-white px-5 py-2.5 rounded-xl text-sm font-medium active:scale-[0.97] transition-transform"
               >
                 <Plus className="w-4 h-4" />
                 إضافة خدمة جديدة
@@ -609,10 +609,10 @@ export function ServiceManagement() {
                   }`}
                 >
                   {/* Color accent bar */}
-                  <div className={`flex border-r-4 ${colorBorderMap[color] || 'border-r-emerald-400'}`}>
+                  <div className={`flex border-r-4 ${colorBorderMap[color] || 'border-r-clinic-400'}`}>
                     {/* Icon circle */}
                     <div className="flex items-center px-3 py-3.5">
-                      <div className={`w-12 h-12 rounded-xl ${colorCircleMap[color] || 'bg-emerald-100 dark:bg-emerald-900/30'} flex items-center justify-center text-xl flex-shrink-0`}>
+                      <div className={`w-12 h-12 rounded-xl ${colorCircleMap[color] || 'bg-clinic-100 dark:bg-clinic-900/30'} flex items-center justify-center text-xl flex-shrink-0`}>
                         {icon}
                       </div>
                     </div>
@@ -653,7 +653,7 @@ export function ServiceManagement() {
                         {/* Price - inline editable */}
                         {quickEditId === service.id ? (
                           <div className="flex items-center gap-1 bg-gray-50 dark:bg-gray-700 rounded-lg px-1.5 py-0.5">
-                            <DollarSign className="w-3 h-3 text-emerald-500" />
+                            <DollarSign className="w-3 h-3 text-clinic-500" />
                             <input
                               type="number"
                               value={quickEditPrice}
@@ -662,13 +662,13 @@ export function ServiceManagement() {
                                 if (e.key === 'Enter') handleQuickPriceSave(service.id);
                                 if (e.key === 'Escape') setQuickEditId(null);
                               }}
-                              className="w-16 h-6 text-xs font-semibold bg-transparent text-emerald-600 dark:text-emerald-400 focus:outline-none"
+                              className="w-16 h-6 text-xs font-semibold bg-transparent text-clinic-600 dark:text-clinic-400 focus:outline-none"
                               dir="ltr"
                               autoFocus
                             />
                             <button
                               onClick={() => handleQuickPriceSave(service.id)}
-                              className="p-0.5 text-emerald-600 hover:text-emerald-700"
+                              className="p-0.5 text-clinic-600 hover:text-clinic-700"
                             >
                               <Check className="w-3.5 h-3.5" />
                             </button>
@@ -685,7 +685,7 @@ export function ServiceManagement() {
                               setQuickEditId(service.id);
                               setQuickEditPrice(String(service.price));
                             }}
-                            className="flex items-center gap-1 text-xs font-bold text-emerald-600 dark:text-emerald-400 hover:underline"
+                            className="flex items-center gap-1 text-xs font-bold text-clinic-600 dark:text-clinic-400 hover:underline"
                             title="انقر لتعديل السعر"
                           >
                             <DollarSign className="w-3 h-3" />
@@ -715,7 +715,7 @@ export function ServiceManagement() {
                         title={isPaused ? 'تفعيل' : 'إيقاف مؤقت'}
                       >
                         {isPaused ? (
-                          <Play className="w-3.5 h-3.5 text-emerald-500" />
+                          <Play className="w-3.5 h-3.5 text-clinic-500" />
                         ) : (
                           <Pause className="w-3.5 h-3.5 text-amber-500" />
                         )}
@@ -764,8 +764,8 @@ export function ServiceManagement() {
               {/* Header */}
               <div className="flex items-center justify-between px-5 pb-3 border-b border-gray-100 dark:border-gray-800">
                 <div className="flex items-center gap-2">
-                  <div className="w-8 h-8 rounded-lg bg-emerald-100 dark:bg-emerald-900/30 flex items-center justify-center">
-                    <Plus className="w-4 h-4 text-emerald-600 dark:text-emerald-400" />
+                  <div className="w-8 h-8 rounded-lg bg-clinic-100 dark:bg-clinic-900/30 flex items-center justify-center">
+                    <Plus className="w-4 h-4 text-clinic-600 dark:text-clinic-400" />
                   </div>
                   <h3 className="font-bold text-base">إضافة خدمة جديدة</h3>
                 </div>
@@ -787,7 +787,7 @@ export function ServiceManagement() {
                       type="text"
                       value={form.icon}
                       onChange={(e) => setForm(p => ({ ...p, icon: e.target.value }))}
-                      className="w-14 h-11 text-center text-2xl bg-gray-50 dark:bg-gray-800 border border-gray-200 dark:border-gray-700 rounded-xl focus:outline-none focus:ring-2 focus:ring-emerald-500"
+                      className="w-14 h-11 text-center text-2xl bg-gray-50 dark:bg-gray-800 border border-gray-200 dark:border-gray-700 rounded-xl focus:outline-none focus:ring-2 focus:ring-clinic-500"
                       maxLength={2}
                     />
                   </div>
@@ -798,7 +798,7 @@ export function ServiceManagement() {
                       value={form.nameAr}
                       onChange={(e) => setForm(p => ({ ...p, nameAr: e.target.value }))}
                       placeholder="مثال: قياس ضغط الدم"
-                      className="w-full h-11 px-3 bg-gray-50 dark:bg-gray-800 border border-gray-200 dark:border-gray-700 rounded-xl text-sm focus:outline-none focus:ring-2 focus:ring-emerald-500"
+                      className="w-full h-11 px-3 bg-gray-50 dark:bg-gray-800 border border-gray-200 dark:border-gray-700 rounded-xl text-sm focus:outline-none focus:ring-2 focus:ring-clinic-500"
                     />
                   </div>
                 </div>
@@ -814,7 +814,7 @@ export function ServiceManagement() {
                         value={form.price}
                         onChange={(e) => setForm(p => ({ ...p, price: e.target.value }))}
                         placeholder="0"
-                        className="w-full h-11 pr-9 pl-3 bg-gray-50 dark:bg-gray-800 border border-gray-200 dark:border-gray-700 rounded-xl text-sm focus:outline-none focus:ring-2 focus:ring-emerald-500"
+                        className="w-full h-11 pr-9 pl-3 bg-gray-50 dark:bg-gray-800 border border-gray-200 dark:border-gray-700 rounded-xl text-sm focus:outline-none focus:ring-2 focus:ring-clinic-500"
                         dir="ltr"
                       />
                     </div>
@@ -828,7 +828,7 @@ export function ServiceManagement() {
                         value={form.duration}
                         onChange={(e) => setForm(p => ({ ...p, duration: e.target.value }))}
                         placeholder="15"
-                        className="w-full h-11 pr-9 pl-3 bg-gray-50 dark:bg-gray-800 border border-gray-200 dark:border-gray-700 rounded-xl text-sm focus:outline-none focus:ring-2 focus:ring-emerald-500"
+                        className="w-full h-11 pr-9 pl-3 bg-gray-50 dark:bg-gray-800 border border-gray-200 dark:border-gray-700 rounded-xl text-sm focus:outline-none focus:ring-2 focus:ring-clinic-500"
                         dir="ltr"
                       />
                     </div>
@@ -842,7 +842,7 @@ export function ServiceManagement() {
                     <select
                       value={form.category}
                       onChange={(e) => setForm(p => ({ ...p, category: e.target.value }))}
-                      className="w-full h-11 px-3 bg-gray-50 dark:bg-gray-800 border border-gray-200 dark:border-gray-700 rounded-xl text-sm focus:outline-none focus:ring-2 focus:ring-emerald-500 appearance-none"
+                      className="w-full h-11 px-3 bg-gray-50 dark:bg-gray-800 border border-gray-200 dark:border-gray-700 rounded-xl text-sm focus:outline-none focus:ring-2 focus:ring-clinic-500 appearance-none"
                     >
                       {CATEGORIES.map(cat => (
                         <option key={cat.key} value={cat.key}>{cat.icon} {cat.label}</option>
@@ -860,7 +860,7 @@ export function ServiceManagement() {
                     onChange={(e) => setForm(p => ({ ...p, description: e.target.value }))}
                     placeholder="وصف مختصر للخدمة..."
                     rows={2}
-                    className="w-full px-3 py-2.5 bg-gray-50 dark:bg-gray-800 border border-gray-200 dark:border-gray-700 rounded-xl text-sm focus:outline-none focus:ring-2 focus:ring-emerald-500 resize-none"
+                    className="w-full px-3 py-2.5 bg-gray-50 dark:bg-gray-800 border border-gray-200 dark:border-gray-700 rounded-xl text-sm focus:outline-none focus:ring-2 focus:ring-clinic-500 resize-none"
                   />
                 </div>
 
@@ -868,7 +868,7 @@ export function ServiceManagement() {
                 <button
                   onClick={handleAddService}
                   disabled={submitting}
-                  className="w-full h-12 bg-emerald-600 hover:bg-emerald-700 text-white font-bold rounded-xl active:scale-[0.98] transition-all shadow-lg shadow-emerald-600/20 disabled:opacity-50 flex items-center justify-center gap-2"
+                  className="w-full h-12 bg-clinic-600 hover:bg-clinic-700 text-white font-bold rounded-xl active:scale-[0.98] transition-all shadow-lg shadow-clinic-600/20 disabled:opacity-50 flex items-center justify-center gap-2"
                 >
                   {submitting ? (
                     <Loader2 className="w-5 h-5 animate-spin" />
@@ -1029,7 +1029,7 @@ export function ServiceManagement() {
                     className="p-1"
                   >
                     {editingService.status === 'active' ? (
-                      <ToggleRight className="w-10 h-6 text-emerald-500" />
+                      <ToggleRight className="w-10 h-6 text-clinic-500" />
                     ) : (
                       <ToggleLeft className="w-10 h-6 text-gray-400" />
                     )}

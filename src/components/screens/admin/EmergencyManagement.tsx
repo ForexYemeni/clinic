@@ -66,7 +66,7 @@ export function EmergencyManagement() {
             onClick={() => setStatusFilter(f.id)}
             className={`px-3 py-1.5 rounded-full text-xs font-medium whitespace-nowrap transition-all ${
               statusFilter === f.id
-                ? 'bg-emerald-600 text-white'
+                ? 'bg-clinic-600 text-white'
                 : 'bg-gray-100 dark:bg-gray-800 text-muted-foreground'
             }`}
           >
@@ -108,7 +108,7 @@ export function EmergencyManagement() {
               </div>
               <p className="text-sm font-medium">{em.patientName || 'مريض غير مسجل'}</p>
               {em.notes && <p className="text-xs text-muted-foreground mt-1">{em.notes}</p>}
-              {em.actions && <p className="text-xs text-emerald-600 dark:text-emerald-400 mt-1">الإجراءات: {em.actions}</p>}
+              {em.actions && <p className="text-xs text-clinic-600 dark:text-clinic-400 mt-1">الإجراءات: {em.actions}</p>}
               {em.procedures && <p className="text-xs text-teal-600 dark:text-teal-400 mt-0.5">الإجراءات الطبية: {em.procedures}</p>}
               {em.nurseName && <p className="text-xs text-muted-foreground mt-1">الممرض: {em.nurseName}</p>}
 

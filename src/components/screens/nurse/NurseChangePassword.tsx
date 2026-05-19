@@ -55,7 +55,7 @@ export function NurseChangePassword() {
               value={passwords.newPassword}
               onChange={(e) => setPasswords(p => ({ ...p, newPassword: e.target.value }))}
               placeholder="كلمة المرور الجديدة"
-              className="w-full h-11 pr-10 pl-10 bg-white dark:bg-gray-800 border border-border rounded-xl text-sm focus:outline-none focus:ring-2 focus:ring-emerald-500"
+              className="w-full h-11 pr-10 pl-10 bg-white dark:bg-gray-800 border border-border rounded-xl text-sm focus:outline-none focus:ring-2 focus:ring-clinic-500"
             />
             <button type="button" onClick={() => setShowPass(!showPass)} className="absolute left-3 top-1/2 -translate-y-1/2 text-muted-foreground">
               {showPass ? <EyeOff className="w-4 h-4" /> : <Eye className="w-4 h-4" />}
@@ -72,7 +72,7 @@ export function NurseChangePassword() {
               value={passwords.confirm}
               onChange={(e) => setPasswords(p => ({ ...p, confirm: e.target.value }))}
               placeholder="أعد إدخال كلمة المرور"
-              className="w-full h-11 pr-10 pl-3 bg-white dark:bg-gray-800 border border-border rounded-xl text-sm focus:outline-none focus:ring-2 focus:ring-emerald-500"
+              className="w-full h-11 pr-10 pl-3 bg-white dark:bg-gray-800 border border-border rounded-xl text-sm focus:outline-none focus:ring-2 focus:ring-clinic-500"
             />
           </div>
         </div>
@@ -80,7 +80,7 @@ export function NurseChangePassword() {
         <button
           type="submit"
           disabled={loading}
-          className="w-full h-12 bg-gradient-to-l from-emerald-600 to-teal-600 text-white font-bold rounded-xl shadow-lg disabled:opacity-60 active:scale-[0.98] transition-transform"
+          className="w-full h-12 bg-gradient-to-l to-clinic-600 to-teal-600 text-white font-bold rounded-xl shadow-lg disabled:opacity-60 active:scale-[0.98] transition-transform"
         >
           {loading ? <div className="w-5 h-5 border-2 border-white/30 border-t-white rounded-full animate-spin mx-auto" /> : 'تغيير كلمة المرور'}
         </button>

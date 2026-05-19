@@ -7,7 +7,8 @@ import { useAppStore } from '@/lib/store';
 import { toast } from 'sonner';
 
 export function LoginScreen() {
-  const { setScreen, setUser, setIsFirstSetup, clinicName } = useAppStore();
+  const { setScreen, setUser, setIsFirstSetup, clinicName, clinicSettings } = useAppStore();
+  const logo = clinicSettings.logo;
   const [phone, setPhone] = useState('');
   const [password, setPassword] = useState('');
   const [showPass, setShowPass] = useState(false);
@@ -77,22 +78,26 @@ export function LoginScreen() {
   };
 
   return (
-    <div className="min-h-screen flex flex-col bg-gradient-to-br from-emerald-50 via-white to-teal-50 dark:from-gray-950 dark:via-gray-900 dark:to-emerald-950">
+    <div className="min-h-screen flex flex-col bg-gradient-to-br from-clinic-50 via-white to-clinic-50 dark:from-gray-950 dark:via-gray-900 dark:to-gray-950">
       {/* Header */}
       <div className="flex-1 flex flex-col items-center justify-center pt-12 pb-6">
         <motion.div
           initial={{ scale: 0.8, opacity: 0 }}
           animate={{ scale: 1, opacity: 1 }}
           transition={{ type: 'spring', stiffness: 200, damping: 20 }}
-          className="w-20 h-20 bg-gradient-to-br from-emerald-500 to-teal-600 rounded-3xl flex items-center justify-center shadow-xl shadow-emerald-200 dark:shadow-emerald-900/40"
+          className="w-20 h-20 bg-gradient-to-br from-clinic-500 to-clinic-600 rounded-3xl flex items-center justify-center shadow-xl shadow-clinic-200 dark:shadow-clinic-900/40 overflow-hidden"
         >
-          <Heart className="w-12 h-12 text-white" fill="currentColor" />
+          {logo ? (
+            <img src={logo} alt="شعار" className="w-12 h-12 object-contain" />
+          ) : (
+            <Heart className="w-12 h-12 text-white" fill="currentColor" />
+          )}
         </motion.div>
         <motion.h1
           initial={{ opacity: 0, y: 10 }}
           animate={{ opacity: 1, y: 0 }}
           transition={{ delay: 0.2 }}
-          className="text-xl font-bold mt-4 text-emerald-800 dark:text-emerald-300"
+          className="text-xl font-bold mt-4 text-clinic-800 dark:text-clinic-300"
         >
           {clinicName}
         </motion.h1>
@@ -133,7 +138,7 @@ export function LoginScreen() {
                   setError('');
                 }}
                 placeholder="7XXXXXXXX"
-                className="w-full h-12 pr-10 pl-14 bg-white dark:bg-gray-800 border border-border rounded-xl text-base font-mono focus:outline-none focus:ring-2 focus:ring-emerald-500 focus:border-transparent transition-all"
+                className="w-full h-12 pr-10 pl-14 bg-white dark:bg-gray-800 border border-border rounded-xl text-base font-mono focus:outline-none focus:ring-2 focus:ring-clinic-500 focus:border-transparent transition-all"
                 dir="ltr"
                 inputMode="numeric"
               />
@@ -152,7 +157,7 @@ export function LoginScreen() {
                 value={password}
                 onChange={(e) => { setPassword(e.target.value); setError(''); }}
                 placeholder="أدخل كلمة المرور"
-                className="w-full h-12 pr-10 pl-10 bg-white dark:bg-gray-800 border border-border rounded-xl text-base focus:outline-none focus:ring-2 focus:ring-emerald-500 focus:border-transparent transition-all"
+                className="w-full h-12 pr-10 pl-10 bg-white dark:bg-gray-800 border border-border rounded-xl text-base focus:outline-none focus:ring-2 focus:ring-clinic-500 focus:border-transparent transition-all"
               />
               <button
                 type="button"
@@ -180,7 +185,7 @@ export function LoginScreen() {
           <button
             type="submit"
             disabled={loading}
-            className="w-full h-12 bg-gradient-to-l from-emerald-600 to-teal-600 text-white font-bold rounded-xl shadow-lg shadow-emerald-200 dark:shadow-emerald-900/40 disabled:opacity-60 active:scale-[0.98] transition-all"
+            className="w-full h-12 bg-gradient-to-l from-clinic-600 to-clinic-700 text-white font-bold rounded-xl shadow-lg shadow-clinic-200 dark:shadow-clinic-900/40 disabled:opacity-60 active:scale-[0.98] transition-all"
           >
             {loading ? (
               <div className="w-6 h-6 border-2 border-white/30 border-t-white rounded-full animate-spin mx-auto" />

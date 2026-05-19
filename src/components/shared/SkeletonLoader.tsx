@@ -82,7 +82,7 @@ function CardListSkeleton({ count = 5 }: { count?: number }) {
 function PatientDetailSkeleton() {
   return (
     <div className="pb-24 pt-0">
-      <div className="bg-gradient-to-br from-emerald-600 to-teal-600 -mx-4 px-4 pt-2 pb-6 rounded-b-3xl">
+      <div className="bg-gradient-to-br to-clinic-600 to-clinic-600 -mx-4 px-4 pt-2 pb-6 rounded-b-3xl">
         <div className="flex items-center gap-3 mb-4">
           <Skeleton className="w-9 h-9 rounded-xl bg-white/20" />
           <Skeleton className="h-5 w-24 bg-white/20" />

@@ -70,7 +70,7 @@ export function PatientDetail({ role = 'admin' }: Props) {
           <p className="text-sm text-muted-foreground mb-6">قد يكون المريض محذوفاً أو حدث خطأ في الاتصال</p>
           <button
             onClick={fetchPatient}
-            className="inline-flex items-center gap-2 bg-emerald-600 text-white px-6 py-2.5 rounded-xl text-sm font-medium active:scale-[0.97] transition-transform"
+            className="inline-flex items-center gap-2 bg-clinic-600 text-white px-6 py-2.5 rounded-xl text-sm font-medium active:scale-[0.97] transition-transform"
           >
             <RefreshCw className="w-4 h-4" /> إعادة المحاولة
           </button>
@@ -104,7 +104,7 @@ export function PatientDetail({ role = 'admin' }: Props) {
   return (
     <div className="pb-24">
       {/* Patient Header */}
-      <div className="bg-gradient-to-l from-emerald-600 to-teal-600 text-white p-4 pb-6">
+      <div className="bg-gradient-to-l to-clinic-600 to-teal-600 text-white p-4 pb-6">
         <div className="flex items-center justify-between mb-3">
           <button onClick={() => setScreen(role === 'admin' ? 'admin-patients' : 'nurse-patients')} className="flex items-center gap-1 text-white/80 text-sm">
             <ArrowRight className="w-4 h-4" /> رجوع
@@ -165,7 +165,7 @@ export function PatientDetail({ role = 'admin' }: Props) {
               onClick={() => setActiveTab(tab.id)}
               className={`flex-1 flex items-center justify-center gap-1 py-2.5 rounded-xl text-xs font-medium transition-all ${
                 activeTab === tab.id
-                  ? 'bg-emerald-600 text-white shadow-sm'
+                  ? 'bg-clinic-600 text-white shadow-sm'
                   : 'text-muted-foreground hover:text-foreground'
               }`}
             >
@@ -239,7 +239,7 @@ export function PatientDetail({ role = 'admin' }: Props) {
                       {visit.medications && visit.medications.length > 0 && (
                         <div className="mt-2 flex flex-wrap gap-1">
                           {visit.medications.map((med: string, i: number) => (
-                            <span key={i} className="text-[10px] bg-emerald-50 dark:bg-emerald-900/20 text-emerald-700 dark:text-emerald-400 px-2 py-0.5 rounded-full">{med}</span>
+                            <span key={i} className="text-[10px] bg-clinic-50 dark:bg-clinic-900/20 text-clinic-700 dark:text-clinic-400 px-2 py-0.5 rounded-full">{med}</span>
                           ))}
                         </div>
                       )}
@@ -262,8 +262,8 @@ export function PatientDetail({ role = 'admin' }: Props) {
                   <div key={svc.id} className="bg-white dark:bg-gray-800 rounded-xl p-3 border border-border">
                     <div className="flex items-center justify-between">
                       <div className="flex items-center gap-3">
-                        <div className="w-10 h-10 bg-emerald-50 dark:bg-emerald-900/20 rounded-xl flex items-center justify-center">
-                          <Stethoscope className="w-5 h-5 text-emerald-600 dark:text-emerald-400" />
+                        <div className="w-10 h-10 bg-clinic-50 dark:bg-clinic-900/20 rounded-xl flex items-center justify-center">
+                          <Stethoscope className="w-5 h-5 text-clinic-600 dark:text-clinic-400" />
                         </div>
                         <div>
                           <p className="text-sm font-bold">{svc.nameAr || svc.serviceName || 'خدمة'}</p>
@@ -274,7 +274,7 @@ export function PatientDetail({ role = 'admin' }: Props) {
                           </div>
                         </div>
                       </div>
-                      <span className="text-sm font-bold text-emerald-600 dark:text-emerald-400 bg-emerald-50 dark:bg-emerald-900/20 px-2 py-1 rounded-lg">
+                      <span className="text-sm font-bold text-clinic-600 dark:text-clinic-400 bg-clinic-50 dark:bg-clinic-900/20 px-2 py-1 rounded-lg">
                         {formatCurrency(svc.price || svc.service?.price || 0)}
                       </span>
                     </div>
@@ -325,7 +325,7 @@ export function PatientDetail({ role = 'admin' }: Props) {
                         <span>الإجمالي</span>
                         <span className="font-bold">{formatCurrency(inv.total)}</span>
                       </div>
-                      <div className="flex justify-between text-xs text-emerald-600 dark:text-emerald-400">
+                      <div className="flex justify-between text-xs text-clinic-600 dark:text-clinic-400">
                         <span>المدفوع</span>
                         <span className="font-medium">{formatCurrency(inv.paid)}</span>
                       </div>
@@ -345,7 +345,7 @@ export function PatientDetail({ role = 'admin' }: Props) {
               {/* Medical Info */}
               <div className="bg-white dark:bg-gray-800 rounded-xl p-3 border border-border">
                 <h3 className="font-bold text-sm mb-3 flex items-center gap-2">
-                  <Activity className="w-4 h-4 text-emerald-500" />
+                  <Activity className="w-4 h-4 text-clinic-500" />
                   المعلومات الطبية
                 </h3>
                 <div className="space-y-2">

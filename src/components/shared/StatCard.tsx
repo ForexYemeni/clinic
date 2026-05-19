@@ -55,7 +55,7 @@ const StatCard = React.memo(function StatCard({ icon: Icon, label, value, color,
             <Icon className="w-5 h-5" />
           </div>
           {trend && (
-            <div className={`flex items-center text-xs font-semibold ${trend.startsWith('+') ? 'text-emerald-600' : 'text-red-500'}`}>
+            <div className={`flex items-center text-xs font-semibold ${trend.startsWith('+') ? 'text-clinic-600' : 'text-red-500'}`}>
               {trend.startsWith('+') ? <ArrowUpRight className="w-3 h-3" /> : <ArrowDownRight className="w-3 h-3" />}
               {trend}
             </div>

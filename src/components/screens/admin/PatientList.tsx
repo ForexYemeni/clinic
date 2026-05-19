@@ -67,7 +67,7 @@ export function PatientList({ role = 'admin' }: Props) {
           )}
           <button
             onClick={handleAddPatient}
-            className="flex items-center gap-1.5 bg-emerald-600 text-white px-3 py-2 rounded-xl text-sm font-medium active:scale-[0.97] transition-transform"
+            className="flex items-center gap-1.5 bg-clinic-600 text-white px-3 py-2 rounded-xl text-sm font-medium active:scale-[0.97] transition-transform"
           >
             <Plus className="w-4 h-4" />
             مريض جديد
@@ -83,7 +83,7 @@ export function PatientList({ role = 'admin' }: Props) {
           value={search}
           onChange={(e) => setSearch(e.target.value)}
           placeholder="بحث بالاسم أو رقم الهاتف..."
-          className="w-full h-10 pr-9 pl-4 bg-white dark:bg-gray-800 border border-border rounded-xl text-sm focus:outline-none focus:ring-2 focus:ring-emerald-500"
+          className="w-full h-10 pr-9 pl-4 bg-white dark:bg-gray-800 border border-border rounded-xl text-sm focus:outline-none focus:ring-2 focus:ring-clinic-500"
         />
       </div>
 
@@ -111,8 +111,8 @@ export function PatientList({ role = 'admin' }: Props) {
               >
                 <div className="flex items-center justify-between">
                   <div className="flex items-center gap-3">
-                    <div className="w-11 h-11 bg-emerald-100 dark:bg-emerald-900/30 rounded-xl flex items-center justify-center">
-                      <UserIcon className="w-5 h-5 text-emerald-600 dark:text-emerald-400" />
+                    <div className="w-11 h-11 bg-clinic-100 dark:bg-clinic-900/30 rounded-xl flex items-center justify-center">
+                      <UserIcon className="w-5 h-5 text-clinic-600 dark:text-clinic-400" />
                     </div>
                     <div>
                       <p className="font-medium text-sm">{patient.name}</p>
@@ -142,7 +142,7 @@ export function PatientList({ role = 'admin' }: Props) {
               {role === 'nurse' && (
                 <button
                   onClick={(e) => handleAddVisit(patient.id, patient.name, e)}
-                  className="w-full flex items-center justify-center gap-2 py-2 bg-emerald-50 dark:bg-emerald-900/20 border-t border-border text-emerald-700 dark:text-emerald-400 text-xs font-medium active:bg-emerald-100 dark:active:bg-emerald-900/40 transition-colors"
+                  className="w-full flex items-center justify-center gap-2 py-2 bg-clinic-50 dark:bg-clinic-900/20 border-t border-border text-clinic-700 dark:text-clinic-400 text-xs font-medium active:bg-clinic-100 dark:active:bg-clinic-900/40 transition-colors"
                 >
                   <ClipboardPlus className="w-4 h-4" />
                   إضافة زيارة وخدمات
@@ -157,7 +157,7 @@ export function PatientList({ role = 'admin' }: Props) {
         <div className="text-center py-12">
           <UserIcon className="w-12 h-12 mx-auto text-muted-foreground/30" />
           <p className="text-muted-foreground mt-3">لا يوجد مرضى</p>
-          <button onClick={handleAddPatient} className="mt-3 text-emerald-600 text-sm font-medium">
+          <button onClick={handleAddPatient} className="mt-3 text-clinic-600 text-sm font-medium">
             إضافة أول مريض
           </button>
         </div>

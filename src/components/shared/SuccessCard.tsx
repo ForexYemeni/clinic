@@ -38,10 +38,10 @@ export function SuccessCard({
   message,
 }: SuccessCardProps) {
   const headerGradient = type === 'payment'
-    ? 'from-green-500 to-emerald-500'
+    ? 'from-green-500 to-clinic-500'
     : type === 'emergency'
     ? 'from-red-500 to-orange-500'
-    : 'from-emerald-500 to-teal-500';
+    : 'from-clinic-500 to-clinic-500';
 
   const isPaidInFull = remaining !== undefined && remaining <= 0;
 
@@ -98,8 +98,8 @@ export function SuccessCard({
               {/* Patient */}
               {patientName && (
                 <div className="flex items-center gap-3 bg-gray-50 dark:bg-gray-700/50 rounded-xl p-3">
-                  <div className="w-10 h-10 bg-emerald-100 dark:bg-emerald-900/30 rounded-xl flex items-center justify-center">
-                    <UserIcon className="w-5 h-5 text-emerald-600 dark:text-emerald-400" />
+                  <div className="w-10 h-10 bg-clinic-100 dark:bg-clinic-900/30 rounded-xl flex items-center justify-center">
+                    <UserIcon className="w-5 h-5 text-clinic-600 dark:text-clinic-400" />
                   </div>
                   <div>
                     <p className="text-[10px] text-muted-foreground">المريض</p>
@@ -112,7 +112,7 @@ export function SuccessCard({
               {services.length > 0 && (
                 <div className="bg-gray-50 dark:bg-gray-700/50 rounded-xl p-3">
                   <div className="flex items-center gap-2 mb-2">
-                    <Stethoscope className="w-4 h-4 text-emerald-600 dark:text-emerald-400" />
+                    <Stethoscope className="w-4 h-4 text-clinic-600 dark:text-clinic-400" />
                     <p className="text-xs font-bold">الخدمات ({services.length})</p>
                   </div>
                   <div className="space-y-1.5">
@@ -130,7 +130,7 @@ export function SuccessCard({
               {total !== undefined && (
                 <div className="bg-gray-50 dark:bg-gray-700/50 rounded-xl p-3">
                   <div className="flex items-center gap-2 mb-2">
-                    <CreditCard className="w-4 h-4 text-emerald-600 dark:text-emerald-400" />
+                    <CreditCard className="w-4 h-4 text-clinic-600 dark:text-clinic-400" />
                     <p className="text-xs font-bold">{type === 'payment' ? 'تفاصيل الدفع' : 'الفاتورة'}</p>
                     {invoiceId && (
                       <span className="text-[10px] text-muted-foreground mr-auto" dir="ltr">#{invoiceId}</span>
@@ -158,7 +158,7 @@ export function SuccessCard({
                   <div className="mt-2">
                     <div className="h-1.5 bg-gray-200 dark:bg-gray-600 rounded-full overflow-hidden">
                       <div
-                        className={`h-full rounded-full transition-all duration-500 ${isPaidInFull ? 'bg-green-500' : 'bg-emerald-500'}`}
+                        className={`h-full rounded-full transition-all duration-500 ${isPaidInFull ? 'bg-green-500' : 'bg-clinic-500'}`}
                         style={{ width: `${total > 0 ? Math.min(100, ((paid || 0) / total) * 100) : 0}%` }}
                       />
                     </div>
@@ -172,7 +172,7 @@ export function SuccessCard({
               {/* Close Button */}
               <button
                 onClick={onClose}
-                className="w-full h-11 bg-gradient-to-l from-emerald-600 to-teal-600 text-white font-bold rounded-xl shadow-lg shadow-emerald-500/20 active:scale-[0.98] transition-transform"
+                className="w-full h-11 bg-gradient-to-l to-clinic-600 to-clinic-600 text-white font-bold rounded-xl shadow-lg shadow-clinic-500/20 active:scale-[0.98] transition-transform"
               >
                 تم
               </button>

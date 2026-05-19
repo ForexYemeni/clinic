@@ -13,7 +13,7 @@ export function AdminMoreMenu() {
     { id: 'admin-finance', label: 'المالية', subtitle: 'الفواتير والمدفوعات', icon: DollarSign, color: 'text-amber-600 dark:text-amber-400', bg: 'bg-amber-100 dark:bg-amber-900/30' },
     { id: 'admin-reports', label: 'التقارير', subtitle: 'تقارير يومية وشهرية', icon: BarChart3, color: 'text-purple-600 dark:text-purple-400', bg: 'bg-purple-100 dark:bg-purple-900/30' },
     { id: 'admin-notifications', label: 'الإشعارات', subtitle: 'التنبيهات والإشعارات', icon: Bell, color: 'text-red-600 dark:text-red-400', bg: 'bg-red-100 dark:bg-red-900/30' },
-    { id: 'admin-clinic-settings', label: 'إعدادات العيادة', subtitle: 'الاسم والشعار والهوية', icon: Building2, color: 'text-emerald-600 dark:text-emerald-400', bg: 'bg-emerald-100 dark:bg-emerald-900/30' },
+    { id: 'admin-clinic-settings', label: 'إعدادات العيادة', subtitle: 'الاسم والشعار والهوية', icon: Building2, color: 'text-clinic-600 dark:text-clinic-400', bg: 'bg-clinic-100 dark:bg-clinic-900/30' },
     { id: 'admin-settings', label: 'الإعدادات', subtitle: 'المظهر والأمان', icon: Settings, color: 'text-gray-600 dark:text-gray-400', bg: 'bg-gray-100 dark:bg-gray-700' },
     { id: 'admin-system-reset', label: 'حذف البيانات', subtitle: 'إعادة تهيئة النظام', icon: Trash2, color: 'text-red-600 dark:text-red-400', bg: 'bg-red-100 dark:bg-red-900/30' },
   ];

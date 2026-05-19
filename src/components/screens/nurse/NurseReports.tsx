@@ -49,9 +49,9 @@ export function NurseReports() {
       ) : (
         <div className="grid grid-cols-2 gap-3">
           <div className="bg-white dark:bg-gray-800 rounded-xl p-4 border border-border text-center">
-            <DollarSign className="w-6 h-6 mx-auto text-emerald-500 mb-1" />
+            <DollarSign className="w-6 h-6 mx-auto text-clinic-500 mb-1" />
             <p className="text-xs text-muted-foreground">الإيرادات</p>
-            <p className="text-lg font-bold text-emerald-600">{formatCurrency(data?.totalRevenue || 0)}</p>
+            <p className="text-lg font-bold text-clinic-600">{formatCurrency(data?.totalRevenue || 0)}</p>
           </div>
           <div className="bg-white dark:bg-gray-800 rounded-xl p-4 border border-border text-center">
             <Users className="w-6 h-6 mx-auto text-blue-500 mb-1" />

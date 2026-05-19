@@ -184,8 +184,8 @@ export function SystemReset() {
             {/* What STAYS */}
             <div className="mb-8">
               <div className="flex items-center gap-2 mb-3">
-                <Shield className="w-4 h-4 text-emerald-400" />
-                <h3 className="text-sm font-bold text-emerald-400">سيتم الاحتفاظ به</h3>
+                <Shield className="w-4 h-4 text-clinic-400" />
+                <h3 className="text-sm font-bold text-clinic-400">سيتم الاحتفاظ به</h3>
               </div>
               <div className="grid grid-cols-1 gap-2">
                 {keptItems.map((item, i) => (
@@ -194,14 +194,14 @@ export function SystemReset() {
                     initial={{ opacity: 0, y: 10 }}
                     animate={{ opacity: 1, y: 0 }}
                     transition={{ delay: 0.4 + i * 0.06 }}
-                    className="bg-emerald-950/30 border border-emerald-900/40 rounded-xl p-3 flex items-center gap-3"
+                    className="bg-clinic-950/30 border border-clinic-900/40 rounded-xl p-3 flex items-center gap-3"
                   >
-                    <div className="w-9 h-9 bg-emerald-900/40 rounded-lg flex items-center justify-center shrink-0">
-                      <item.icon className="w-4 h-4 text-emerald-400" />
+                    <div className="w-9 h-9 bg-clinic-900/40 rounded-lg flex items-center justify-center shrink-0">
+                      <item.icon className="w-4 h-4 text-clinic-400" />
                     </div>
                     <div>
-                      <p className="text-xs font-bold text-emerald-300">{item.label}</p>
-                      <p className="text-[10px] text-emerald-400/60">{item.desc}</p>
+                      <p className="text-xs font-bold text-clinic-300">{item.label}</p>
+                      <p className="text-[10px] text-clinic-400/60">{item.desc}</p>
                     </div>
                   </motion.div>
                 ))}
@@ -271,7 +271,7 @@ export function SystemReset() {
                 <motion.p
                   initial={{ opacity: 0, scale: 0.9 }}
                   animate={{ opacity: 1, scale: 1 }}
-                  className="text-[11px] text-emerald-400 mt-1.5 text-center flex items-center justify-center gap-1"
+                  className="text-[11px] text-clinic-400 mt-1.5 text-center flex items-center justify-center gap-1"
                 >
                   <CheckCircle className="w-3 h-3" />
                   النص مطابق
@@ -366,14 +366,14 @@ export function SystemReset() {
                   initial={{ scale: 0 }}
                   animate={{ scale: 1 }}
                   transition={{ type: 'spring', stiffness: 200, damping: 15, delay: 0.1 }}
-                  className="w-20 h-20 rounded-full bg-emerald-900/50 border-2 border-emerald-500/40 flex items-center justify-center mb-6"
+                  className="w-20 h-20 rounded-full bg-clinic-900/50 border-2 border-clinic-500/40 flex items-center justify-center mb-6"
                 >
                   <motion.div
                     initial={{ scale: 0 }}
                     animate={{ scale: 1 }}
                     transition={{ type: 'spring', stiffness: 300, damping: 12, delay: 0.3 }}
                   >
-                    <CheckCircle className="w-10 h-10 text-emerald-400" />
+                    <CheckCircle className="w-10 h-10 text-clinic-400" />
                   </motion.div>
                 </motion.div>
 
@@ -412,7 +412,7 @@ export function SystemReset() {
                 >
                   <button
                     onClick={handleSuccessDone}
-                    className="w-full h-12 bg-gradient-to-l from-emerald-600 to-emerald-700 text-white rounded-2xl text-sm font-bold active:scale-[0.97] transition-transform shadow-lg shadow-emerald-900/30"
+                    className="w-full h-12 bg-gradient-to-l to-clinic-600 to-clinic-700 text-white rounded-2xl text-sm font-bold active:scale-[0.97] transition-transform shadow-lg shadow-clinic-900/30"
                   >
                     العودة للوحة التحكم
                   </button>

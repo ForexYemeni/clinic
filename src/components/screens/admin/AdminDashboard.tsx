@@ -29,9 +29,9 @@ export function AdminDashboard() {
   }, []);
 
   const stats = useMemo(() => [
-    { label: 'إجمالي المرضى', value: data?.totalPatients || 0, icon: Users, gradient: 'from-emerald-500 to-emerald-600', onClick: () => setScreen('admin-patients') },
+    { label: 'إجمالي المرضى', value: data?.totalPatients || 0, icon: Users, gradient: 'from-clinic-500 to-clinic-600', onClick: () => setScreen('admin-patients') },
     { label: 'طوارئ نشطة', value: data?.activeEmergencies || 0, icon: AlertTriangle, gradient: 'from-red-500 to-red-600', onClick: () => setScreen('admin-emergencies') },
-    { label: 'خدمات اليوم', value: data?.todayServices || 0, icon: Activity, gradient: 'from-teal-500 to-teal-600', onClick: () => setScreen('admin-services') },
+    { label: 'خدمات اليوم', value: data?.todayServices || 0, icon: Activity, gradient: 'from-teal-500 to-clinic-600', onClick: () => setScreen('admin-services') },
     { label: 'إيرادات اليوم', value: data?.todayRevenue || 0, icon: DollarSign, gradient: 'from-amber-500 to-amber-600', isCurrency: true, onClick: () => setScreen('admin-finance') },
   ], [data, setScreen]);
 
@@ -80,13 +80,13 @@ export function AdminDashboard() {
         className="bg-white dark:bg-gray-800 rounded-2xl p-4 shadow-sm border border-border"
       >
         <h3 className="font-bold text-sm mb-3 flex items-center gap-2">
-          <TrendingUp className="w-4 h-4 text-emerald-500" />
+          <TrendingUp className="w-4 h-4 text-clinic-500" />
           ملخص الشهر
         </h3>
         <div className="grid grid-cols-2 gap-3">
-          <div className="bg-emerald-50 dark:bg-emerald-900/20 rounded-xl p-3">
+          <div className="bg-clinic-50 dark:bg-clinic-900/20 rounded-xl p-3">
             <p className="text-xs text-muted-foreground">الإيرادات</p>
-            <p className="text-lg font-bold text-emerald-700 dark:text-emerald-400">
+            <p className="text-lg font-bold text-clinic-700 dark:text-clinic-400">
               {formatCurrency(data?.monthlyRevenue || 0)}
             </p>
           </div>
@@ -115,7 +115,7 @@ export function AdminDashboard() {
             {data.topServices.slice(0, 5).map((svc, i) => (
               <div key={i} className="flex items-center justify-between py-1.5">
                 <div className="flex items-center gap-2">
-                  <span className="w-6 h-6 bg-emerald-100 dark:bg-emerald-900/30 rounded-lg flex items-center justify-center text-xs font-bold text-emerald-700 dark:text-emerald-400">
+                  <span className="w-6 h-6 bg-clinic-100 dark:bg-clinic-900/30 rounded-lg flex items-center justify-center text-xs font-bold text-clinic-700 dark:text-clinic-400">
                     {i + 1}
                   </span>
                   <span className="text-sm">{svc.name}</span>
@@ -140,7 +140,7 @@ export function AdminDashboard() {
               <AlertTriangle className="w-4 h-4 text-red-500" />
               آخر الطوارئ
             </h3>
-            <button onClick={() => setScreen('admin-emergencies')} className="text-xs text-emerald-600 dark:text-emerald-400 flex items-center gap-1">
+            <button onClick={() => setScreen('admin-emergencies')} className="text-xs text-clinic-600 dark:text-clinic-400 flex items-center gap-1">
               عرض الكل <ChevronLeft className="w-3 h-3" />
             </button>
           </div>
@@ -174,7 +174,7 @@ export function AdminDashboard() {
           onClick={() => setScreen('admin-add-patient')}
           className="bg-white dark:bg-gray-800 rounded-2xl p-4 shadow-sm border border-border text-center active:scale-[0.97] transition-transform"
         >
-          <Users className="w-8 h-8 mx-auto text-emerald-500" />
+          <Users className="w-8 h-8 mx-auto text-clinic-500" />
           <p className="text-sm font-medium mt-2">إضافة مريض</p>
         </button>
         <button

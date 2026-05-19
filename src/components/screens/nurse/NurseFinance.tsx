@@ -62,7 +62,7 @@ export function NurseFinance() {
 
   const getStatusBg = (status: string) => {
     switch (status) {
-      case 'paid': return 'from-green-500 to-emerald-600';
+      case 'paid': return 'from-green-500 to-clinic-600';
       case 'unpaid': return 'from-red-500 to-red-600';
       case 'partial': return 'from-yellow-500 to-amber-600';
       default: return 'from-gray-500 to-gray-600';
@@ -137,7 +137,7 @@ export function NurseFinance() {
 
       {/* Stats Cards */}
       <div className="grid grid-cols-3 gap-2 mb-4">
-        <motion.div initial={{ opacity: 0, y: 10 }} animate={{ opacity: 1, y: 0 }} className="bg-gradient-to-br from-emerald-500 to-emerald-600 rounded-2xl p-3 text-white text-center shadow-lg shadow-emerald-500/20">
+        <motion.div initial={{ opacity: 0, y: 10 }} animate={{ opacity: 1, y: 0 }} className="bg-gradient-to-br from-clinic-500 to-clinic-600 rounded-2xl p-3 text-white text-center shadow-lg shadow-clinic-500/20">
           <DollarSign className="w-5 h-5 mx-auto mb-1 opacity-80" />
           <p className="text-[10px] opacity-80">الإجمالي</p>
           <p className="text-sm font-bold">{formatCurrency(stats.totalRevenue)}</p>
@@ -167,7 +167,7 @@ export function NurseFinance() {
             onClick={() => setFilter(f.id)}
             className={`flex items-center gap-1.5 px-3 py-1.5 rounded-full text-xs font-medium whitespace-nowrap transition-all ${
               filter === f.id
-                ? 'bg-emerald-600 text-white shadow-sm'
+                ? 'bg-clinic-600 text-white shadow-sm'
                 : 'bg-gray-100 dark:bg-gray-800 text-muted-foreground'
             }`}
           >
@@ -219,15 +219,15 @@ export function NurseFinance() {
                     {inv.items.map((item, i) => (
                       <div key={i} className="flex items-center justify-between">
                         <div className="flex items-center gap-2">
-                          <div className="w-8 h-8 bg-emerald-50 dark:bg-emerald-900/20 rounded-lg flex items-center justify-center">
-                            <Stethoscope className="w-4 h-4 text-emerald-600 dark:text-emerald-400" />
+                          <div className="w-8 h-8 bg-clinic-50 dark:bg-clinic-900/20 rounded-lg flex items-center justify-center">
+                            <Stethoscope className="w-4 h-4 text-clinic-600 dark:text-clinic-400" />
                           </div>
                           <div>
                             <p className="text-xs font-medium">{item.serviceName}</p>
                             <p className="text-[10px] text-muted-foreground">الكمية: {item.quantity}</p>
                           </div>
                         </div>
-                        <span className="text-xs font-bold text-emerald-600 dark:text-emerald-400">
+                        <span className="text-xs font-bold text-clinic-600 dark:text-clinic-400">
                           {formatCurrency(item.price * item.quantity)}
                         </span>
                       </div>
@@ -272,7 +272,7 @@ export function NurseFinance() {
                 {inv.remaining > 0 && (
                   <button
                     onClick={() => handlePayClick(inv)}
-                    className="w-full mt-3 h-10 bg-gradient-to-l from-emerald-600 to-teal-600 text-white font-bold rounded-xl text-sm flex items-center justify-center gap-2 shadow-sm shadow-emerald-500/20 active:scale-[0.98] transition-transform"
+                    className="w-full mt-3 h-10 bg-gradient-to-l to-clinic-600 to-teal-600 text-white font-bold rounded-xl text-sm flex items-center justify-center gap-2 shadow-sm shadow-clinic-500/20 active:scale-[0.98] transition-transform"
                   >
                     <Banknote className="w-4 h-4" />
                     تسديد {formatCurrency(inv.remaining)}

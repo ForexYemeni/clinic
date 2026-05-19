@@ -39,7 +39,7 @@ const NurseDashboard = React.memo(function NurseDashboard() {
         <CardContent className="px-4 pb-3">
           <div className="grid grid-cols-3 gap-2">
             {[
-              { label: 'مريض جديد', icon: UserPlus, screen: 'nurse-patients' as const, color: 'bg-gradient-to-br from-emerald-100 to-teal-50 text-emerald-600 dark:from-emerald-900/30 dark:to-teal-900/20 dark:text-emerald-400' },
+              { label: 'مريض جديد', icon: UserPlus, screen: 'nurse-patients' as const, color: 'bg-gradient-to-br from-clinic-100 to-teal-50 text-clinic-600 dark:from-clinic-900/30 dark:to-teal-900/20 dark:text-clinic-400' },
               { label: 'حالة طوارئ', icon: AlertTriangle, screen: 'nurse-emergencies' as const, color: 'bg-gradient-to-br from-red-100 to-red-50 text-red-600 dark:from-red-900/30 dark:to-red-800/20 dark:text-red-400' },
               { label: 'تقرير يومي', icon: FileText, screen: 'nurse-reports' as const, color: 'bg-gradient-to-br from-blue-100 to-blue-50 text-blue-600 dark:from-blue-900/30 dark:to-blue-800/20 dark:text-blue-400' },
             ].map((item) => (

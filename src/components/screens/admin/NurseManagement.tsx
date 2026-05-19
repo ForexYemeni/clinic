@@ -96,7 +96,7 @@ export function NurseManagement() {
         <h2 className="text-lg font-bold">إدارة الممرضين</h2>
         <button
           onClick={() => setShowAddForm(true)}
-          className="flex items-center gap-1.5 bg-emerald-600 text-white px-4 py-2 rounded-xl text-sm font-medium active:scale-[0.97] transition-transform"
+          className="flex items-center gap-1.5 bg-clinic-600 text-white px-4 py-2 rounded-xl text-sm font-medium active:scale-[0.97] transition-transform"
         >
           <Plus className="w-4 h-4" />
           إضافة ممرض
@@ -105,7 +105,7 @@ export function NurseManagement() {
 
       {/* Add Form */}
       {showAddForm && (
-        <div className="bg-emerald-50 dark:bg-emerald-900/20 rounded-2xl p-4 mb-4 border border-emerald-200 dark:border-emerald-800">
+        <div className="bg-clinic-50 dark:bg-clinic-900/20 rounded-2xl p-4 mb-4 border border-clinic-200 dark:border-clinic-800">
           <h3 className="font-bold text-sm mb-3">ممرض جديد</h3>
           <div className="space-y-3">
             <input
@@ -113,7 +113,7 @@ export function NurseManagement() {
               value={newNurse.name}
               onChange={(e) => setNewNurse(p => ({ ...p, name: e.target.value }))}
               placeholder="اسم الممرض"
-              className="w-full h-10 px-3 bg-white dark:bg-gray-800 border border-border rounded-xl text-sm focus:outline-none focus:ring-2 focus:ring-emerald-500"
+              className="w-full h-10 px-3 bg-white dark:bg-gray-800 border border-border rounded-xl text-sm focus:outline-none focus:ring-2 focus:ring-clinic-500"
             />
             <div className="relative">
               <div className="absolute left-3 top-1/2 -translate-y-1/2 text-xs text-muted-foreground font-mono">967+</div>
@@ -122,7 +122,7 @@ export function NurseManagement() {
                 value={newNurse.phone}
                 onChange={(e) => setNewNurse(p => ({ ...p, phone: e.target.value.replace(/\D/g, '').slice(0, 9) }))}
                 placeholder="رقم الهاتف (9 أرقام)"
-                className="w-full h-10 px-3 pl-12 bg-white dark:bg-gray-800 border border-border rounded-xl text-sm font-mono focus:outline-none focus:ring-2 focus:ring-emerald-500"
+                className="w-full h-10 px-3 pl-12 bg-white dark:bg-gray-800 border border-border rounded-xl text-sm font-mono focus:outline-none focus:ring-2 focus:ring-clinic-500"
                 dir="ltr"
               />
             </div>
@@ -131,10 +131,10 @@ export function NurseManagement() {
               value={newNurse.password}
               onChange={(e) => setNewNurse(p => ({ ...p, password: e.target.value }))}
               placeholder="كلمة المرور"
-              className="w-full h-10 px-3 bg-white dark:bg-gray-800 border border-border rounded-xl text-sm focus:outline-none focus:ring-2 focus:ring-emerald-500"
+              className="w-full h-10 px-3 bg-white dark:bg-gray-800 border border-border rounded-xl text-sm focus:outline-none focus:ring-2 focus:ring-clinic-500"
             />
             <div className="flex gap-2">
-              <button onClick={handleAddNurse} className="flex-1 h-10 bg-emerald-600 text-white font-medium rounded-xl active:scale-[0.97] transition-transform">
+              <button onClick={handleAddNurse} className="flex-1 h-10 bg-clinic-600 text-white font-medium rounded-xl active:scale-[0.97] transition-transform">
                 إضافة
               </button>
               <button onClick={() => setShowAddForm(false)} className="flex-1 h-10 bg-gray-200 dark:bg-gray-700 font-medium rounded-xl active:scale-[0.97] transition-transform">
@@ -158,8 +158,8 @@ export function NurseManagement() {
             <div key={nurse.id} className={`bg-white dark:bg-gray-800 rounded-xl p-3 border border-border ${!nurse.active ? 'opacity-60' : ''}`}>
               <div className="flex items-center justify-between">
                 <div className="flex items-center gap-3">
-                  <div className={`w-10 h-10 rounded-xl flex items-center justify-center ${nurse.active ? 'bg-emerald-100 dark:bg-emerald-900/30' : 'bg-gray-100 dark:bg-gray-700'}`}>
-                    {nurse.active ? <UserCheck className="w-5 h-5 text-emerald-600" /> : <UserX className="w-5 h-5 text-gray-400" />}
+                  <div className={`w-10 h-10 rounded-xl flex items-center justify-center ${nurse.active ? 'bg-clinic-100 dark:bg-clinic-900/30' : 'bg-gray-100 dark:bg-gray-700'}`}>
+                    {nurse.active ? <UserCheck className="w-5 h-5 text-clinic-600" /> : <UserX className="w-5 h-5 text-gray-400" />}
                   </div>
                   <div>
                     <p className="font-medium text-sm">{nurse.name}</p>
@@ -171,7 +171,7 @@ export function NurseManagement() {
                     <Lock className="w-4 h-4 text-muted-foreground" />
                   </button>
                   <button onClick={() => handleToggleActive(nurse.id, nurse.active)} className="p-2 rounded-lg hover:bg-gray-100 dark:hover:bg-gray-700" title={nurse.active ? 'تعطيل' : 'تفعيل'}>
-                    {nurse.active ? <UserX className="w-4 h-4 text-yellow-600" /> : <UserCheck className="w-4 h-4 text-emerald-600" />}
+                    {nurse.active ? <UserX className="w-4 h-4 text-yellow-600" /> : <UserCheck className="w-4 h-4 text-clinic-600" />}
                   </button>
                   <button onClick={() => handleDelete(nurse.id)} className="p-2 rounded-lg hover:bg-gray-100 dark:hover:bg-gray-700" title="حذف">
                     <Trash2 className="w-4 h-4 text-red-500" />

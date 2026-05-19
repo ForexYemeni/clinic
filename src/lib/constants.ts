@@ -259,7 +259,7 @@ export const statusColors: Record<string, string> = {
   treated: 'bg-green-100 text-green-700 dark:bg-green-900/30 dark:text-green-400',
   transferred: 'bg-blue-100 text-blue-700 dark:bg-blue-900/30 dark:text-blue-400',
   archived: 'bg-gray-100 text-gray-700 dark:bg-gray-900/30 dark:text-gray-400',
-  completed: 'bg-emerald-100 text-emerald-700 dark:bg-emerald-900/30 dark:text-emerald-400',
+  completed: 'bg-clinic-100 text-clinic-700 dark:bg-clinic-900/30 dark:text-clinic-400',
   cancelled: 'bg-red-100 text-red-700 dark:bg-red-900/30 dark:text-red-400',
   paid: 'bg-green-100 text-green-700 dark:bg-green-900/30 dark:text-green-400',
   unpaid: 'bg-red-100 text-red-700 dark:bg-red-900/30 dark:text-red-400',
@@ -301,7 +301,7 @@ export const paymentMethodLabels: Record<string, string> = {
 };
 
 export const paymentMethodColors: Record<string, string> = {
-  cash: 'bg-emerald-100 text-emerald-700 dark:bg-emerald-900/30 dark:text-emerald-400',
+  cash: 'bg-clinic-100 text-clinic-700 dark:bg-clinic-900/30 dark:text-clinic-400',
   card: 'bg-blue-100 text-blue-700 dark:bg-blue-900/30 dark:text-blue-400',
   transfer: 'bg-purple-100 text-purple-700 dark:bg-purple-900/30 dark:text-purple-400',
 };
@@ -326,7 +326,7 @@ export const notificationTypeIcons: Record<string, LucideIcon> = {
 
 export const notificationTypeColors: Record<string, string> = {
   emergency: 'bg-red-100 text-red-600 dark:bg-red-900/30 dark:text-red-400',
-  service: 'bg-emerald-100 text-emerald-600 dark:bg-emerald-900/30 dark:text-emerald-400',
+  service: 'bg-clinic-100 text-clinic-600 dark:bg-clinic-900/30 dark:text-clinic-400',
   system: 'bg-gray-100 text-gray-600 dark:bg-gray-900/30 dark:text-gray-400',
 };
 
@@ -336,7 +336,7 @@ export const PIE_COLORS = ['#059669', '#0d9488', '#0891b2', '#6366f1', '#8b5cf6'
 
 // ==================== GRADIENT CLASSES ====================
 export const statGradients = {
-  emerald: 'bg-gradient-to-br from-emerald-500 to-emerald-600',
+  emerald: 'bg-gradient-to-br from-clinic-500 to-clinic-600',
   red: 'bg-gradient-to-br from-red-500 to-red-600',
   teal: 'bg-gradient-to-br from-teal-500 to-teal-600',
   amber: 'bg-gradient-to-br from-amber-500 to-amber-600',

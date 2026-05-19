@@ -9,6 +9,7 @@ import { BottomNav } from '@/components/layout/BottomNav';
 import { SplashScreen } from '@/components/screens/SplashScreen';
 import { LoginScreen } from '@/components/screens/LoginScreen';
 import { FirstSetupScreen } from '@/components/screens/FirstSetupScreen';
+import { ThemeUpdater } from '@/components/shared/ThemeUpdater';
 
 // Lazy-loaded admin screens
 const AdminDashboard = dynamic(() => import('@/components/screens/admin/AdminDashboard').then(m => ({ default: m.AdminDashboard })), { ssr: false });
@@ -106,6 +107,7 @@ export default function ClinicApp() {
 
   return (
     <div className="min-h-screen bg-background max-w-lg mx-auto relative">
+      <ThemeUpdater />
       {needsShell && <TopHeader />}
       <main>
         <AnimatePresence mode="wait">

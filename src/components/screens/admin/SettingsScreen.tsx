@@ -68,8 +68,8 @@ export function SettingsScreen() {
       <div className="bg-white dark:bg-gray-800 rounded-xl p-4 border border-border mb-3">
         <div className="flex items-center justify-between">
           <div className="flex items-center gap-3">
-            <div className="w-10 h-10 bg-emerald-100 dark:bg-emerald-900/30 rounded-xl flex items-center justify-center">
-              <Building2 className="w-5 h-5 text-emerald-600" />
+            <div className="w-10 h-10 bg-clinic-100 dark:bg-clinic-900/30 rounded-xl flex items-center justify-center">
+              <Building2 className="w-5 h-5 text-clinic-600" />
             </div>
             <div>
               <p className="text-xs text-muted-foreground">اسم العيادة</p>
@@ -79,9 +79,9 @@ export function SettingsScreen() {
                     type="text"
                     value={newClinicName}
                     onChange={(e) => setNewClinicName(e.target.value)}
-                    className="h-8 px-2 text-sm bg-gray-50 dark:bg-gray-700 border border-border rounded-lg focus:outline-none focus:ring-1 focus:ring-emerald-500"
+                    className="h-8 px-2 text-sm bg-gray-50 dark:bg-gray-700 border border-border rounded-lg focus:outline-none focus:ring-1 focus:ring-clinic-500"
                   />
-                  <button onClick={handleSaveName} className="text-xs text-emerald-600 font-medium">حفظ</button>
+                  <button onClick={handleSaveName} className="text-xs text-clinic-600 font-medium">حفظ</button>
                   <button onClick={() => setEditingName(false)} className="text-xs text-muted-foreground">إلغاء</button>
                 </div>
               ) : (
@@ -90,7 +90,7 @@ export function SettingsScreen() {
             </div>
           </div>
           {!editingName && (
-            <button onClick={() => setEditingName(true)} className="text-xs text-emerald-600">تعديل</button>
+            <button onClick={() => setEditingName(true)} className="text-xs text-clinic-600">تعديل</button>
           )}
         </div>
       </div>
@@ -128,17 +128,17 @@ export function SettingsScreen() {
               value={passwords.newPassword}
               onChange={(e) => setPasswords(p => ({ ...p, newPassword: e.target.value }))}
               placeholder="كلمة المرور الجديدة"
-              className="w-full h-10 px-3 bg-gray-50 dark:bg-gray-700 border border-border rounded-xl text-sm focus:outline-none focus:ring-2 focus:ring-emerald-500"
+              className="w-full h-10 px-3 bg-gray-50 dark:bg-gray-700 border border-border rounded-xl text-sm focus:outline-none focus:ring-2 focus:ring-clinic-500"
             />
             <input
               type="password"
               value={passwords.confirm}
               onChange={(e) => setPasswords(p => ({ ...p, confirm: e.target.value }))}
               placeholder="تأكيد كلمة المرور"
-              className="w-full h-10 px-3 bg-gray-50 dark:bg-gray-700 border border-border rounded-xl text-sm focus:outline-none focus:ring-2 focus:ring-emerald-500"
+              className="w-full h-10 px-3 bg-gray-50 dark:bg-gray-700 border border-border rounded-xl text-sm focus:outline-none focus:ring-2 focus:ring-clinic-500"
             />
             <div className="flex gap-2">
-              <button onClick={handleChangePassword} className="flex-1 h-10 bg-emerald-600 text-white rounded-xl text-sm font-medium">حفظ</button>
+              <button onClick={handleChangePassword} className="flex-1 h-10 bg-clinic-600 text-white rounded-xl text-sm font-medium">حفظ</button>
               <button onClick={() => setChangingPassword(false)} className="flex-1 h-10 bg-gray-200 dark:bg-gray-700 rounded-xl text-sm font-medium">إلغاء</button>
             </div>
           </div>
