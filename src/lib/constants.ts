@@ -54,13 +54,15 @@ export interface InvoiceItem {
   patientId?: string;
   visitId?: string;
   nurseName?: string;
+  nurseId?: string;
+  patientName?: string;
   items: InvoiceLineItem[];
   total: number;
   paid: number;
   remaining: number;
   status: string;
   paymentMethod?: string;
-  patient?: { id?: string; name: string };
+  patient?: { id?: string; name: string; phone?: string };
   createdAt: string;
   [key: string]: unknown;
 }

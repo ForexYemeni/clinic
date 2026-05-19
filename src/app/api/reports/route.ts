@@ -151,25 +151,42 @@ export async function GET(request: NextRequest) {
 
     // Build queries with optional nurseId filtering
     const visitsExtraFilters = nurseId ? [{ field: 'nurseId', value: nurseId }] : [];
-    const visitsDateField = nurseId ? 'visitDate' : 'visitDate';
 
     const [patientsSnap, visitsSnap, invoicesSnap] = await Promise.all([
       // Patients - always use clinicId only (no nurseId)
       safeQueryWithDate('patients', 'createdAt', startStr),
       // Visits - optionally filtered by nurseId
-      safeQueryWithDate('visits', visitsDateField, startStr, visitsExtraFilters),
-      // Invoices - always use clinicId only
+      safeQueryWithDate('visits', 'visitDate', startStr, visitsExtraFilters),
+      // Invoices - always use clinicId only (filtered by nurseId below)
       safeQueryWithDate('invoices', 'createdAt', startStr),
     ]);
 
-    const totalPatients = patientsSnap.size;
+    // If nurseId is provided, filter invoices that belong to this nurse's visits
+    let filteredInvoiceDocs = invoicesSnap.docs;
+    if (nurseId) {
+      const nurseVisitIds = new Set(visitsSnap.docs.map(d => d.id));
+      filteredInvoiceDocs = invoicesSnap.docs.filter(invDoc => {
+        const invData = invDoc.data();
+        // Check if invoice's visitId matches one of the nurse's visits
+        if (invData.visitId && nurseVisitIds.has(invData.visitId)) return true;
+        // Check if invoice has nurseId directly
+        if (invData.nurseId === nurseId) return true;
+        // Check if any item in the invoice has this nurse's name via visit lookup
+        return false;
+      });
+    }
+
+    const totalPatients = nurseId ? visitsSnap.docs.reduce((count, doc) => {
+      const pid = doc.data().patientId;
+      return pid ? count + 1 : count;
+    }, 0) : patientsSnap.size;
     const totalVisits = visitsSnap.size;
     const totalServices = visitsSnap.docs.reduce((sum, doc) => sum + ((doc.data().serviceIds || []) as string[]).length, 0);
-    const totalRevenue = invoicesSnap.docs.reduce((sum, doc) => sum + (doc.data().paid || 0), 0);
-    const totalInvoiced = invoicesSnap.docs.reduce((sum, doc) => sum + (doc.data().total || 0), 0);
-    const unpaidAmount = invoicesSnap.docs.reduce((sum, doc) => sum + ((doc.data().remaining) ?? (doc.data().total - (doc.data().paid || 0))), 0);
-    const paidInvoices = invoicesSnap.docs.filter((d) => d.data().status === 'paid').length;
-    const unpaidInvoices = invoicesSnap.docs.filter((d) => d.data().status === 'unpaid' || d.data().status === 'partial').length;
+    const totalRevenue = filteredInvoiceDocs.reduce((sum, doc) => sum + (doc.data().paid || 0), 0);
+    const totalInvoiced = filteredInvoiceDocs.reduce((sum, doc) => sum + (doc.data().total || 0), 0);
+    const unpaidAmount = filteredInvoiceDocs.reduce((sum, doc) => sum + ((doc.data().remaining) ?? (doc.data().total - (doc.data().paid || 0))), 0);
+    const paidInvoices = filteredInvoiceDocs.filter((d) => d.data().status === 'paid').length;
+    const unpaidInvoices = filteredInvoiceDocs.filter((d) => d.data().status === 'unpaid' || d.data().status === 'partial').length;
 
     const emergenciesSnap = await safeQueryWithDate('emergencies', 'createdAt', startStr);
 
@@ -187,8 +204,8 @@ export async function GET(request: NextRequest) {
         dayMap[dayKey].visits += 1;
       }
 
-      // Group invoices by date
-      for (const invDoc of invoicesSnap.docs) {
+      // Group invoices by date (use filtered invoices for nurseId)
+      for (const invDoc of filteredInvoiceDocs) {
         const id = invDoc.data();
         const invDate = id.createdAt || '';
         const dayKey = invDate.slice(0, 10);
@@ -196,8 +213,8 @@ export async function GET(request: NextRequest) {
         dayMap[dayKey].revenue += id.paid || 0;
       }
 
-      // Group patients by date
-      for (const patDoc of patientsSnap.docs) {
+      // Group patients by date (skip for nurseId - patients counted from visits)
+      for (const patDoc of (nurseId ? [] : patientsSnap.docs)) {
         const pd = patDoc.data();
         const patDate = pd.createdAt || '';
         const dayKey = patDate.slice(0, 10);

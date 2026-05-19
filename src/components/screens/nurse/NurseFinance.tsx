@@ -34,7 +34,9 @@ export function NurseFinance() {
 
   const fetchInvoices = useCallback(async () => {
     try {
-      const invRes = await fetch('/api/invoices');
+      // Only fetch invoices for this nurse
+      const nurseParam = user?.id ? `?nurseId=${user.id}` : '';
+      const invRes = await fetch(`/api/invoices${nurseParam}`);
       if (invRes.ok) {
         const invData = await invRes.json();
         setInvoices(invData);
@@ -45,7 +47,7 @@ export function NurseFinance() {
     } catch {} finally {
       setLoading(false);
     }
-  }, []);
+  }, [user?.id]);
 
   useEffect(() => { fetchInvoices(); }, [fetchInvoices]);
 

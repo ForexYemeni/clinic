@@ -14,7 +14,8 @@ import { PwaInstallBanner } from '@/components/shared/PwaInstallPrompt';
 
 const NurseDashboard = React.memo(function NurseDashboard() {
   const { setScreen, user } = useAppStore();
-  const { data, loading } = useData<DashboardData>('/api/dashboard');
+  const nurseParam = user?.id ? `?role=nurse&nurseId=${user.id}` : '?role=nurse';
+  const { data, loading } = useData<DashboardData>(`/api/dashboard${nurseParam}`);
 
   if (loading && !data) return <SkeletonLoader type="dashboard" />;
   if (!data) return <EmptyState icon={AlertTriangle} title="خطأ في تحميل البيانات" />;

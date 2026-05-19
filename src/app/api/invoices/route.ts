@@ -2,13 +2,14 @@ import { adminDb } from '@/lib/firebase-admin';
 import { NextRequest, NextResponse } from 'next/server';
 import { extractAuthAndClinicId } from '@/lib/auth';
 
-// GET: List invoices (?patientId=xxx, ?status=unpaid, filtered by clinicId)
+// GET: List invoices (?patientId=xxx, ?status=unpaid, ?nurseId=xxx, filtered by clinicId)
 export async function GET(request: NextRequest) {
   try {
     const { auth, effectiveClinicId } = extractAuthAndClinicId(request);
     const { searchParams } = new URL(request.url);
     const patientId = searchParams.get('patientId');
     const status = searchParams.get('status');
+    const nurseId = searchParams.get('nurseId');
 
     if (!effectiveClinicId) {
       return NextResponse.json([]);
@@ -67,7 +68,7 @@ export async function GET(request: NextRequest) {
           }
         } catch {}
       }
-      // Extract nurse name from visit if available
+      // Extract nurse name and nurseId from visit if available
       if (data.visitId) {
         try {
           const visitDoc = await adminDb.collection('visits').doc(data.visitId).get();
@@ -96,6 +97,10 @@ export async function GET(request: NextRequest) {
             data.nurseName = nData?.name || '';
           }
         } catch {}
+      }
+      // Filter by nurseId if requested
+      if (nurseId) {
+        if (data.nurseId !== nurseId) continue;
       }
       invoices.push(data);
     }

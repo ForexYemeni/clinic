@@ -2,7 +2,7 @@
 
 import React, { useEffect, useState } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
-import { BarChart3, DollarSign, Users, Activity, Calendar, TrendingUp, FileText, AlertTriangle, CheckCircle, Clock, ChevronLeft, ArrowRight, RefreshCw } from 'lucide-react';
+import { BarChart3, DollarSign, Users, Activity, Calendar, TrendingUp, FileText, AlertTriangle, CheckCircle, Clock, ArrowRight, RefreshCw, Stethoscope, ChevronDown, X } from 'lucide-react';
 import { useAppStore } from '@/lib/store';
 import { formatCurrency } from '@/lib/constants';
 import { apiGet } from '@/lib/api';
@@ -40,6 +40,13 @@ interface ServicesReport {
   maxCount: number;
 }
 
+interface NurseInfo {
+  id: string;
+  name: string;
+  phone?: string;
+  active: boolean;
+}
+
 export function AdminReports() {
   const { setScreen } = useAppStore();
   const [reportType, setReportType] = useState<'daily' | 'weekly' | 'monthly' | 'services'>('daily');
@@ -48,15 +55,35 @@ export function AdminReports() {
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState('');
 
-  const fetchReport = async (type: string) => {
+  // Nurse filter state
+  const [nurses, setNurses] = useState<NurseInfo[]>([]);
+  const [selectedNurseId, setSelectedNurseId] = useState<string>('');
+  const [showNursePicker, setShowNursePicker] = useState(false);
+
+  // Fetch nurses list
+  useEffect(() => {
+    const fetchNurses = async () => {
+      try {
+        const res = await fetch('/api/users?role=nurse');
+        if (res.ok) {
+          const data = await res.json();
+          setNurses(data);
+        }
+      } catch {}
+    };
+    fetchNurses();
+  }, []);
+
+  const fetchReport = async (type: string, nurseId?: string) => {
     setLoading(true);
     setError('');
     try {
+      const nurseParam = nurseId ? `&nurseId=${nurseId}` : '';
       if (type === 'services') {
-        const data = await apiGet<ServicesReport>('/api/reports?type=services');
+        const data = await apiGet<ServicesReport>(`/api/reports?type=services${nurseParam}`);
         setServicesData(data);
       } else {
-        const data = await apiGet<ReportStats>(`/api/reports?type=${type}`);
+        const data = await apiGet<ReportStats>(`/api/reports?type=${type}${nurseParam}`);
         setReportData(data);
       }
     } catch (err: any) {
@@ -67,9 +94,15 @@ export function AdminReports() {
   };
 
   useEffect(() => {
-    fetchReport(reportType);
-  }, [reportType]);
+    fetchReport(reportType, selectedNurseId || undefined);
+  }, [reportType, selectedNurseId]);
 
+  const handleNurseSelect = (nurseId: string) => {
+    setSelectedNurseId(nurseId);
+    setShowNursePicker(false);
+  };
+
+  const selectedNurse = nurses.find(n => n.id === selectedNurseId);
   const periodLabel = reportType === 'daily' ? 'اليوم' : reportType === 'weekly' ? 'الأسبوع' : 'الشهر';
 
   const reportTabs = [
@@ -96,14 +129,125 @@ export function AdminReports() {
           التقارير والإحصائيات
         </h2>
         <button
-          onClick={() => fetchReport(reportType)}
+          onClick={() => fetchReport(reportType, selectedNurseId || undefined)}
           className="w-8 h-8 rounded-lg bg-gray-100 dark:bg-gray-800 flex items-center justify-center active:scale-95 transition-transform"
           title="تحديث"
         >
           <RefreshCw className={`w-4 h-4 text-muted-foreground ${loading ? 'animate-spin' : ''}`} />
         </button>
       </div>
-      <p className="text-xs text-muted-foreground mb-4">ملخص شامل لأداء العيادة</p>
+      <p className="text-xs text-muted-foreground mb-4">
+        {selectedNurse ? `تقارير ${selectedNurse.name}` : 'ملخص شامل لأداء العيادة'}
+      </p>
+
+      {/* Nurse Selector */}
+      <div className="mb-4">
+        <button
+          onClick={() => setShowNursePicker(!showNursePicker)}
+          className="w-full bg-white dark:bg-gray-800 rounded-2xl border border-border p-3 shadow-sm active:scale-[0.98] transition-transform"
+        >
+          <div className="flex items-center justify-between">
+            <div className="flex items-center gap-3">
+              <div className={`w-9 h-9 rounded-xl flex items-center justify-center ${
+                selectedNurseId
+                  ? 'bg-gradient-to-br from-blue-500 to-blue-600 shadow-lg shadow-blue-500/20'
+                  : 'bg-gradient-to-br from-purple-500 to-purple-600 shadow-lg shadow-purple-500/20'
+              }`}>
+                <Stethoscope className="w-4.5 h-4.5 text-white" />
+              </div>
+              <div className="text-right">
+                <p className="text-sm font-bold">
+                  {selectedNurse ? selectedNurse.name : 'جميع الموظفين'}
+                </p>
+                <p className="text-[10px] text-muted-foreground">
+                  {selectedNurse ? `تقارير ${selectedNurse.name} فقط` : 'تقارير العيادة بالكامل'}
+                </p>
+              </div>
+            </div>
+            <div className="flex items-center gap-2">
+              {selectedNurseId && (
+                <button
+                  onClick={(e) => {
+                    e.stopPropagation();
+                    handleNurseSelect('');
+                  }}
+                  className="w-6 h-6 rounded-full bg-red-100 dark:bg-red-900/30 flex items-center justify-center"
+                >
+                  <X className="w-3 h-3 text-red-500" />
+                </button>
+              )}
+              <ChevronDown className={`w-5 h-5 text-muted-foreground transition-transform ${showNursePicker ? 'rotate-180' : ''}`} />
+            </div>
+          </div>
+        </button>
+
+        {/* Nurse Picker Dropdown */}
+        <AnimatePresence>
+          {showNursePicker && (
+            <motion.div
+              initial={{ opacity: 0, height: 0 }}
+              animate={{ opacity: 1, height: 'auto' }}
+              exit={{ opacity: 0, height: 0 }}
+              className="overflow-hidden"
+            >
+              <div className="mt-2 bg-white dark:bg-gray-800 rounded-2xl border border-border overflow-hidden shadow-sm max-h-60 overflow-y-auto">
+                <button
+                  onClick={() => handleNurseSelect('')}
+                  className={`w-full px-4 py-3 flex items-center gap-3 border-b border-border active:bg-gray-50 dark:active:bg-gray-700 transition-colors ${
+                    !selectedNurseId ? 'bg-purple-50 dark:bg-purple-900/20' : ''
+                  }`}
+                >
+                  <div className="w-8 h-8 rounded-lg bg-purple-100 dark:bg-purple-900/30 flex items-center justify-center">
+                    <BarChart3 className="w-4 h-4 text-purple-600 dark:text-purple-400" />
+                  </div>
+                  <div className="text-right">
+                    <p className="text-sm font-bold">جميع الموظفين</p>
+                    <p className="text-[10px] text-muted-foreground">تقارير العيادة بالكامل</p>
+                  </div>
+                  {!selectedNurseId && (
+                    <CheckCircle className="w-4 h-4 text-purple-600 mr-auto" />
+                  )}
+                </button>
+
+                {nurses.map(nurse => (
+                  <button
+                    key={nurse.id}
+                    onClick={() => handleNurseSelect(nurse.id)}
+                    className={`w-full px-4 py-3 flex items-center gap-3 border-b border-border last:border-b-0 active:bg-gray-50 dark:active:bg-gray-700 transition-colors ${
+                      selectedNurseId === nurse.id ? 'bg-blue-50 dark:bg-blue-900/20' : ''
+                    }`}
+                  >
+                    <div className={`w-8 h-8 rounded-lg flex items-center justify-center ${
+                      nurse.active ? 'bg-blue-100 dark:bg-blue-900/30' : 'bg-amber-100 dark:bg-amber-900/30'
+                    }`}>
+                      <Stethoscope className={`w-4 h-4 ${nurse.active ? 'text-blue-600 dark:text-blue-400' : 'text-amber-600 dark:text-amber-400'}`} />
+                    </div>
+                    <div className="text-right">
+                      <div className="flex items-center gap-2">
+                        <p className="text-sm font-bold">{nurse.name}</p>
+                        {!nurse.active && (
+                          <span className="text-[9px] px-1.5 py-0.5 rounded-full bg-amber-100 text-amber-700 dark:bg-amber-900/30 dark:text-amber-400">معطل</span>
+                        )}
+                      </div>
+                      <p className="text-[10px] text-muted-foreground" dir="ltr">{nurse.phone}</p>
+                    </div>
+                    {selectedNurseId === nurse.id && (
+                      <CheckCircle className="w-4 h-4 text-blue-600 mr-auto" />
+                    )}
+                  </button>
+                ))}
+
+                {nurses.length === 0 && (
+                  <div className="px-4 py-6 text-center text-muted-foreground text-sm">
+                    <Users className="w-8 h-8 mx-auto mb-2 opacity-30" />
+                    <p>لا يوجد ممرضين</p>
+                  </div>
+                )}
+              </div>
+            </motion.div>
+          )}
+        </AnimatePresence>
+      </div>
 
       {/* Report Type Tabs */}
       <div className="flex gap-2 mb-5 overflow-x-auto pb-1" style={{ scrollbarWidth: 'none' }}>
@@ -136,7 +280,7 @@ export function AdminReports() {
           <p className="text-sm font-bold text-red-600 dark:text-red-400 mb-1">خطأ في تحميل التقرير</p>
           <p className="text-xs text-muted-foreground mb-3">{error}</p>
           <button
-            onClick={() => fetchReport(reportType)}
+            onClick={() => fetchReport(reportType, selectedNurseId || undefined)}
             className="px-4 py-2 bg-red-600 text-white rounded-xl text-xs font-bold active:scale-95 transition-transform"
           >
             إعادة المحاولة
@@ -272,7 +416,9 @@ export function AdminReports() {
               <div className="bg-white dark:bg-gray-800 rounded-2xl border border-border overflow-hidden shadow-sm">
                 <div className="p-3 border-b border-border flex items-center gap-2">
                   <FileText className="w-4 h-4 text-clinic-600" />
-                  <h3 className="text-sm font-bold">تفاصيل مالية</h3>
+                  <h3 className="text-sm font-bold">
+                    {selectedNurseId ? `تفاصيل مالية - ${selectedNurse?.name}` : 'تفاصيل مالية'}
+                  </h3>
                 </div>
                 <div className="divide-y divide-border">
                   <div className="px-3 py-2.5 flex items-center justify-between">
@@ -312,6 +458,54 @@ export function AdminReports() {
                   )}
                 </div>
               </div>
+
+              {/* Profit/Loss Summary for nurse */}
+              {selectedNurseId && (reportData?.totalInvoiced || 0) > 0 && (
+                <motion.div
+                  initial={{ opacity: 0, y: 10 }}
+                  animate={{ opacity: 1, y: 0 }}
+                  className="bg-gradient-to-br from-blue-600 to-indigo-700 rounded-2xl p-4 text-white shadow-lg shadow-blue-600/20"
+                >
+                  <div className="flex items-center gap-2 mb-3">
+                    <TrendingUp className="w-5 h-5" />
+                    <h3 className="text-sm font-bold">صافي الأرباح والخسائر - {selectedNurse?.name}</h3>
+                  </div>
+                  <div className="grid grid-cols-3 gap-3 mb-3">
+                    <div className="bg-white/10 rounded-xl p-3 backdrop-blur-sm text-center">
+                      <p className="text-[10px] text-white/70 mb-1">إجمالي الفواتير</p>
+                      <p className="text-sm font-bold">{formatCurrency(reportData?.totalInvoiced || 0)}</p>
+                    </div>
+                    <div className="bg-white/10 rounded-xl p-3 backdrop-blur-sm text-center">
+                      <p className="text-[10px] text-white/70 mb-1">المحصل</p>
+                      <p className="text-sm font-bold text-green-200">{formatCurrency(reportData?.totalRevenue || 0)}</p>
+                    </div>
+                    <div className="bg-white/10 rounded-xl p-3 backdrop-blur-sm text-center">
+                      <p className="text-[10px] text-white/70 mb-1">غير محصل</p>
+                      <p className="text-sm font-bold text-red-200">{formatCurrency(reportData?.unpaidAmount || 0)}</p>
+                    </div>
+                  </div>
+                  <div className="bg-white/10 rounded-xl p-3 backdrop-blur-sm">
+                    <div className="flex items-center justify-between mb-2">
+                      <span className="text-xs font-bold">نسبة التحصيل</span>
+                      <span className={`text-xs font-bold px-2 py-0.5 rounded-full ${
+                        (reportData?.totalRevenue || 0) >= (reportData?.totalInvoiced || 1) * 0.7
+                          ? 'bg-green-400/20 text-green-200'
+                          : (reportData?.totalRevenue || 0) >= (reportData?.totalInvoiced || 1) * 0.4
+                          ? 'bg-yellow-400/20 text-yellow-200'
+                          : 'bg-red-400/20 text-red-200'
+                      }`}>
+                        {Math.round(((reportData?.totalRevenue || 0) / (reportData?.totalInvoiced || 1)) * 100)}%
+                      </span>
+                    </div>
+                    <div className="bg-white/10 rounded-full h-3 overflow-hidden">
+                      <div
+                        className="bg-gradient-to-l from-green-400 to-green-300 h-3 rounded-full transition-all duration-700"
+                        style={{ width: `${Math.min(((reportData?.totalRevenue || 0) / (reportData?.totalInvoiced || 1)) * 100, 100)}%` }}
+                      />
+                    </div>
+                  </div>
+                </motion.div>
+              )}
 
               {/* Payment Progress */}
               {(reportData?.totalInvoiced || 0) > 0 && (
