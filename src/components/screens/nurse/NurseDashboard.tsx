@@ -10,6 +10,7 @@ import { StatCard } from '@/components/shared/StatCard';
 import { EmptyState } from '@/components/shared/EmptyState';
 import { SkeletonLoader } from '@/components/shared/SkeletonLoader';
 import { DashboardData, statGradients } from '@/lib/constants';
+import { PwaInstallBanner } from '@/components/shared/PwaInstallPrompt';
 
 const NurseDashboard = React.memo(function NurseDashboard() {
   const { setScreen, user } = useAppStore();
@@ -20,6 +21,9 @@ const NurseDashboard = React.memo(function NurseDashboard() {
 
   return (
     <div className="px-4 pb-24 pt-2 space-y-4">
+      {/* PWA Install Banner */}
+      <PwaInstallBanner />
+
       <div>
         <h2 className="text-lg font-bold">مرحباً {user?.name} 👋</h2>
         <p className="text-sm text-muted-foreground">لوحة التحكم</p>

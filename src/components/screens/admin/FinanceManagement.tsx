@@ -147,18 +147,18 @@ export function FinanceManagement() {
                 </div>
               </div>
 
-              {/* Nurse name - Professional badge */}
-              {inv.nurseName && (
-                <div className="flex items-center gap-1.5 mb-2 px-1">
-                  <div className="w-5 h-5 rounded-md bg-blue-100 dark:bg-blue-900/30 flex items-center justify-center">
+              {/* Nurse/Admin name - Professional badge */}
+              <div className="flex items-center gap-2 mb-2 px-1">
+                <div className="flex items-center gap-1.5 bg-blue-50 dark:bg-blue-900/20 px-2.5 py-1 rounded-lg">
+                  <div className="w-5 h-5 rounded-md bg-blue-100 dark:bg-blue-900/40 flex items-center justify-center">
                     <Stethoscope className="w-3 h-3 text-blue-600 dark:text-blue-400" />
                   </div>
-                  <span className="text-[11px] font-medium text-blue-700 dark:text-blue-300">
-                    {inv.nurseName}
+                  <span className="text-[11px] font-bold text-blue-700 dark:text-blue-300">
+                    {inv.nurseName || inv.nurseId || 'مدير العيادة'}
                   </span>
-                  <span className="text-[9px] text-muted-foreground">- مقدم الخدمة</span>
                 </div>
-              )}
+                <span className="text-[9px] text-muted-foreground">مقدم الإجراء</span>
+              </div>
             </div>
 
             {/* Service items */}

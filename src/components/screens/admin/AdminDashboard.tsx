@@ -5,6 +5,7 @@ import { motion } from 'framer-motion';
 import { Users, AlertTriangle, Activity, DollarSign, TrendingUp, Clock, Stethoscope, ChevronLeft } from 'lucide-react';
 import { useAppStore } from '@/lib/store';
 import { formatCurrency, formatRelativeTime, severityLabels, severityColors, type DashboardData, type EmergencyItem } from '@/lib/constants';
+import { PwaInstallBanner } from '@/components/shared/PwaInstallPrompt';
 
 export function AdminDashboard() {
   const { setScreen } = useAppStore();
@@ -47,6 +48,9 @@ export function AdminDashboard() {
 
   return (
     <div className="p-4 space-y-5 pb-24">
+      {/* PWA Install Banner - Prominent at top */}
+      <PwaInstallBanner />
+
       {/* Quick Stats */}
       <div className="grid grid-cols-2 gap-3">
         {stats.map((stat, i) => (

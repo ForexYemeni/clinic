@@ -73,7 +73,8 @@ export async function GET(request: NextRequest) {
           const visitDoc = await adminDb.collection('visits').doc(data.visitId).get();
           if (visitDoc.exists) {
             const vData = visitDoc.data();
-            data.nurseName = vData?.nurseName || '';
+            data.nurseName = vData?.nurseName || vData?.createdByName || '';
+            data.nurseId = vData?.nurseId || '';
           }
         } catch {}
       }
@@ -85,6 +86,16 @@ export async function GET(request: NextRequest) {
         if (nurseNames.length > 0) {
           data.nurseName = nurseNames[0]; // Use first nurse name
         }
+      }
+      // Last resort: look up nurse by nurseId from visit
+      if (!data.nurseName && data.nurseId) {
+        try {
+          const nurseDoc = await adminDb.collection('users').doc(data.nurseId).get();
+          if (nurseDoc.exists) {
+            const nData = nurseDoc.data();
+            data.nurseName = nData?.name || '';
+          }
+        } catch {}
       }
       invoices.push(data);
     }
