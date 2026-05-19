@@ -32,6 +32,71 @@ export async function GET(request: NextRequest) {
       return adminDb.collection(col).where('clinicId', '==', effectiveClinicId);
     };
 
+    // Safe query helper - tries indexed query first, falls back to unindexed
+    const safeQuery = async (
+      col: string,
+      filters: { field: string; value: string }[],
+    ) => {
+      try {
+        let query: any = adminDb.collection(col);
+        for (const f of filters) {
+          query = query.where(f.field, '==', f.value);
+        }
+        const snap = await query.get();
+        return snap;
+      } catch {
+        // Fallback: just filter by clinicId only
+        try {
+          const snap = await adminDb.collection(col)
+            .where('clinicId', '==', effectiveClinicId)
+            .get();
+          return snap;
+        } catch {
+          return { docs: [], size: 0 };
+        }
+      }
+    };
+
+    // Safe query with date range
+    const safeQueryWithDate = async (
+      col: string,
+      dateField: string,
+      startDate: string,
+      extraFilters: { field: string; value: string }[] = [],
+    ) => {
+      try {
+        let query: any = adminDb.collection(col)
+          .where('clinicId', '==', effectiveClinicId);
+        for (const f of extraFilters) {
+          query = query.where(f.field, '==', f.value);
+        }
+        query = query.where(dateField, '>=', startDate);
+        const snap = await query.get();
+        return snap;
+      } catch {
+        // Fallback: just filter by clinicId + extra filters (no date)
+        try {
+          let query: any = adminDb.collection(col)
+            .where('clinicId', '==', effectiveClinicId);
+          for (const f of extraFilters) {
+            query = query.where(f.field, '==', f.value);
+          }
+          const snap = await query.get();
+          return snap;
+        } catch {
+          // Final fallback: clinicId only
+          try {
+            const snap = await adminDb.collection(col)
+              .where('clinicId', '==', effectiveClinicId)
+              .get();
+            return snap;
+          } catch {
+            return { docs: [], size: 0 };
+          }
+        }
+      }
+    };
+
     const now = new Date();
     let startDate = new Date();
     if (type === 'daily') { startDate.setHours(0, 0, 0, 0); }
@@ -40,15 +105,9 @@ export async function GET(request: NextRequest) {
     const startStr = startDate.toISOString();
 
     if (type === 'services') {
-      let visitsQuery = withClinic('visits');
-      // Filter by nurseId if provided
-      if (nurseId) {
-        visitsQuery = adminDb.collection('visits')
-          .where('clinicId', '==', effectiveClinicId)
-          .where('nurseId', '==', nurseId);
-      }
-      const visitsSnapshot = await visitsQuery.get()
-        .catch(() => adminDb.collection('visits').where('clinicId', '==', effectiveClinicId).get());
+      // Get all visits for this clinic (optionally filtered by nurseId)
+      const visitsExtraFilters = nurseId ? [{ field: 'nurseId', value: nurseId }] : [];
+      const visitsSnapshot = await safeQueryWithDate('visits', 'visitDate', startStr, visitsExtraFilters);
 
       const serviceCountMap: Record<string, { count: number; name: string; revenue: number }> = {};
 
@@ -57,13 +116,21 @@ export async function GET(request: NextRequest) {
         const serviceIds: string[] = visitData.serviceIds || [];
         for (const serviceId of serviceIds) {
           if (!serviceCountMap[serviceId]) {
-            const serviceDoc = await adminDb.collection('services').doc(serviceId).get();
-            const serviceData = serviceDoc.exists ? serviceDoc.data() : null;
-            serviceCountMap[serviceId] = { count: 0, name: serviceData?.nameAr || 'غير معروف', revenue: 0 };
+            try {
+              const serviceDoc = await adminDb.collection('services').doc(serviceId).get();
+              const serviceData = serviceDoc.exists ? serviceDoc.data() : null;
+              serviceCountMap[serviceId] = { count: 0, name: serviceData?.nameAr || 'غير معروف', revenue: 0 };
+            } catch {
+              serviceCountMap[serviceId] = { count: 0, name: 'غير معروف', revenue: 0 };
+            }
           }
           serviceCountMap[serviceId].count += 1;
-          const serviceDoc = await adminDb.collection('services').doc(serviceId).get();
-          if (serviceDoc.exists) serviceCountMap[serviceId].revenue += serviceDoc.data()?.price || 0;
+          try {
+            const serviceDoc = await adminDb.collection('services').doc(serviceId).get();
+            if (serviceDoc.exists) serviceCountMap[serviceId].revenue += serviceDoc.data()?.price || 0;
+          } catch {
+            // Skip revenue if can't fetch service
+          }
         }
       }
 
@@ -83,45 +150,16 @@ export async function GET(request: NextRequest) {
     }
 
     // Build queries with optional nurseId filtering
-    const buildFilteredQuery = (col: string, dateField: string = 'createdAt') => {
-      if (nurseId) {
-        // Nurse-specific: filter by both clinicId and nurseId
-        return adminDb.collection(col)
-          .where('clinicId', '==', effectiveClinicId)
-          .where('nurseId', '==', nurseId)
-          .where(dateField, '>=', startStr)
-          .get()
-          .catch(() =>
-            adminDb.collection(col)
-              .where('clinicId', '==', effectiveClinicId)
-              .where('nurseId', '==', nurseId)
-              .get()
-              .catch(() =>
-                adminDb.collection(col)
-                  .where('clinicId', '==', effectiveClinicId)
-                  .get()
-              )
-          );
-      }
-      return adminDb.collection(col)
-        .where('clinicId', '==', effectiveClinicId)
-        .where(dateField, '>=', startStr)
-        .get()
-        .catch(() =>
-          adminDb.collection(col)
-            .where('clinicId', '==', effectiveClinicId)
-            .get()
-        );
-    };
+    const visitsExtraFilters = nurseId ? [{ field: 'nurseId', value: nurseId }] : [];
+    const visitsDateField = nurseId ? 'visitDate' : 'visitDate';
 
     const [patientsSnap, visitsSnap, invoicesSnap] = await Promise.all([
-      // Patients don't have nurseId, so always use clinicId only
-      withClinic('patients').where('createdAt', '>=', startStr).get().catch(() => withClinic('patients').get()),
-      nurseId
-        ? adminDb.collection('visits').where('clinicId', '==', effectiveClinicId).where('nurseId', '==', nurseId).get().catch(() => withClinic('visits').get())
-        : withClinic('visits').where('visitDate', '>=', startStr).get().catch(() => withClinic('visits').get()),
-      // Invoices don't have nurseId directly, use clinicId
-      withClinic('invoices').where('createdAt', '>=', startStr).get().catch(() => withClinic('invoices').get()),
+      // Patients - always use clinicId only (no nurseId)
+      safeQueryWithDate('patients', 'createdAt', startStr),
+      // Visits - optionally filtered by nurseId
+      safeQueryWithDate('visits', visitsDateField, startStr, visitsExtraFilters),
+      // Invoices - always use clinicId only
+      safeQueryWithDate('invoices', 'createdAt', startStr),
     ]);
 
     const totalPatients = patientsSnap.size;
@@ -133,10 +171,9 @@ export async function GET(request: NextRequest) {
     const paidInvoices = invoicesSnap.docs.filter((d) => d.data().status === 'paid').length;
     const unpaidInvoices = invoicesSnap.docs.filter((d) => d.data().status === 'unpaid' || d.data().status === 'partial').length;
 
-    const emergenciesSnap = await withClinic('emergencies').where('createdAt', '>=', startStr).get()
-      .catch(() => withClinic('emergencies').get());
+    const emergenciesSnap = await safeQueryWithDate('emergencies', 'createdAt', startStr);
 
-    // Build daily breakdown for monthly reports
+    // Build daily breakdown for monthly/weekly reports
     let dailyBreakdown: { date: string; patients: number; revenue: number; visits: number }[] = [];
     if (type === 'monthly' || type === 'weekly') {
       const dayMap: Record<string, { patients: number; revenue: number; visits: number }> = {};

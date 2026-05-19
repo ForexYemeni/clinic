@@ -1,7 +1,7 @@
 {
-  "name": "نظام إدارة العيادة",
+  "name": "نظام إدارة العيادة - Clinic Manager",
   "short_name": "العيادة",
-  "description": "تطبيق احترافي لإدارة العيادة - مرضى، زيارات، خدمات، فواتير",
+  "description": "تطبيق احترافي لإدارة العيادة - مرضى، زيارات، خدمات، فواتير، تقارير",
   "start_url": "/",
   "display": "standalone",
   "orientation": "portrait",
@@ -61,5 +61,19 @@
     }
   ],
   "screenshots": [],
-  "prefer_related_applications": false
+  "prefer_related_applications": false,
+  "shortcuts": [
+    {
+      "name": "المرضى",
+      "short_name": "المرضى",
+      "url": "/?screen=patients",
+      "icons": [{ "src": "/icons/icon-96x96.png", "sizes": "96x96" }]
+    },
+    {
+      "name": "إضافة زيارة",
+      "short_name": "زيارة",
+      "url": "/?screen=add-visit",
+      "icons": [{ "src": "/icons/icon-96x96.png", "sizes": "96x96" }]
+    }
+  ]
 }

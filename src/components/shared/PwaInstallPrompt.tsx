@@ -2,7 +2,7 @@
 
 import React, { useEffect, useState, useCallback } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
-import { Smartphone, X, Download } from 'lucide-react';
+import { Smartphone, X, Download, Sparkles } from 'lucide-react';
 
 interface BeforeInstallPromptEvent extends Event {
   prompt: () => Promise<void>;
@@ -13,38 +13,56 @@ export function PwaInstallPrompt() {
   const [deferredPrompt, setDeferredPrompt] = useState<BeforeInstallPromptEvent | null>(null);
   const [visible, setVisible] = useState(false);
   const [dismissed, setDismissed] = useState(() => {
-    if (typeof window !== 'undefined' && sessionStorage.getItem('pwa-install-dismissed')) {
-      return true;
+    if (typeof window !== 'undefined') {
+      // Use localStorage for persistence across sessions
+      const dismissedAt = localStorage.getItem('pwa-install-dismissed');
+      if (dismissedAt) {
+        const dismissedTime = parseInt(dismissedAt, 10);
+        // Show again after 3 days
+        const threeDaysMs = 3 * 24 * 60 * 60 * 1000;
+        if (Date.now() - dismissedTime < threeDaysMs) {
+          return true;
+        }
+        localStorage.removeItem('pwa-install-dismissed');
+      }
     }
     return false;
   });
+  const [isInstalled, setIsInstalled] = useState(false);
 
   useEffect(() => {
+    // Check if already installed
+    if (window.matchMedia('(display-mode: standalone)').matches) {
+      setIsInstalled(true);
+      return;
+    }
+
     const handler = (e: Event) => {
       e.preventDefault();
       setDeferredPrompt(e as BeforeInstallPromptEvent);
-      // Small delay before showing for better UX
-      setTimeout(() => setVisible(true), 2000);
+      // Show prompt after a short delay for better UX
+      setTimeout(() => setVisible(true), 1500);
     };
 
     window.addEventListener('beforeinstallprompt', handler);
-    return () => window.removeEventListener('beforeinstallprompt', handler);
+
+    // Listen for successful install
+    window.addEventListener('appinstalled', () => {
+      setIsInstalled(true);
+      setVisible(false);
+      setDeferredPrompt(null);
+    });
+
+    return () => {
+      window.removeEventListener('beforeinstallprompt', handler);
+    };
   }, []);
 
   const handleDismiss = useCallback(() => {
     setVisible(false);
     setDismissed(true);
-    sessionStorage.setItem('pwa-install-dismissed', 'true');
+    localStorage.setItem('pwa-install-dismissed', String(Date.now()));
   }, []);
-
-  // Auto-dismiss after 15 seconds
-  useEffect(() => {
-    if (!visible) return;
-    const timer = setTimeout(() => {
-      handleDismiss();
-    }, 15000);
-    return () => clearTimeout(timer);
-  }, [visible, handleDismiss]);
 
   const handleInstall = useCallback(async () => {
     if (!deferredPrompt) return;
@@ -52,7 +70,7 @@ export function PwaInstallPrompt() {
       await deferredPrompt.prompt();
       const { outcome } = await deferredPrompt.userChoice;
       if (outcome === 'accepted') {
-        // User accepted
+        setIsInstalled(true);
       }
     } catch {
       // Prompt failed
@@ -60,10 +78,10 @@ export function PwaInstallPrompt() {
     setDeferredPrompt(null);
     setVisible(false);
     setDismissed(true);
-    sessionStorage.setItem('pwa-install-dismissed', 'true');
+    localStorage.setItem('pwa-install-dismissed', String(Date.now()));
   }, [deferredPrompt]);
 
-  if (dismissed && !visible) return null;
+  if (isInstalled || (dismissed && !visible)) return null;
 
   return (
     <AnimatePresence>
@@ -79,43 +97,66 @@ export function PwaInstallPrompt() {
             {/* Close button */}
             <button
               onClick={handleDismiss}
-              className="absolute top-3 left-3 w-6 h-6 rounded-full bg-gray-100 dark:bg-gray-700 flex items-center justify-center hover:bg-gray-200 dark:hover:bg-gray-600 transition-colors z-10"
+              className="absolute top-3 left-3 w-7 h-7 rounded-full bg-gray-100 dark:bg-gray-700 flex items-center justify-center hover:bg-gray-200 dark:hover:bg-gray-600 transition-colors z-10"
             >
               <X className="w-3.5 h-3.5 text-muted-foreground" />
             </button>
 
-            <div className="p-4 flex items-center gap-4">
-              {/* Gradient icon */}
-              <div className="w-12 h-12 rounded-2xl bg-gradient-to-br from-green-400 to-emerald-600 flex items-center justify-center flex-shrink-0 shadow-lg shadow-green-500/25">
-                <Smartphone className="w-6 h-6 text-white" />
+            <div className="p-5">
+              {/* Top section with icon */}
+              <div className="flex items-start gap-4 mb-4">
+                {/* App icon */}
+                <div className="w-14 h-14 rounded-2xl bg-gradient-to-br from-emerald-400 to-green-600 flex items-center justify-center flex-shrink-0 shadow-lg shadow-green-500/25">
+                  <img src="/icon-512.png" alt="" className="w-10 h-10 rounded-xl" onError={(e) => {
+                    (e.target as HTMLImageElement).style.display = 'none';
+                  }} />
+                  <Smartphone className="w-6 h-6 text-white absolute" />
+                </div>
+
+                {/* Text content */}
+                <div className="flex-1 min-w-0 pr-4 pt-0.5">
+                  <div className="flex items-center gap-1.5 mb-1">
+                    <Sparkles className="w-3.5 h-3.5 text-amber-500" />
+                    <h3 className="text-sm font-bold text-foreground">تثبيت التطبيق</h3>
+                  </div>
+                  <p className="text-xs text-muted-foreground leading-relaxed">
+                    أضف التطبيق إلى شاشتك الرئيسية للوصول السريع والعمل بدون إنترنت
+                  </p>
+                </div>
               </div>
 
-              {/* Text content */}
-              <div className="flex-1 min-w-0 pr-4">
-                <h3 className="text-sm font-bold text-foreground">تثبيت التطبيق</h3>
-                <p className="text-xs text-muted-foreground mt-0.5 leading-relaxed">
-                  أضف التطبيق إلى شاشتك الرئيسية للوصول السريع
-                </p>
+              {/* Features list */}
+              <div className="flex gap-3 mb-4 px-1">
+                <div className="flex items-center gap-1.5 text-[10px] text-muted-foreground">
+                  <span className="w-1.5 h-1.5 rounded-full bg-green-500" />
+                  وصول سريع
+                </div>
+                <div className="flex items-center gap-1.5 text-[10px] text-muted-foreground">
+                  <span className="w-1.5 h-1.5 rounded-full bg-blue-500" />
+                  يعمل بدون إنترنت
+                </div>
+                <div className="flex items-center gap-1.5 text-[10px] text-muted-foreground">
+                  <span className="w-1.5 h-1.5 rounded-full bg-purple-500" />
+                  بدون إعلانات
+                </div>
               </div>
 
-              {/* Install button */}
-              <button
-                onClick={handleInstall}
-                className="flex items-center gap-1.5 px-4 py-2.5 bg-gradient-to-l from-green-500 to-emerald-600 text-white rounded-xl text-xs font-bold shadow-md shadow-green-500/25 active:scale-95 transition-transform flex-shrink-0"
-              >
-                <Download className="w-3.5 h-3.5" />
-                تثبيت
-              </button>
-            </div>
-
-            {/* Dismiss link */}
-            <div className="px-4 pb-3 flex justify-start">
-              <button
-                onClick={handleDismiss}
-                className="text-xs text-muted-foreground hover:text-foreground transition-colors"
-              >
-                لاحقاً
-              </button>
+              {/* Action buttons */}
+              <div className="flex gap-2">
+                <button
+                  onClick={handleInstall}
+                  className="flex-1 flex items-center justify-center gap-2 h-11 bg-gradient-to-l from-green-500 to-emerald-600 text-white rounded-xl text-sm font-bold shadow-md shadow-green-500/25 active:scale-95 transition-transform"
+                >
+                  <Download className="w-4 h-4" />
+                  تثبيت الآن
+                </button>
+                <button
+                  onClick={handleDismiss}
+                  className="h-11 px-4 bg-gray-100 dark:bg-gray-700 rounded-xl text-xs font-medium text-muted-foreground active:scale-95 transition-transform"
+                >
+                  لاحقاً
+                </button>
+              </div>
             </div>
           </div>
         </motion.div>

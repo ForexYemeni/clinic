@@ -417,24 +417,13 @@ export function ServiceManagement() {
             <p className="text-[11px] text-muted-foreground">{stats.total} خدمة مسجلة</p>
           </div>
         </div>
-        <div className="flex items-center gap-2">
-          <button
-            onClick={handleReseedDefaults}
-            disabled={submitting}
-            className="h-9 px-3 rounded-xl bg-blue-50 dark:bg-blue-900/20 flex items-center gap-1.5 active:scale-95 transition-transform"
-            title="إضافة الخدمات المفقودة"
-          >
-            <RefreshCw className={`w-4 h-4 text-blue-600 dark:text-blue-400 ${submitting ? 'animate-spin' : ''}`} />
-            <span className="text-xs font-medium text-blue-600 dark:text-blue-400">تحميل</span>
-          </button>
-          <button
-            onClick={() => { setForm(emptyForm); setShowAddSheet(true); }}
-            className="flex items-center gap-1.5 bg-clinic-600 hover:bg-clinic-700 text-white px-4 py-2.5 rounded-xl text-sm font-medium active:scale-[0.97] transition-all shadow-lg shadow-clinic-600/20"
-          >
-            <Plus className="w-4 h-4" />
-            إضافة خدمة
-          </button>
-        </div>
+        <button
+          onClick={() => { setForm(emptyForm); setShowAddSheet(true); }}
+          className="flex items-center gap-1.5 bg-clinic-600 hover:bg-clinic-700 text-white px-4 py-2.5 rounded-xl text-sm font-medium active:scale-[0.97] transition-all shadow-lg shadow-clinic-600/20"
+        >
+          <Plus className="w-4 h-4" />
+          إضافة خدمة
+        </button>
       </div>
 
       {/* ═══════ Stats Bar ═══════ */}
@@ -477,6 +466,42 @@ export function ServiceManagement() {
           </div>
           <p className="text-2xl font-bold leading-none">{stats.paused}</p>
         </motion.div>
+      </div>
+
+      {/* ═══════ Service Actions ═══════ */}
+      <div className="grid grid-cols-2 gap-3 mb-4">
+        <motion.button
+          initial={{ opacity: 0, y: 8 }}
+          animate={{ opacity: 1, y: 0 }}
+          transition={{ delay: 0.15 }}
+          onClick={handleReseedDefaults}
+          disabled={submitting}
+          className="bg-white dark:bg-gray-800 rounded-2xl p-3.5 border border-blue-200 dark:border-blue-900/40 flex items-center gap-3 active:scale-[0.98] transition-transform shadow-sm disabled:opacity-60"
+        >
+          <div className="w-10 h-10 bg-blue-100 dark:bg-blue-900/30 rounded-xl flex items-center justify-center flex-shrink-0">
+            <RefreshCw className={`w-5 h-5 text-blue-600 dark:text-blue-400 ${submitting ? 'animate-spin' : ''}`} />
+          </div>
+          <div className="text-right">
+            <p className="text-xs font-bold text-blue-700 dark:text-blue-300">تحميل الخدمات</p>
+            <p className="text-[9px] text-muted-foreground">إضافة المفقودة</p>
+          </div>
+        </motion.button>
+        <motion.button
+          initial={{ opacity: 0, y: 8 }}
+          animate={{ opacity: 1, y: 0 }}
+          transition={{ delay: 0.2 }}
+          onClick={handleFullResetServices}
+          disabled={submitting}
+          className="bg-white dark:bg-gray-800 rounded-2xl p-3.5 border border-amber-200 dark:border-amber-900/40 flex items-center gap-3 active:scale-[0.98] transition-transform shadow-sm disabled:opacity-60"
+        >
+          <div className="w-10 h-10 bg-amber-100 dark:bg-amber-900/30 rounded-xl flex items-center justify-center flex-shrink-0">
+            <Package className="w-5 h-5 text-amber-600 dark:text-amber-400" />
+          </div>
+          <div className="text-right">
+            <p className="text-xs font-bold text-amber-700 dark:text-amber-300">إعادة تعيين</p>
+            <p className="text-[9px] text-muted-foreground">حذف وإعادة تحميل</p>
+          </div>
+        </motion.button>
       </div>
 
       {/* ═══════ Search ═══════ */}

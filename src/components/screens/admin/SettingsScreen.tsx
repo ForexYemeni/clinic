@@ -1,7 +1,8 @@
 'use client';
 
 import React, { useState } from 'react';
-import { Building2, Moon, Sun, Lock, LogOut, Shield, Info } from 'lucide-react';
+import { motion, AnimatePresence } from 'framer-motion';
+import { Building2, Moon, Sun, Lock, LogOut, Shield, Info, ChevronLeft, AlertTriangle } from 'lucide-react';
 import { useAppStore } from '@/lib/store';
 import { toast } from 'sonner';
 
@@ -11,11 +12,11 @@ export function SettingsScreen() {
   const [newClinicName, setNewClinicName] = useState(clinicName);
   const [changingPassword, setChangingPassword] = useState(false);
   const [passwords, setPasswords] = useState({ current: '', newPassword: '', confirm: '' });
+  const [showLogoutConfirm, setShowLogoutConfirm] = useState(false);
 
   const handleSaveName = async () => {
     if (!newClinicName.trim()) return;
     try {
-      // Persist clinic name to Firestore via API
       const res = await fetch('/api/clinic', {
         method: 'PUT',
         headers: { 'Content-Type': 'application/json' },
@@ -55,9 +56,11 @@ export function SettingsScreen() {
   };
 
   const handleLogout = () => {
-    if (confirm('هل تريد تسجيل الخروج؟')) {
-      logout();
-    }
+    setShowLogoutConfirm(true);
+  };
+
+  const confirmLogout = () => {
+    logout();
   };
 
   return (
@@ -65,11 +68,16 @@ export function SettingsScreen() {
       <h2 className="text-lg font-bold mb-4">الإعدادات</h2>
 
       {/* Clinic Name */}
-      <div className="bg-white dark:bg-gray-800 rounded-xl p-4 border border-border mb-3">
+      <motion.div
+        initial={{ opacity: 0, y: 8 }}
+        animate={{ opacity: 1, y: 0 }}
+        transition={{ delay: 0 }}
+        className="bg-white dark:bg-gray-800 rounded-2xl p-4 border border-border mb-3 shadow-sm"
+      >
         <div className="flex items-center justify-between">
           <div className="flex items-center gap-3">
-            <div className="w-10 h-10 bg-clinic-100 dark:bg-clinic-900/30 rounded-xl flex items-center justify-center">
-              <Building2 className="w-5 h-5 text-clinic-600" />
+            <div className="w-11 h-11 bg-clinic-100 dark:bg-clinic-900/30 rounded-xl flex items-center justify-center">
+              <Building2 className="w-5 h-5 text-clinic-600 dark:text-clinic-400" />
             </div>
             <div>
               <p className="text-xs text-muted-foreground">اسم العيادة</p>
@@ -90,16 +98,21 @@ export function SettingsScreen() {
             </div>
           </div>
           {!editingName && (
-            <button onClick={() => setEditingName(true)} className="text-xs text-clinic-600">تعديل</button>
+            <button onClick={() => setEditingName(true)} className="text-xs text-clinic-600 font-medium px-2 py-1 bg-clinic-50 dark:bg-clinic-900/20 rounded-lg">تعديل</button>
           )}
         </div>
-      </div>
+      </motion.div>
 
       {/* Theme */}
-      <div className="bg-white dark:bg-gray-800 rounded-xl p-4 border border-border mb-3">
+      <motion.div
+        initial={{ opacity: 0, y: 8 }}
+        animate={{ opacity: 1, y: 0 }}
+        transition={{ delay: 0.05 }}
+        className="bg-white dark:bg-gray-800 rounded-2xl p-4 border border-border mb-3 shadow-sm"
+      >
         <div className="flex items-center justify-between">
           <div className="flex items-center gap-3">
-            <div className="w-10 h-10 bg-purple-100 dark:bg-purple-900/30 rounded-xl flex items-center justify-center">
+            <div className="w-11 h-11 bg-purple-100 dark:bg-purple-900/30 rounded-xl flex items-center justify-center">
               {theme === 'light' ? <Moon className="w-5 h-5 text-purple-600" /> : <Sun className="w-5 h-5 text-yellow-500" />}
             </div>
             <div>
@@ -114,10 +127,15 @@ export function SettingsScreen() {
             {theme === 'light' ? 'الوضع الداكن' : 'الوضع الفاتح'}
           </button>
         </div>
-      </div>
+      </motion.div>
 
       {/* Change Password */}
-      <div className="bg-white dark:bg-gray-800 rounded-xl p-4 border border-border mb-3">
+      <motion.div
+        initial={{ opacity: 0, y: 8 }}
+        animate={{ opacity: 1, y: 0 }}
+        transition={{ delay: 0.1 }}
+        className="bg-white dark:bg-gray-800 rounded-2xl p-4 border border-border mb-3 shadow-sm"
+      >
         {changingPassword ? (
           <div className="space-y-3">
             <h3 className="text-sm font-medium flex items-center gap-2">
@@ -145,30 +163,86 @@ export function SettingsScreen() {
         ) : (
           <button onClick={() => setChangingPassword(true)} className="w-full flex items-center justify-between">
             <div className="flex items-center gap-3">
-              <div className="w-10 h-10 bg-amber-100 dark:bg-amber-900/30 rounded-xl flex items-center justify-center">
+              <div className="w-11 h-11 bg-amber-100 dark:bg-amber-900/30 rounded-xl flex items-center justify-center">
                 <Lock className="w-5 h-5 text-amber-600" />
               </div>
-              <p className="text-sm font-medium">تغيير كلمة المرور</p>
+              <div className="text-right">
+                <p className="text-sm font-medium">تغيير كلمة المرور</p>
+                <p className="text-[10px] text-muted-foreground">تحديث كلمة المرور الخاصة بك</p>
+              </div>
             </div>
+            <ChevronLeft className="w-4 h-4 text-muted-foreground" />
           </button>
         )}
-      </div>
+      </motion.div>
 
-      {/* Logout */}
-      <button
-        onClick={handleLogout}
-        className="w-full bg-white dark:bg-gray-800 rounded-xl p-4 border border-border flex items-center gap-3 mb-3 active:scale-[0.98] transition-transform"
+      {/* Logout - Professional Danger Card */}
+      <motion.div
+        initial={{ opacity: 0, y: 8 }}
+        animate={{ opacity: 1, y: 0 }}
+        transition={{ delay: 0.15 }}
       >
-        <div className="w-10 h-10 bg-red-100 dark:bg-red-900/30 rounded-xl flex items-center justify-center">
-          <LogOut className="w-5 h-5 text-red-600" />
-        </div>
-        <p className="text-sm font-medium text-red-600">تسجيل الخروج</p>
-      </button>
+        <AnimatePresence mode="wait">
+          {showLogoutConfirm ? (
+            <motion.div
+              key="confirm"
+              initial={{ opacity: 0, scale: 0.95 }}
+              animate={{ opacity: 1, scale: 1 }}
+              exit={{ opacity: 0, scale: 0.95 }}
+              className="bg-gradient-to-br from-red-500 to-red-600 rounded-2xl p-4 shadow-lg shadow-red-500/20 mb-3"
+            >
+              <div className="flex items-center gap-3 mb-3">
+                <div className="w-11 h-11 bg-white/20 rounded-xl flex items-center justify-center backdrop-blur-sm">
+                  <AlertTriangle className="w-6 h-6 text-white" />
+                </div>
+                <div>
+                  <p className="text-sm font-bold text-white">تأكيد تسجيل الخروج</p>
+                  <p className="text-[10px] text-white/80">سيتم تسجيل خروجك من الحساب الحالي</p>
+                </div>
+              </div>
+              <div className="flex gap-2">
+                <button
+                  onClick={confirmLogout}
+                  className="flex-1 h-10 bg-white text-red-600 rounded-xl text-sm font-bold active:scale-[0.97] transition-transform shadow-sm"
+                >
+                  نعم، تسجيل الخروج
+                </button>
+                <button
+                  onClick={() => setShowLogoutConfirm(false)}
+                  className="flex-1 h-10 bg-white/20 text-white rounded-xl text-sm font-medium backdrop-blur-sm active:scale-[0.97] transition-transform"
+                >
+                  إلغاء
+                </button>
+              </div>
+            </motion.div>
+          ) : (
+            <motion.button
+              key="card"
+              initial={{ opacity: 0 }}
+              animate={{ opacity: 1 }}
+              exit={{ opacity: 0 }}
+              onClick={handleLogout}
+              className="w-full bg-white dark:bg-gray-800 rounded-2xl p-4 border border-red-200 dark:border-red-900/50 flex items-center gap-3 mb-3 active:scale-[0.98] transition-transform shadow-sm"
+            >
+              <div className="w-11 h-11 bg-red-100 dark:bg-red-900/30 rounded-xl flex items-center justify-center">
+                <LogOut className="w-5 h-5 text-red-600 dark:text-red-400" />
+              </div>
+              <div className="flex-1 text-right">
+                <p className="text-sm font-bold text-red-600 dark:text-red-400">تسجيل الخروج</p>
+                <p className="text-[10px] text-muted-foreground">الخروج من حسابك الحالي</p>
+              </div>
+              <ChevronLeft className="w-4 h-4 text-red-400" />
+            </motion.button>
+          )}
+        </AnimatePresence>
+      </motion.div>
 
       {/* App Info */}
       <div className="mt-6 text-center">
-        <p className="text-xs text-muted-foreground">{clinicName} v3.0</p>
-        <p className="text-[10px] text-muted-foreground mt-1">جميع الحقوق محفوظة</p>
+        <div className="inline-flex items-center gap-1.5 px-3 py-1.5 bg-gray-100 dark:bg-gray-800 rounded-full">
+          <Shield className="w-3 h-3 text-muted-foreground" />
+          <p className="text-[10px] text-muted-foreground">{clinicName} v3.0</p>
+        </div>
       </div>
     </div>
   );
