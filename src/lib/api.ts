@@ -50,6 +50,57 @@ export function apiFetch(url: string, options: RequestInit = {}): Promise<Respon
   });
 }
 
+/**
+ * Global fetch wrapper that auto-adds JWT token for ALL /api/ requests.
+ * This is a monkey-patch on window.fetch that ensures even components
+ * using raw fetch() will include the auth token.
+ */
+let _originalFetch: typeof fetch | null = null;
+
+export function installGlobalApiFetch() {
+  if (typeof window === 'undefined') return;
+  if (_originalFetch) return; // Already installed
+
+  _originalFetch = window.fetch;
+  window.fetch = function(input: RequestInfo | URL, init?: RequestInit): Promise<Response> {
+    const url = typeof input === 'string' ? input : input instanceof URL ? input.href : '';
+
+    // Only intercept /api/ requests
+    if (url.startsWith('/api/')) {
+      const state = useAppStore.getState();
+      const token = state.token;
+
+      const headers: Record<string, string> = {
+        ...(init?.headers as Record<string, string> || {}),
+      };
+
+      // Add JWT token if available and not already set
+      if (token && !headers['Authorization']) {
+        headers['Authorization'] = `Bearer ${token}`;
+      }
+
+      // Add Content-Type for POST/PUT/PATCH if not set
+      if (init?.method && ['POST', 'PUT', 'PATCH'].includes(init.method) && !headers['Content-Type']) {
+        headers['Content-Type'] = 'application/json';
+      }
+
+      // Build URL with clinic context for super_admin
+      let finalUrl = url;
+      if (state.user?.role === 'super_admin' && state.selectedClinicId) {
+        const separator = url.includes('?') ? '&' : '?';
+        finalUrl = `${url}${separator}clinicId=${state.selectedClinicId}`;
+      }
+
+      return _originalFetch!(finalUrl, {
+        ...init,
+        headers,
+      });
+    }
+
+    return _originalFetch!(input, init);
+  };
+}
+
 // Helper for GET requests
 export async function apiGet<T>(url: string): Promise<T> {
   const res = await apiFetch(url);

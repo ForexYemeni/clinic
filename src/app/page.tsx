@@ -5,6 +5,7 @@ import dynamic from 'next/dynamic';
 import { motion, AnimatePresence } from 'framer-motion';
 import { Shield, Building2, ScrollText, Settings } from 'lucide-react';
 import { useAppStore } from '@/lib/store';
+import { installGlobalApiFetch } from '@/lib/api';
 import { TopHeader } from '@/components/layout/TopHeader';
 import { BottomNav } from '@/components/layout/BottomNav';
 import { SplashScreen } from '@/components/screens/SplashScreen';
@@ -114,6 +115,9 @@ export default function ClinicApp() {
 
   // Initialize theme and token from localStorage
   useEffect(() => {
+    // Install global fetch interceptor that auto-adds JWT token to all /api/ requests
+    installGlobalApiFetch();
+
     const saved = localStorage.getItem('clinic-theme') as 'light' | 'dark' | null;
     if (saved) {
       useAppStore.getState().setTheme(saved);
