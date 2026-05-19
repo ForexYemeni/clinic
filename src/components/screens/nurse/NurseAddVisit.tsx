@@ -9,6 +9,7 @@ import { SuccessCard } from '@/components/shared/SuccessCard';
 
 export function NurseAddVisit() {
   const { setScreen, user, selectedPatientId: preselectedPatientId } = useAppStore();
+  const isAdmin = user?.role === 'admin';
   const [step, setStep] = useState<'select-patient' | 'add-visit'>(
     preselectedPatientId ? 'add-visit' : 'select-patient'
   );
@@ -48,7 +49,10 @@ export function NurseAddVisit() {
   useEffect(() => {
     const fetchData = async () => {
       try {
-        const pRes = await fetch('/api/patients');
+        const token = useAppStore.getState().token;
+        const pRes = await fetch('/api/patients', {
+          headers: { ...(token ? { 'Authorization': `Bearer ${token}` } : {}) },
+        });
         if (pRes.ok) {
           const pData = await pRes.json();
           setPatients(pData);
@@ -69,13 +73,16 @@ export function NurseAddVisit() {
     const fetchServices = async () => {
       try {
         setServicesError('');
-        const sRes = await fetch('/api/services');
+        const token = useAppStore.getState().token;
+        const sRes = await fetch('/api/services', {
+          headers: { ...(token ? { 'Authorization': `Bearer ${token}` } : {}) },
+        });
         if (sRes.ok) {
           const sData = await sRes.json();
           const activeServices = sData.filter((s: any) => s.status === 'active' || s.active === true);
           setServices(activeServices);
           if (activeServices.length === 0) {
-            setServicesError('لا توجد خدمات نشطة. يجب على الإدارة إضافة خدمات أولاً.');
+            setServicesError('لا توجد خدمات نشطة. يجب إضافة خدمات أولاً.');
           }
         } else {
           const errData = await sRes.json().catch(() => ({}));
@@ -119,9 +126,13 @@ export function NurseAddVisit() {
 
     setSubmitting(true);
     try {
+      const token = useAppStore.getState().token;
       const res = await fetch('/api/visits', {
         method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
+        headers: {
+          'Content-Type': 'application/json',
+          ...(token ? { 'Authorization': `Bearer ${token}` } : {}),
+        },
         body: JSON.stringify({
           patientId: activePatientId || preselectedPatientId,
           nurseId: user?.id,
@@ -169,7 +180,7 @@ export function NurseAddVisit() {
 
   const handleSuccessClose = () => {
     setShowSuccess(false);
-    setScreen('nurse-patients');
+    setScreen(isAdmin ? 'admin-patients' : 'nurse-patients');
   };
 
   return (
@@ -194,7 +205,7 @@ export function NurseAddVisit() {
           if (step === 'add-visit' && !preselectedPatientId) {
             setStep('select-patient');
           } else {
-            setScreen('nurse-patients');
+            setScreen(isAdmin ? 'admin-patients' : 'nurse-patients');
           }
         }}
         className="flex items-center gap-1 text-sm text-muted-foreground mb-4"
@@ -225,7 +236,7 @@ export function NurseAddVisit() {
               <UserIcon className="w-12 h-12 mx-auto text-muted-foreground/30 mb-3" />
               <p className="text-muted-foreground text-sm">لا يوجد مرضى</p>
               <button
-                onClick={() => setScreen('admin-add-patient')}
+                onClick={() => setScreen(isAdmin ? 'admin-add-patient' : 'admin-add-patient')}
                 className="mt-3 text-clinic-600 text-sm font-medium"
               >
                 إضافة مريض جديد
@@ -253,7 +264,7 @@ export function NurseAddVisit() {
 
           {/* Add new patient */}
           <button
-            onClick={() => setScreen('admin-add-patient')}
+            onClick={() => setScreen(isAdmin ? 'admin-add-patient' : 'admin-add-patient')}
             className="w-full mt-4 flex items-center justify-center gap-2 h-12 border-2 border-dashed border-clinic-300 dark:border-clinic-700 rounded-xl text-clinic-600 text-sm font-medium active:scale-[0.98] transition-transform"
           >
             <Plus className="w-4 h-4" />
@@ -298,7 +309,16 @@ export function NurseAddVisit() {
               <div className="bg-yellow-50 dark:bg-yellow-900/20 rounded-xl p-4 text-center">
                 <Stethoscope className="w-8 h-8 mx-auto text-yellow-400 mb-2" />
                 <p className="text-sm text-yellow-700 dark:text-yellow-400">لا توجد خدمات متاحة</p>
-                <p className="text-xs text-muted-foreground mt-1">يجب على الإدارة إضافة خدمات أولاً</p>
+                <p className="text-xs text-muted-foreground mt-1">يجب إضافة خدمات أولاً</p>
+                {isAdmin && (
+                  <button
+                    onClick={() => setScreen('admin-services')}
+                    className="mt-3 inline-flex items-center gap-1.5 bg-clinic-600 text-white px-4 py-2 rounded-xl text-sm font-medium active:scale-[0.97] transition-transform"
+                  >
+                    <Plus className="w-4 h-4" />
+                    إضافة خدمات
+                  </button>
+                )}
               </div>
             ) : (
               <div className="space-y-2">

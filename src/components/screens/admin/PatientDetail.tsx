@@ -109,15 +109,13 @@ export function PatientDetail({ role = 'admin' }: Props) {
           <button onClick={() => setScreen(role === 'admin' ? 'admin-patients' : 'nurse-patients')} className="flex items-center gap-1 text-white/80 text-sm">
             <ArrowRight className="w-4 h-4" /> رجوع
           </button>
-          {role === 'nurse' && (
-            <button
-              onClick={() => setScreen('nurse-add-visit')}
-              className="flex items-center gap-1.5 bg-white/20 backdrop-blur-sm px-3 py-1.5 rounded-xl text-sm font-medium active:scale-[0.97] transition-transform"
-            >
-              <ClipboardPlus className="w-4 h-4" />
-              إضافة زيارة
-            </button>
-          )}
+          <button
+            onClick={() => setScreen('nurse-add-visit')}
+            className="flex items-center gap-1.5 bg-white/20 backdrop-blur-sm px-3 py-1.5 rounded-xl text-sm font-medium active:scale-[0.97] transition-transform"
+          >
+            <ClipboardPlus className="w-4 h-4" />
+            إضافة زيارة
+          </button>
         </div>
         <div className="flex items-center gap-3">
           <div className="w-14 h-14 bg-white/20 rounded-2xl flex items-center justify-center">

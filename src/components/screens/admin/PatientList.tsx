@@ -56,15 +56,13 @@ export function PatientList({ role = 'admin' }: Props) {
       <div className="flex items-center justify-between mb-4">
         <h2 className="text-lg font-bold">المرضى</h2>
         <div className="flex items-center gap-2">
-          {role === 'nurse' && (
-            <button
-              onClick={() => setScreen('nurse-add-visit')}
-              className="flex items-center gap-1.5 bg-teal-600 text-white px-3 py-2 rounded-xl text-sm font-medium active:scale-[0.97] transition-transform"
-            >
-              <Stethoscope className="w-4 h-4" />
-              زيارة
-            </button>
-          )}
+          <button
+            onClick={() => setScreen('nurse-add-visit')}
+            className="flex items-center gap-1.5 bg-teal-600 text-white px-3 py-2 rounded-xl text-sm font-medium active:scale-[0.97] transition-transform"
+          >
+            <Stethoscope className="w-4 h-4" />
+            زيارة
+          </button>
           <button
             onClick={handleAddPatient}
             className="flex items-center gap-1.5 bg-clinic-600 text-white px-3 py-2 rounded-xl text-sm font-medium active:scale-[0.97] transition-transform"
@@ -138,16 +136,14 @@ export function PatientList({ role = 'admin' }: Props) {
                   </div>
                 </div>
               </button>
-              {/* Nurse: Add Visit button */}
-              {role === 'nurse' && (
-                <button
-                  onClick={(e) => handleAddVisit(patient.id, patient.name, e)}
-                  className="w-full flex items-center justify-center gap-2 py-2 bg-clinic-50 dark:bg-clinic-900/20 border-t border-border text-clinic-700 dark:text-clinic-400 text-xs font-medium active:bg-clinic-100 dark:active:bg-clinic-900/40 transition-colors"
-                >
-                  <ClipboardPlus className="w-4 h-4" />
-                  إضافة زيارة وخدمات
-                </button>
-              )}
+              {/* Add Visit button (for both admin and nurse) */}
+              <button
+                onClick={(e) => handleAddVisit(patient.id, patient.name, e)}
+                className="w-full flex items-center justify-center gap-2 py-2 bg-clinic-50 dark:bg-clinic-900/20 border-t border-border text-clinic-700 dark:text-clinic-400 text-xs font-medium active:bg-clinic-100 dark:active:bg-clinic-900/40 transition-colors"
+              >
+                <ClipboardPlus className="w-4 h-4" />
+                إضافة زيارة وخدمات
+              </button>
             </motion.div>
           ))}
         </div>

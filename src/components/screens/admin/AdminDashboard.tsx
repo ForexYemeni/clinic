@@ -168,7 +168,7 @@ export function AdminDashboard() {
         initial={{ opacity: 0, y: 15 }}
         animate={{ opacity: 1, y: 0 }}
         transition={{ delay: 0.6 }}
-        className="grid grid-cols-2 gap-3"
+        className="grid grid-cols-3 gap-3"
       >
         <button
           onClick={() => setScreen('admin-add-patient')}
@@ -176,6 +176,13 @@ export function AdminDashboard() {
         >
           <Users className="w-8 h-8 mx-auto text-clinic-500" />
           <p className="text-sm font-medium mt-2">إضافة مريض</p>
+        </button>
+        <button
+          onClick={() => setScreen('nurse-add-visit')}
+          className="bg-white dark:bg-gray-800 rounded-2xl p-4 shadow-sm border border-border text-center active:scale-[0.97] transition-transform"
+        >
+          <Activity className="w-8 h-8 mx-auto text-teal-500" />
+          <p className="text-sm font-medium mt-2">زيارة جديدة</p>
         </button>
         <button
           onClick={() => setScreen('admin-add-emergency')}

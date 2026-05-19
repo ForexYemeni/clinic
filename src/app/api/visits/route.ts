@@ -43,7 +43,7 @@ export async function POST(request: NextRequest) {
       return NextResponse.json({ error: 'يرجى تحديد المريض' }, { status: 400 });
     }
     if (!nurseId) {
-      return NextResponse.json({ error: 'يرجى تحديد الممرض' }, { status: 400 });
+      return NextResponse.json({ error: 'يرجى تحديد مقدم الخدمة' }, { status: 400 });
     }
 
     if (!effectiveClinicId) {
