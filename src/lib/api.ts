@@ -30,9 +30,23 @@ function buildUrlWithClinicContext(url: string): string {
 export function apiFetch(url: string, options: RequestInit = {}): Promise<Response> {
   const token = useAppStore.getState().token;
 
-  const headers: Record<string, string> = {
-    ...(options.headers as Record<string, string> || {}),
-  };
+  // Build headers - handle both plain objects and Headers instances
+  let existingHeaders: Record<string, string> = {};
+  if (options.headers) {
+    if (options.headers instanceof Headers) {
+      options.headers.forEach((value, key) => {
+        existingHeaders[key] = value;
+      });
+    } else if (Array.isArray(options.headers)) {
+      for (const [key, value] of options.headers as [string, string][]) {
+        existingHeaders[key] = value;
+      }
+    } else {
+      existingHeaders = { ...(options.headers as Record<string, string> || {}) };
+    }
+  }
+
+  const headers: Record<string, string> = { ...existingHeaders };
 
   // Add JSON content type for POST/PUT/PATCH
   if (options.method && ['POST', 'PUT', 'PATCH'].includes(options.method) && !headers['Content-Type']) {
@@ -40,7 +54,7 @@ export function apiFetch(url: string, options: RequestInit = {}): Promise<Respon
   }
 
   // Add JWT token if available
-  if (token) {
+  if (token && !headers['Authorization']) {
     headers['Authorization'] = `Bearer ${token}`;
   }
 
@@ -73,9 +87,19 @@ export function installGlobalApiFetch() {
       const state = useAppStore.getState();
       const token = state.token;
 
-      const headers: Record<string, string> = {
-        ...(init?.headers as Record<string, string> || {}),
-      };
+      // Safely extract existing headers regardless of type
+      let existingHeaders: Record<string, string> = {};
+      if (init?.headers) {
+        if (init.headers instanceof Headers) {
+          init.headers.forEach((value, key) => { existingHeaders[key] = value; });
+        } else if (Array.isArray(init.headers)) {
+          for (const [key, value] of init.headers as [string, string][]) { existingHeaders[key] = value; }
+        } else {
+          existingHeaders = { ...(init.headers as Record<string, string> || {}) };
+        }
+      }
+
+      const headers: Record<string, string> = { ...existingHeaders };
 
       // Add JWT token if available and not already set
       if (token && !headers['Authorization']) {
@@ -119,18 +143,34 @@ export async function apiGet<T>(url: string): Promise<T> {
 
 // Helper for POST requests
 export async function apiPost<T>(url: string, body: unknown): Promise<T> {
-  const res = await apiFetch(url, {
-    method: 'POST',
-    body: JSON.stringify(body),
-  });
-  const data = await res.json();
-  if (!res.ok) {
-    const error: any = new Error(data.error || 'خطأ في العملية');
-    error.data = data;
-    error.status = res.status;
-    throw error;
+  try {
+    const res = await apiFetch(url, {
+      method: 'POST',
+      body: JSON.stringify(body),
+    });
+    
+    // Safely parse JSON with fallback
+    let data: any;
+    try {
+      data = await res.json();
+    } catch {
+      if (!res.ok) throw new Error('خطأ في الاتصال بالخادم');
+      throw new Error('استجابة غير صالحة من الخادم');
+    }
+    
+    if (!res.ok) {
+      const error: any = new Error(data?.error || 'خطأ في العملية');
+      error.data = data;
+      error.status = res.status;
+      throw error;
+    }
+    return data as T;
+  } catch (err: any) {
+    // Re-throw if already our custom error
+    if (err.data || err.status) throw err;
+    // Network or other fetch errors
+    throw new Error(err.message || 'خطأ في الاتصال');
   }
-  return data;
 }
 
 // Helper for PUT requests

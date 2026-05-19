@@ -5,7 +5,6 @@ import { motion, AnimatePresence } from 'framer-motion';
 import { Heart, Phone, Lock, Eye, EyeOff, AlertCircle, AlertTriangle, Clock, Shield, MessageCircle, X, ArrowRight } from 'lucide-react';
 import { useAppStore } from '@/lib/store';
 import { toast } from 'sonner';
-import { apiPost } from '@/lib/api';
 
 interface PlatformContact {
   supportPhone: string;
@@ -69,8 +68,39 @@ export function LoginScreen() {
 
     setLoading(true);
     try {
-      const data = await apiPost('/api/auth', { phone, password });
+      // Use raw fetch directly for maximum reliability - bypasses any interceptors
+      const res = await fetch('/api/auth', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ phone, password }),
+      });
 
+      // Safely parse JSON response
+      let data: any;
+      try {
+        data = await res.json();
+      } catch {
+        throw new Error('خطأ في الاتصال بالخادم');
+      }
+
+      // Handle non-OK responses
+      if (!res.ok) {
+        // Check if this is a subscription expired/suspended error (403)
+        if (res.status === 403 && data?.subscriptionExpired) {
+          setSubError({
+            subscriptionExpired: data.subscriptionExpired,
+            subscriptionStatus: data.subscriptionStatus || 'expired',
+            subscriptionEndDate: data.subscriptionEndDate || '',
+            clinicName: data.clinicName || clinicName,
+          });
+          setLoading(false);
+          return;
+        }
+        // Other errors
+        throw new Error(data?.error || 'خطأ في تسجيل الدخول');
+      }
+
+      // Success - set user data
       setUser(data.user);
       setToken(data.token);
       if (data.clinic?.id) setClinicId(data.clinic.id);
@@ -113,18 +143,7 @@ export function LoginScreen() {
 
       toast.success(`مرحباً ${data.user.name}`);
     } catch (err: any) {
-      // Check if this is a subscription error (403 with subscription info)
-      const errorData = err?.data || {};
-      if (err?.status === 403 && errorData.subscriptionExpired) {
-        setSubError({
-          subscriptionExpired: errorData.subscriptionExpired,
-          subscriptionStatus: errorData.subscriptionStatus || 'expired',
-          subscriptionEndDate: errorData.subscriptionEndDate || '',
-          clinicName: errorData.clinicName || clinicName,
-        });
-      } else {
-        setError(err.message || 'خطأ في تسجيل الدخول');
-      }
+      setError(err.message || 'خطأ في تسجيل الدخول');
     } finally {
       setLoading(false);
     }
