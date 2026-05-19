@@ -315,22 +315,45 @@ export function ServiceManagement() {
     }
   };
 
-  // ─── Re-seed Defaults ─────────────────────────────────
+  // ─── Re-seed Defaults (add missing services) ──────────
   const handleReseedDefaults = async () => {
-    if (!confirm('سيتم إعادة تحميل جميع الخدمات الافتراضية. هل أنت متأكد؟')) return;
+    if (!confirm('سيتم إضافة الخدمات المفقودة فقط دون حذف الخدمات الموجودة. هل أنت متأكد؟')) return;
     try {
-      const res = await fetch('/api/setup', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ reseedServices: true }),
-      });
-      // The setup endpoint may not support reseedServices specifically,
-      // but we show the confirmation UX. If it fails, we still refresh.
-      toast.success('تم إعادة تحميل الخدمات الافتراضية');
-      setLoading(true);
-      fetchServices();
+      setSubmitting(true);
+      const res = await fetch('/api/services/reseed', { method: 'POST' });
+      const data = await res.json();
+      if (res.ok && data.success) {
+        toast.success(data.message);
+        setLoading(true);
+        fetchServices();
+      } else {
+        toast.error(data.error || 'خطأ في إعادة التحميل');
+      }
     } catch {
-      toast.error('خطأ في إعادة التحميل');
+      toast.error('خطأ في الاتصال');
+    } finally {
+      setSubmitting(false);
+    }
+  };
+
+  // ─── Full Reset Services (delete all + re-seed) ───────
+  const handleFullResetServices = async () => {
+    if (!confirm('⚠️ سيتم حذف جميع الخدمات الحالية وإعادة تحميل الخدمات الافتراضية. هذا الإجراء لا يمكن التراجع عنه!')) return;
+    try {
+      setSubmitting(true);
+      const res = await fetch('/api/services/reseed', { method: 'DELETE' });
+      const data = await res.json();
+      if (res.ok && data.success) {
+        toast.success(data.message);
+        setLoading(true);
+        fetchServices();
+      } else {
+        toast.error(data.error || 'خطأ في إعادة التهيئة');
+      }
+    } catch {
+      toast.error('خطأ في الاتصال');
+    } finally {
+      setSubmitting(false);
     }
   };
 
@@ -397,10 +420,12 @@ export function ServiceManagement() {
         <div className="flex items-center gap-2">
           <button
             onClick={handleReseedDefaults}
-            className="h-9 w-9 rounded-xl bg-gray-100 dark:bg-gray-800 flex items-center justify-center active:scale-95 transition-transform"
-            title="إعادة تحميل الخدمات الافتراضية"
+            disabled={submitting}
+            className="h-9 px-3 rounded-xl bg-blue-50 dark:bg-blue-900/20 flex items-center gap-1.5 active:scale-95 transition-transform"
+            title="إضافة الخدمات المفقودة"
           >
-            <RefreshCw className="w-4 h-4 text-muted-foreground" />
+            <RefreshCw className={`w-4 h-4 text-blue-600 dark:text-blue-400 ${submitting ? 'animate-spin' : ''}`} />
+            <span className="text-xs font-medium text-blue-600 dark:text-blue-400">تحميل</span>
           </button>
           <button
             onClick={() => { setForm(emptyForm); setShowAddSheet(true); }}

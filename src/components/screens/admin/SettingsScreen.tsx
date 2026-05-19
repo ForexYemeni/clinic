@@ -15,12 +15,21 @@ export function SettingsScreen() {
   const handleSaveName = async () => {
     if (!newClinicName.trim()) return;
     try {
-      // Update clinic name in Firestore would require an API call
-      setClinicName(newClinicName.trim());
-      setEditingName(false);
-      toast.success('تم تحديث اسم العيادة');
+      // Persist clinic name to Firestore via API
+      const res = await fetch('/api/clinic', {
+        method: 'PUT',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ name: newClinicName.trim() }),
+      });
+      if (res.ok) {
+        setClinicName(newClinicName.trim());
+        setEditingName(false);
+        toast.success('تم تحديث اسم العيادة');
+      } else {
+        toast.error('خطأ في تحديث اسم العيادة');
+      }
     } catch {
-      toast.error('خطأ في التحديث');
+      toast.error('خطأ في الاتصال');
     }
   };
 

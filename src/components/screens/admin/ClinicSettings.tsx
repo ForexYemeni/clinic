@@ -92,15 +92,26 @@ export function ClinicSettings() {
         body: JSON.stringify(payload),
       });
       if (res.ok) {
-        setClinicSettings(payload);
-        if (payload.name) setClinicName(payload.name);
+        const savedData = await res.json();
+        setClinicSettings({
+          name: savedData.name || '',
+          description: savedData.description || '',
+          phone: savedData.phone || '',
+          address: savedData.address || '',
+          logo: savedData.logo || '',
+          primaryColor: savedData.primaryColor || 'emerald',
+        });
+        if (savedData.name) setClinicName(savedData.name);
         setDirty(false);
         toast.success('تم حفظ الإعدادات');
       } else {
-        toast.error('خطأ في حفظ الإعدادات');
+        const errData = await res.json().catch(() => ({}));
+        console.error('Save clinic settings error:', errData);
+        toast.error(errData.error || 'خطأ في حفظ الإعدادات');
       }
-    } catch {
-      toast.error('خطأ في الاتصال');
+    } catch (err) {
+      console.error('Save clinic settings network error:', err);
+      toast.error('خطأ في الاتصال بالخادم');
     } finally {
       setSaving(false);
     }
@@ -134,7 +145,47 @@ export function ClinicSettings() {
     fileInputRef.current?.click();
   };
 
-  const handleLogoChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+  // Compress image to fit within Firestore limits (~900KB base64)
+  const compressImage = (file: File): Promise<string> => {
+    return new Promise((resolve, reject) => {
+      const canvas = document.createElement('canvas');
+      const ctx = canvas.getContext('2d');
+      const img = new Image();
+      img.onload = () => {
+        // Max dimensions for small logo
+        const MAX_WIDTH = 300;
+        const MAX_HEIGHT = 300;
+        let { width, height } = img;
+        
+        if (width > MAX_WIDTH || height > MAX_HEIGHT) {
+          const ratio = Math.min(MAX_WIDTH / width, MAX_HEIGHT / height);
+          width = Math.round(width * ratio);
+          height = Math.round(height * ratio);
+        }
+        
+        canvas.width = width;
+        canvas.height = height;
+        ctx?.drawImage(img, 0, 0, width, height);
+        
+        // Start with quality 0.7 and reduce if needed
+        let quality = 0.7;
+        let base64 = canvas.toDataURL('image/jpeg', quality);
+        
+        // Reduce quality until under 800KB
+        while (base64.length > 800000 && quality > 0.1) {
+          quality -= 0.1;
+          base64 = canvas.toDataURL('image/jpeg', quality);
+        }
+        
+        resolve(base64);
+        URL.revokeObjectURL(img.src);
+      };
+      img.onerror = reject;
+      img.src = URL.createObjectURL(file);
+    });
+  };
+
+  const handleLogoChange = async (e: React.ChangeEvent<HTMLInputElement>) => {
     const file = e.target.files?.[0];
     if (!file) return;
 
@@ -143,19 +194,17 @@ export function ClinicSettings() {
       return;
     }
 
-    if (file.size > 2 * 1024 * 1024) {
-      toast.error('حجم الصورة يجب أن يكون أقل من 2 ميجابايت');
-      return;
-    }
-
-    const reader = new FileReader();
-    reader.onloadend = () => {
-      const base64 = reader.result as string;
+    try {
+      const base64 = await compressImage(file);
       updateField('logo', base64);
       setClinicSettings({ logo: base64 });
       handleSave({ ...form, logo: base64 });
-    };
-    reader.readAsDataURL(file);
+    } catch {
+      toast.error('خطأ في معالجة الصورة');
+    }
+    
+    // Reset file input
+    if (fileInputRef.current) fileInputRef.current.value = '';
   };
 
   // Remove logo
