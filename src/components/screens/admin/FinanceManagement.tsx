@@ -2,7 +2,7 @@
 
 import React, { useEffect, useState, useCallback } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
-import { DollarSign, CreditCard, CheckCircle, AlertCircle, User, Stethoscope, Banknote, Receipt, TrendingUp, TrendingDown, Users, Activity, ChevronDown, Filter, X, RefreshCw } from 'lucide-react';
+import { DollarSign, CreditCard, CheckCircle, AlertCircle, User, Stethoscope, Banknote, Receipt, TrendingUp, TrendingDown, Users, Activity, ChevronDown, Filter, X, RefreshCw, ArrowRightLeft, Wallet, AlertTriangle } from 'lucide-react';
 import { useAppStore } from '@/lib/store';
 import { formatCurrency, formatRelativeTime, statusColors, statusLabels, paymentMethodLabels, type InvoiceItem } from '@/lib/constants';
 import { apiGet } from '@/lib/api';
@@ -57,6 +57,12 @@ export function FinanceManagement() {
     paid: number;
     remaining: number;
   }>({ patientName: '', total: 0, paid: 0, remaining: 0 });
+
+  // Debt assignment state
+  const [showDebtAssign, setShowDebtAssign] = useState<InvoiceItem | null>(null);
+  const [debtNurseId, setDebtNurseId] = useState<string>('');
+  const [debtAmount, setDebtAmount] = useState('');
+  const [assigningDebt, setAssigningDebt] = useState(false);
 
   // Fetch nurses list
   useEffect(() => {
@@ -178,6 +184,51 @@ export function FinanceManagement() {
       toast.error('خطأ في الاتصال');
     } finally {
       setPaying(false);
+    }
+  };
+
+  const handleAssignDebt = async () => {
+    if (!showDebtAssign) return;
+    if (!debtNurseId) { toast.error('يرجى اختيار الممرض'); return; }
+    if (!debtAmount || Number(debtAmount) <= 0) { toast.error('أدخل مبلغ صحيح'); return; }
+    if (Number(debtAmount) > showDebtAssign.remaining) { toast.error('المبلغ يتجاوز المتبقي في الفاتورة'); return; }
+
+    setAssigningDebt(true);
+    try {
+      const res = await fetch('/api/salary', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          nurseId: debtNurseId,
+          amount: Number(debtAmount),
+          type: 'debt',
+          description: `مديونية فاتورة - ${showDebtAssign.patient?.name || 'مريض'}`,
+          isDebt: true,
+          invoiceId: showDebtAssign.id,
+          patientName: showDebtAssign.patient?.name || 'مريض',
+          requestedBy: 'admin',
+        }),
+      });
+
+      if (res.ok) {
+        toast.success('تم تحويل المبلغ على حساب الممرض بنجاح');
+        setShowDebtAssign(null);
+        setDebtNurseId('');
+        setDebtAmount('');
+        // Refresh data
+        if (selectedNurseId) {
+          fetchData(selectedNurseId);
+        } else {
+          fetchData();
+        }
+      } else {
+        const data = await res.json();
+        toast.error(data.error || 'خطأ في تحويل المبلغ');
+      }
+    } catch {
+      toast.error('خطأ في الاتصال');
+    } finally {
+      setAssigningDebt(false);
     }
   };
 
@@ -572,12 +623,28 @@ export function FinanceManagement() {
                   )}
                 </div>
                 {inv.remaining > 0 && (
-                  <button
-                    onClick={() => handlePayClick(inv)}
-                    className="px-3 py-1.5 bg-clinic-600 text-white text-xs font-bold rounded-lg active:scale-[0.97] transition-transform shadow-sm"
-                  >
-                    تسديد
-                  </button>
+                  <div className="flex items-center gap-1.5">
+                    {(inv.status === 'unpaid' || inv.status === 'partial') && nurses.length > 0 && (
+                      <button
+                        onClick={() => {
+                          setShowDebtAssign(inv);
+                          setDebtAmount(String(inv.remaining));
+                          setDebtNurseId(nurses[0]?.id || '');
+                        }}
+                        className="px-2.5 py-1.5 bg-amber-600 text-white text-[10px] font-bold rounded-lg active:scale-[0.97] transition-transform shadow-sm flex items-center gap-1"
+                        title="تحويل على حساب الممرض"
+                      >
+                        <ArrowRightLeft className="w-3 h-3" />
+                        تحويل
+                      </button>
+                    )}
+                    <button
+                      onClick={() => handlePayClick(inv)}
+                      className="px-3 py-1.5 bg-clinic-600 text-white text-xs font-bold rounded-lg active:scale-[0.97] transition-transform shadow-sm"
+                    >
+                      تسديد
+                    </button>
+                  </div>
                 )}
               </div>
             </motion.div>
@@ -620,6 +687,144 @@ export function FinanceManagement() {
         paid={successData.paid}
         remaining={successData.remaining}
       />
+
+      {/* Debt Assignment Card */}
+      <AnimatePresence>
+        {showDebtAssign && (
+          <motion.div
+            initial={{ opacity: 0, scale: 0.95 }}
+            animate={{ opacity: 1, scale: 1 }}
+            exit={{ opacity: 0, scale: 0.95 }}
+            className="fixed inset-0 z-50 flex items-end justify-center bg-black/40 backdrop-blur-sm"
+            onClick={() => setShowDebtAssign(null)}
+          >
+            <motion.div
+              initial={{ y: 300, opacity: 0 }}
+              animate={{ y: 0, opacity: 1 }}
+              exit={{ y: 300, opacity: 0 }}
+              transition={{ type: 'spring', damping: 25, stiffness: 300 }}
+              className="w-full max-w-lg bg-white dark:bg-gray-900 rounded-t-3xl p-5 pb-8 shadow-2xl"
+              onClick={(e) => e.stopPropagation()}
+            >
+              {/* Handle bar */}
+              <div className="w-10 h-1 bg-gray-300 dark:bg-gray-600 rounded-full mx-auto mb-4" />
+
+              {/* Header */}
+              <div className="flex items-center gap-3 mb-4">
+                <div className="w-12 h-12 bg-gradient-to-br from-amber-500 to-orange-500 rounded-xl flex items-center justify-center shadow-lg shadow-amber-500/20">
+                  <ArrowRightLeft className="w-6 h-6 text-white" />
+                </div>
+                <div>
+                  <p className="text-base font-bold">تحويل على حساب الممرض</p>
+                  <p className="text-xs text-muted-foreground">سيتم خصم المبلغ من راتب الممرض كمديونية</p>
+                </div>
+              </div>
+
+              {/* Invoice summary */}
+              <div className="bg-gray-50 dark:bg-gray-800 rounded-xl p-3 mb-4">
+                <div className="flex items-center gap-2 mb-2">
+                  <User className="w-4 h-4 text-clinic-600" />
+                  <span className="text-sm font-bold">{showDebtAssign.patient?.name || 'مريض'}</span>
+                  <span className={`text-[9px] px-1.5 py-0.5 rounded-full ${statusColors[showDebtAssign.status]}`}>
+                    {statusLabels[showDebtAssign.status]}
+                  </span>
+                </div>
+                <div className="grid grid-cols-3 gap-2 text-xs">
+                  <div>
+                    <p className="text-muted-foreground">الإجمالي</p>
+                    <p className="font-bold">{formatCurrency(showDebtAssign.total)}</p>
+                  </div>
+                  <div>
+                    <p className="text-muted-foreground">المدفوع</p>
+                    <p className="font-bold text-green-600">{formatCurrency(showDebtAssign.paid)}</p>
+                  </div>
+                  <div>
+                    <p className="text-muted-foreground">المتبقي</p>
+                    <p className="font-bold text-red-600">{formatCurrency(showDebtAssign.remaining)}</p>
+                  </div>
+                </div>
+              </div>
+
+              {/* Nurse selector */}
+              <div className="mb-3">
+                <label className="text-xs font-medium mb-1.5 block">اختر الممرض</label>
+                <div className="flex gap-2 overflow-x-auto pb-1" style={{ scrollbarWidth: 'none' }}>
+                  {nurses.filter(n => n.active).map(nurse => (
+                    <button
+                      key={nurse.id}
+                      onClick={() => setDebtNurseId(nurse.id)}
+                      className={`flex items-center gap-2 px-3 py-2 rounded-xl text-xs font-medium whitespace-nowrap transition-all flex-shrink-0 ${
+                        debtNurseId === nurse.id
+                          ? 'bg-amber-600 text-white shadow-sm'
+                          : 'bg-gray-100 dark:bg-gray-800 text-muted-foreground border border-border'
+                      }`}
+                    >
+                      <User className="w-3.5 h-3.5" />
+                      {nurse.name}
+                    </button>
+                  ))}
+                </div>
+              </div>
+
+              {/* Amount */}
+              <div className="mb-4">
+                <label className="text-xs font-medium mb-1.5 block">المبلغ المراد تحويله</label>
+                <input
+                  type="number"
+                  value={debtAmount}
+                  onChange={(e) => setDebtAmount(e.target.value)}
+                  placeholder="المبلغ (ر.ي)"
+                  className="w-full h-11 px-4 bg-white dark:bg-gray-800 border border-border rounded-xl text-sm focus:outline-none focus:ring-2 focus:ring-amber-500 font-bold"
+                  dir="ltr"
+                />
+                <div className="flex gap-2 mt-1.5">
+                  <button
+                    onClick={() => setDebtAmount(String(showDebtAssign.remaining))}
+                    className={`text-[10px] px-2.5 py-1 rounded-full font-medium transition-all ${
+                      debtAmount === String(showDebtAssign.remaining)
+                        ? 'bg-amber-600 text-white'
+                        : 'bg-gray-100 dark:bg-gray-800 text-muted-foreground'
+                    }`}
+                  >
+                    المبلغ الكامل
+                  </button>
+                </div>
+              </div>
+
+              {/* Warning */}
+              <div className="bg-amber-50 dark:bg-amber-900/10 rounded-xl p-3 mb-4 flex items-start gap-2">
+                <AlertTriangle className="w-4 h-4 text-amber-500 flex-shrink-0 mt-0.5" />
+                <div className="text-[10px] text-amber-700 dark:text-amber-300">
+                  <p className="font-bold mb-0.5">تنبيه</p>
+                  <p>سيتم خصم هذا المبلغ من راتب الممرض وسيظهر له كمديونية في حسابه</p>
+                </div>
+              </div>
+
+              {/* Actions */}
+              <div className="flex gap-2">
+                <button
+                  onClick={handleAssignDebt}
+                  disabled={assigningDebt || !debtNurseId || !debtAmount}
+                  className="flex-1 h-11 bg-amber-600 text-white rounded-xl text-sm font-bold active:scale-[0.97] transition-transform shadow-sm disabled:opacity-50 flex items-center justify-center gap-1.5"
+                >
+                  {assigningDebt ? (
+                    <div className="w-4 h-4 border-2 border-white/30 border-t-white rounded-full animate-spin" />
+                  ) : (
+                    <ArrowRightLeft className="w-4 h-4" />
+                  )}
+                  تحويل على الحساب
+                </button>
+                <button
+                  onClick={() => { setShowDebtAssign(null); setDebtNurseId(''); setDebtAmount(''); }}
+                  className="flex-1 h-11 bg-gray-100 dark:bg-gray-800 text-muted-foreground rounded-xl text-sm font-medium active:scale-[0.97] transition-transform"
+                >
+                  إلغاء
+                </button>
+              </div>
+            </motion.div>
+          </motion.div>
+        )}
+      </AnimatePresence>
     </div>
   );
 }
