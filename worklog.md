@@ -177,3 +177,24 @@ Stage Summary:
 - All API routes updated with clinicId isolation
 - Backward compatible with existing single-clinic data
 - Code pushed to GitHub main branch
+---
+Task ID: 1
+Agent: Main
+Task: Fix subscription extension/deactivation/reactivation error + age category update
+
+Work Log:
+- Found root cause: `trialDays: options.type === 'trial' ? days : undefined` in multi-tenant.ts line 167 causes Firestore to crash when trialDays is undefined (Firestore rejects undefined field values)
+- Same issue existed in createClinic function line 228
+- Fixed by using conditional spread: `...(options.type === 'trial' ? { trialDays: days } : {})`
+- Fixed api.ts to skip clinicId injection for /api/super-admin/ routes (both in buildUrlWithClinicContext and global fetch interceptor)
+- Updated AGE_CATEGORIES from infant/child/adult to elderly/child/adult (كبير/طفل/بالغ)
+- Updated age mapping from infant→1 to elderly→65
+- Added missing "Eye" complaint category to NurseAddVisit
+- Updated age category display in PatientDetail, PatientCard, and NurseAddVisit
+- Built successfully and pushed to GitHub
+
+Stage Summary:
+- Bug fix: Subscription extension/activation/suspension now works correctly
+- Bug fix: Super-admin API routes no longer get duplicate clinicId query params
+- Feature: Age categories changed to كبير/طفل/بالغ per user request
+- Feature: Eye complaint category added to NurseAddVisit
