@@ -6,6 +6,7 @@ import { motion, AnimatePresence } from 'framer-motion';
 import { Shield, Building2, ScrollText, Settings, LogOut } from 'lucide-react';
 import { useAppStore } from '@/lib/store';
 import { installGlobalApiFetch } from '@/lib/api';
+import '@/lib/pwa-install'; // Initialize PWA install prompt listener early
 import { TopHeader } from '@/components/layout/TopHeader';
 import { BottomNav } from '@/components/layout/BottomNav';
 import { SplashScreen } from '@/components/screens/SplashScreen';
