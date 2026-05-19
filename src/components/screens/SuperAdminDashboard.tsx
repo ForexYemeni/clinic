@@ -1,10 +1,10 @@
 'use client';
 
 import React, { useEffect, useState } from 'react';
-import { motion } from 'framer-motion';
-import { Shield, Building2, Users, Clock, CreditCard, AlertTriangle, Database, ChevronLeft, Plus, Search, Moon, Sun, Key, ScrollText, FileText, BarChart3 } from 'lucide-react';
+import { motion, AnimatePresence } from 'framer-motion';
+import { Shield, Building2, Users, Clock, CreditCard, AlertTriangle, Database, ChevronLeft, Plus, Search, Moon, Sun, Key, ScrollText, FileText, BarChart3, Trash2, RotateCcw, Eye, EyeOff, Loader2, CheckCircle, Lock } from 'lucide-react';
 import { useAppStore } from '@/lib/store';
-import { apiGet, apiPost, apiPut } from '@/lib/api';
+import { apiGet, apiPost, apiPut, apiDelete } from '@/lib/api';
 import { toast } from 'sonner';
 import { formatCurrency, formatDate } from '@/lib/constants';
 
@@ -62,6 +62,16 @@ export function SuperAdminDashboard({ initialTab = 'dashboard' }: Props) {
   const [confirmNewPassword, setConfirmNewPassword] = useState('');
   const [changingPassword, setChangingPassword] = useState(false);
 
+  // Platform reset state
+  const [showResetModal, setShowResetModal] = useState(false);
+  const [resetStep, setResetStep] = useState<1 | 2 | 3>(1);
+  const [resetConfirmText, setResetConfirmText] = useState('');
+  const [resetPassword, setResetPassword] = useState('');
+  const [showResetPassword, setShowResetPassword] = useState(false);
+  const [resetProcessing, setResetProcessing] = useState(false);
+  const [resetSuccess, setResetSuccess] = useState(false);
+  const RESET_CONFIRM_TEXT = 'حذف كامل المنصة';
+
   // Sync tab with initialTab prop
   useEffect(() => {
     setActiveTab(initialTab);
@@ -82,14 +92,17 @@ export function SuperAdminDashboard({ initialTab = 'dashboard' }: Props) {
 
   const handleAddClinic = async (e: React.FormEvent) => {
     e.preventDefault();
-    if (!newClinicName) return;
+    if (!newClinicName || !newAdminPhone) {
+      toast.error('يرجى إدخال اسم العيادة ورقم هاتف المدير');
+      return;
+    }
     setAddingClinic(true);
     try {
       await apiPost('/api/super-admin/clinics', {
         name: newClinicName,
         phone: newClinicPhone || newAdminPhone,
         ownerPhone: newAdminPhone,
-        adminName: newAdminName,
+        adminName: newAdminName || 'مدير العيادة',
         adminPassword: newAdminPassword || '1234',
         subscriptionType: subType,
         trialDays,
@@ -172,6 +185,35 @@ export function SuperAdminDashboard({ initialTab = 'dashboard' }: Props) {
     } finally {
       setChangingPassword(false);
     }
+  };
+
+  const handlePlatformReset = async () => {
+    if (resetConfirmText !== RESET_CONFIRM_TEXT || !resetPassword) return;
+    setResetStep(3);
+    setResetProcessing(true);
+    try {
+      await apiDelete('/api/platform/reset', {
+        superAdminPassword: resetPassword,
+        confirmText: resetConfirmText,
+      });
+      setResetProcessing(false);
+      setResetSuccess(true);
+      toast.success('تم حذف جميع بيانات المنصة بنجاح');
+      loadClinics();
+    } catch (err: any) {
+      setResetProcessing(false);
+      toast.error(err.message || 'خطأ في إعادة تعيين المنصة');
+      setResetStep(2);
+    }
+  };
+
+  const closeResetModal = () => {
+    setShowResetModal(false);
+    setResetStep(1);
+    setResetConfirmText('');
+    setResetPassword('');
+    setResetSuccess(false);
+    setResetProcessing(false);
   };
 
   const statusColor = (status: string) => {
@@ -522,7 +564,7 @@ export function SuperAdminDashboard({ initialTab = 'dashboard' }: Props) {
           <div className="space-y-2">
             <label className="text-sm font-medium">رقم هاتف المدير *</label>
             <input type="tel" value={newAdminPhone} onChange={(e) => setNewAdminPhone(e.target.value.replace(/\D/g, '').slice(0, 9))} placeholder="7XXXXXXXX"
-              className="w-full h-12 px-4 bg-white dark:bg-gray-800 border border-border rounded-xl text-base font-mono focus:outline-none focus:ring-2 focus:ring-purple-500" dir="ltr" inputMode="numeric" />
+              className="w-full h-12 px-4 bg-white dark:bg-gray-800 border border-border rounded-xl text-base font-mono focus:outline-none focus:ring-2 focus:ring-purple-500" dir="ltr" inputMode="numeric" required />
           </div>
 
           <div className="space-y-2">
@@ -589,107 +631,347 @@ export function SuperAdminDashboard({ initialTab = 'dashboard' }: Props) {
   // ═══ SETTINGS TAB ═══
   if (activeTab === 'settings') {
     return (
-      <div className="p-4 space-y-4 pb-20">
-        <div className="flex items-center gap-3 mb-2">
-          <button onClick={() => setScreen('super-admin-dashboard')} className="h-9 w-9 rounded-xl flex items-center justify-center hover:bg-gray-100 dark:hover:bg-gray-800">
-            <ChevronLeft className="w-5 h-5 rotate-180" />
-          </button>
-          <h2 className="text-lg font-bold">إعدادات المنصة</h2>
-        </div>
-
-        {/* Appearance */}
-        <div className="bg-white dark:bg-gray-800 rounded-2xl border border-border overflow-hidden">
-          <div className="p-4 border-b border-border">
-            <h3 className="text-sm font-bold flex items-center gap-2">
-              <Moon className="w-4 h-4" />
-              المظهر
-            </h3>
-          </div>
-          <button onClick={toggleTheme} className="w-full flex items-center justify-between p-4 hover:bg-gray-50 dark:hover:bg-gray-700/50 transition-colors">
-            <div className="flex items-center gap-3">
-              {theme === 'light' ? <Sun className="w-5 h-5 text-amber-500" /> : <Moon className="w-5 h-5 text-blue-500" />}
-              <div className="text-right">
-                <p className="text-sm font-medium">الوضع</p>
-                <p className="text-xs text-muted-foreground">{theme === 'light' ? 'فاتح' : 'داكن'}</p>
-              </div>
-            </div>
-            <div className={`w-12 h-7 rounded-full transition-colors ${theme === 'dark' ? 'bg-purple-600' : 'bg-gray-200'} relative`}>
-              <div className={`absolute top-0.5 w-6 h-6 bg-white rounded-full shadow transition-transform ${theme === 'dark' ? 'translate-x-5.5 left-0' : 'left-0.5'}`} />
-            </div>
-          </button>
-        </div>
-
-        {/* Security */}
-        <div className="bg-white dark:bg-gray-800 rounded-2xl border border-border overflow-hidden">
-          <div className="p-4 border-b border-border">
-            <h3 className="text-sm font-bold flex items-center gap-2">
-              <Key className="w-4 h-4" />
-              الأمان
-            </h3>
-          </div>
-
-          <form onSubmit={handleChangePassword} className="p-4 space-y-3">
-            <div className="space-y-1">
-              <label className="text-xs font-medium text-muted-foreground">كلمة المرور الحالية</label>
-              <input type="password" value={currentPassword} onChange={(e) => setCurrentPassword(e.target.value)} placeholder="أدخل كلمة المرور الحالية"
-                className="w-full h-10 px-3 bg-gray-50 dark:bg-gray-700 border border-border rounded-xl text-sm focus:outline-none focus:ring-2 focus:ring-purple-500" required />
-            </div>
-            <div className="space-y-1">
-              <label className="text-xs font-medium text-muted-foreground">كلمة المرور الجديدة</label>
-              <input type="password" value={newPassword} onChange={(e) => setNewPassword(e.target.value)} placeholder="6 أحرف على الأقل"
-                className="w-full h-10 px-3 bg-gray-50 dark:bg-gray-700 border border-border rounded-xl text-sm focus:outline-none focus:ring-2 focus:ring-purple-500" required />
-            </div>
-            <div className="space-y-1">
-              <label className="text-xs font-medium text-muted-foreground">تأكيد كلمة المرور الجديدة</label>
-              <input type="password" value={confirmNewPassword} onChange={(e) => setConfirmNewPassword(e.target.value)} placeholder="أعد كتابة كلمة المرور"
-                className="w-full h-10 px-3 bg-gray-50 dark:bg-gray-700 border border-border rounded-xl text-sm focus:outline-none focus:ring-2 focus:ring-purple-500" required />
-            </div>
-            <button type="submit" disabled={changingPassword} className="w-full h-10 bg-purple-600 text-white text-sm font-bold rounded-xl disabled:opacity-60 active:scale-[0.98] transition-all">
-              {changingPassword ? 'جارٍ التغيير...' : 'تغيير كلمة المرور'}
+      <>
+        <div className="p-4 space-y-4 pb-20">
+          <div className="flex items-center gap-3 mb-2">
+            <button onClick={() => setScreen('super-admin-dashboard')} className="h-9 w-9 rounded-xl flex items-center justify-center hover:bg-gray-100 dark:hover:bg-gray-800">
+              <ChevronLeft className="w-5 h-5 rotate-180" />
             </button>
-          </form>
+            <h2 className="text-lg font-bold">إعدادات المنصة</h2>
+          </div>
+
+          {/* Appearance */}
+          <div className="bg-white dark:bg-gray-800 rounded-2xl border border-border overflow-hidden">
+            <div className="p-4 border-b border-border">
+              <h3 className="text-sm font-bold flex items-center gap-2">
+                <Moon className="w-4 h-4" />
+                المظهر
+              </h3>
+            </div>
+            <button onClick={toggleTheme} className="w-full flex items-center justify-between p-4 hover:bg-gray-50 dark:hover:bg-gray-700/50 transition-colors">
+              <div className="flex items-center gap-3">
+                {theme === 'light' ? <Sun className="w-5 h-5 text-amber-500" /> : <Moon className="w-5 h-5 text-blue-500" />}
+                <div className="text-right">
+                  <p className="text-sm font-medium">الوضع</p>
+                  <p className="text-xs text-muted-foreground">{theme === 'light' ? 'فاتح' : 'داكن'}</p>
+                </div>
+              </div>
+              <div className={`w-12 h-7 rounded-full transition-colors ${theme === 'dark' ? 'bg-purple-600' : 'bg-gray-200'} relative`}>
+                <div className={`absolute top-0.5 w-6 h-6 bg-white rounded-full shadow transition-transform ${theme === 'dark' ? 'translate-x-5.5 left-0' : 'left-0.5'}`} />
+              </div>
+            </button>
+          </div>
+
+          {/* Security */}
+          <div className="bg-white dark:bg-gray-800 rounded-2xl border border-border overflow-hidden">
+            <div className="p-4 border-b border-border">
+              <h3 className="text-sm font-bold flex items-center gap-2">
+                <Key className="w-4 h-4" />
+                الأمان
+              </h3>
+            </div>
+
+            <form onSubmit={handleChangePassword} className="p-4 space-y-3">
+              <div className="space-y-1">
+                <label className="text-xs font-medium text-muted-foreground">كلمة المرور الحالية</label>
+                <input type="password" value={currentPassword} onChange={(e) => setCurrentPassword(e.target.value)} placeholder="أدخل كلمة المرور الحالية"
+                  className="w-full h-10 px-3 bg-gray-50 dark:bg-gray-700 border border-border rounded-xl text-sm focus:outline-none focus:ring-2 focus:ring-purple-500" required />
+              </div>
+              <div className="space-y-1">
+                <label className="text-xs font-medium text-muted-foreground">كلمة المرور الجديدة</label>
+                <input type="password" value={newPassword} onChange={(e) => setNewPassword(e.target.value)} placeholder="6 أحرف على الأقل"
+                  className="w-full h-10 px-3 bg-gray-50 dark:bg-gray-700 border border-border rounded-xl text-sm focus:outline-none focus:ring-2 focus:ring-purple-500" required />
+              </div>
+              <div className="space-y-1">
+                <label className="text-xs font-medium text-muted-foreground">تأكيد كلمة المرور الجديدة</label>
+                <input type="password" value={confirmNewPassword} onChange={(e) => setConfirmNewPassword(e.target.value)} placeholder="أعد كتابة كلمة المرور"
+                  className="w-full h-10 px-3 bg-gray-50 dark:bg-gray-700 border border-border rounded-xl text-sm focus:outline-none focus:ring-2 focus:ring-purple-500" required />
+              </div>
+              <button type="submit" disabled={changingPassword} className="w-full h-10 bg-purple-600 text-white text-sm font-bold rounded-xl disabled:opacity-60 active:scale-[0.98] transition-all">
+                {changingPassword ? 'جارٍ التغيير...' : 'تغيير كلمة المرور'}
+              </button>
+            </form>
+          </div>
+
+          {/* Platform */}
+          <div className="bg-white dark:bg-gray-800 rounded-2xl border border-border overflow-hidden">
+            <div className="p-4 border-b border-border">
+              <h3 className="text-sm font-bold flex items-center gap-2">
+                <Database className="w-4 h-4" />
+                قاعدة البيانات
+              </h3>
+            </div>
+            <button onClick={() => setScreen('super-admin-firebase-config')} className="w-full flex items-center justify-between p-4 hover:bg-gray-50 dark:hover:bg-gray-700/50 transition-colors">
+              <div className="flex items-center gap-3">
+                <Database className="w-5 h-5 text-orange-500" />
+                <div className="text-right">
+                  <p className="text-sm font-medium">إعدادات Firebase</p>
+                  <p className="text-xs text-muted-foreground">ربط قاعدة بيانات Firebase جديدة</p>
+                </div>
+              </div>
+              <ChevronLeft className="w-4 h-4 rotate-90 text-muted-foreground" />
+            </button>
+          </div>
+
+          {/* Reports */}
+          <div className="bg-white dark:bg-gray-800 rounded-2xl border border-border overflow-hidden">
+            <div className="p-4 border-b border-border">
+              <h3 className="text-sm font-bold flex items-center gap-2">
+                <BarChart3 className="w-4 h-4" />
+                التقارير
+              </h3>
+            </div>
+            <button onClick={() => setScreen('super-admin-audit-logs')} className="w-full flex items-center justify-between p-4 hover:bg-gray-50 dark:hover:bg-gray-700/50 transition-colors">
+              <div className="flex items-center gap-3">
+                <ScrollText className="w-5 h-5 text-amber-500" />
+                <div className="text-right">
+                  <p className="text-sm font-medium">سجل المراجعة</p>
+                  <p className="text-xs text-muted-foreground">عرض جميع العمليات والإجراءات</p>
+                </div>
+              </div>
+              <ChevronLeft className="w-4 h-4 rotate-90 text-muted-foreground" />
+            </button>
+          </div>
+
+          {/* ═══ Danger Zone - Full Platform Reset ═══ */}
+          <div className="bg-white dark:bg-gray-800 rounded-2xl border-2 border-red-200 dark:border-red-900/50 overflow-hidden">
+            <div className="p-4 border-b border-red-100 dark:border-red-900/30 bg-red-50/50 dark:bg-red-900/10">
+              <h3 className="text-sm font-bold flex items-center gap-2 text-red-600 dark:text-red-400">
+                <AlertTriangle className="w-4 h-4" />
+                منطقة الخطر
+              </h3>
+            </div>
+            <div className="p-4 space-y-3">
+              <p className="text-xs text-muted-foreground leading-relaxed">
+                حذف كامل المنصة سيؤدي إلى إزالة جميع العيادات وبياناتها نهائياً بما في ذلك المرضى والزيارات والفواتير والممرضين والإشعارات وجميع سجلات المراجعة. سيتم الاحتفاظ بحساب الإدارة الرئيسية فقط.
+              </p>
+
+              {/* What will be deleted */}
+              <div className="grid grid-cols-2 gap-2">
+                {[
+                  { icon: Building2, label: 'جميع العيادات', color: 'red' },
+                  { icon: Users, label: 'جميع المرضى', color: 'red' },
+                  { icon: FileText, label: 'جميع الفواتير', color: 'red' },
+                  { icon: CreditCard, label: 'جميع الاشتراكات', color: 'red' },
+                  { icon: ScrollText, label: 'سجلات المراجعة', color: 'red' },
+                  { icon: Database, label: 'جميع الخدمات', color: 'red' },
+                ].map((item, i) => (
+                  <div key={i} className="bg-red-50 dark:bg-red-900/10 rounded-xl p-2.5 flex items-center gap-2">
+                    <item.icon className="w-4 h-4 text-red-500" />
+                    <span className="text-xs font-bold text-red-600 dark:text-red-400">{item.label}</span>
+                  </div>
+                ))}
+              </div>
+
+              {/* What will be kept */}
+              <div className="bg-green-50 dark:bg-green-900/10 border border-green-200 dark:border-green-800 rounded-xl p-3">
+                <p className="text-xs font-bold text-green-700 dark:text-green-400 mb-1">سيتم الاحتفاظ به:</p>
+                <div className="flex items-center gap-2">
+                  <Shield className="w-3.5 h-3.5 text-green-600" />
+                  <span className="text-[11px] text-green-700 dark:text-green-400">حساب الإدارة الرئيسية فقط</span>
+                </div>
+              </div>
+
+              <button
+                onClick={() => { setShowResetModal(true); setResetStep(1); }}
+                className="w-full h-12 bg-gradient-to-l from-red-500 to-red-600 text-white font-bold rounded-xl flex items-center justify-center gap-2 active:scale-[0.98] transition-all shadow-lg shadow-red-200 dark:shadow-none"
+              >
+                <Trash2 className="w-5 h-5" />
+                حذف كامل بيانات المنصة
+              </button>
+            </div>
+          </div>
         </div>
 
-        {/* Platform */}
-        <div className="bg-white dark:bg-gray-800 rounded-2xl border border-border overflow-hidden">
-          <div className="p-4 border-b border-border">
-            <h3 className="text-sm font-bold flex items-center gap-2">
-              <Database className="w-4 h-4" />
-              قاعدة البيانات
-            </h3>
-          </div>
-          <button onClick={() => setScreen('super-admin-firebase-config')} className="w-full flex items-center justify-between p-4 hover:bg-gray-50 dark:hover:bg-gray-700/50 transition-colors">
-            <div className="flex items-center gap-3">
-              <Database className="w-5 h-5 text-orange-500" />
-              <div className="text-right">
-                <p className="text-sm font-medium">إعدادات Firebase</p>
-                <p className="text-xs text-muted-foreground">ربط قاعدة بيانات Firebase جديدة</p>
-              </div>
-            </div>
-            <ChevronLeft className="w-4 h-4 rotate-90 text-muted-foreground" />
-          </button>
-        </div>
+        {/* ═══ PLATFORM RESET MODAL ═══ */}
+        <AnimatePresence>
+          {showResetModal && (
+            <motion.div
+              initial={{ opacity: 0 }}
+              animate={{ opacity: 1 }}
+              exit={{ opacity: 0 }}
+              className="fixed inset-0 z-50 bg-black/60 backdrop-blur-sm flex items-end justify-center"
+              onClick={(e) => { if (e.target === e.currentTarget) closeResetModal(); }}
+            >
+              <motion.div
+                initial={{ y: '100%' }}
+                animate={{ y: 0 }}
+                exit={{ y: '100%' }}
+                transition={{ type: 'spring', damping: 25, stiffness: 300 }}
+                className="w-full max-w-lg bg-white dark:bg-gray-900 rounded-t-3xl max-h-[90vh] overflow-y-auto"
+                onClick={(e) => e.stopPropagation()}
+              >
+                {/* Modal Header */}
+                <div className="sticky top-0 z-10 bg-white dark:bg-gray-900 border-b border-border px-4 py-3 flex items-center justify-between">
+                  <h2 className="text-base font-bold flex items-center gap-2 text-red-600 dark:text-red-400">
+                    <AlertTriangle className="w-5 h-5" />
+                    حذف كامل المنصة
+                  </h2>
+                  <button onClick={closeResetModal} className="w-8 h-8 rounded-full flex items-center justify-center hover:bg-gray-100 dark:hover:bg-gray-800">
+                    ✕
+                  </button>
+                </div>
 
-        {/* Reports */}
-        <div className="bg-white dark:bg-gray-800 rounded-2xl border border-border overflow-hidden">
-          <div className="p-4 border-b border-border">
-            <h3 className="text-sm font-bold flex items-center gap-2">
-              <BarChart3 className="w-4 h-4" />
-              التقارير
-            </h3>
-          </div>
-          <button onClick={() => setScreen('super-admin-audit-logs')} className="w-full flex items-center justify-between p-4 hover:bg-gray-50 dark:hover:bg-gray-700/50 transition-colors">
-            <div className="flex items-center gap-3">
-              <ScrollText className="w-5 h-5 text-amber-500" />
-              <div className="text-right">
-                <p className="text-sm font-medium">سجل المراجعة</p>
-                <p className="text-xs text-muted-foreground">عرض جميع العمليات والإجراءات</p>
-              </div>
-            </div>
-            <ChevronLeft className="w-4 h-4 rotate-90 text-muted-foreground" />
-          </button>
-        </div>
-      </div>
+                {/* Progress bar */}
+                <div className="h-1 bg-gray-200 dark:bg-gray-800">
+                  <motion.div
+                    className="h-full bg-gradient-to-l from-red-500 to-red-700"
+                    animate={{ width: resetStep === 1 ? '50%' : resetStep === 2 ? '100%' : '100%' }}
+                  />
+                </div>
+
+                <div className="p-4">
+                  {/* STEP 1: Warning */}
+                  {resetStep === 1 && (
+                    <motion.div initial={{ opacity: 0, x: 20 }} animate={{ opacity: 1, x: 0 }} className="space-y-4">
+                      <div className="bg-red-50 dark:bg-red-900/20 border border-red-200 dark:border-red-800 rounded-2xl p-4 text-center">
+                        <div className="w-16 h-16 mx-auto mb-3 bg-red-100 dark:bg-red-900/40 rounded-full flex items-center justify-center">
+                          <AlertTriangle className="w-8 h-8 text-red-500" />
+                        </div>
+                        <h3 className="text-base font-bold text-red-700 dark:text-red-400 mb-1">تحذير! إجراء لا يمكن التراجع عنه</h3>
+                        <p className="text-xs text-red-600/70 dark:text-red-400/70">سيتم حذف جميع بيانات المنصة نهائياً ولن يمكن استرجاعها</p>
+                      </div>
+
+                      <div className="grid grid-cols-2 gap-2">
+                        {[
+                          { icon: Building2, label: 'جميع العيادات' },
+                          { icon: Users, label: 'جميع المرضى' },
+                          { icon: FileText, label: 'جميع الفواتير والزيارات' },
+                          { icon: CreditCard, label: 'جميع الاشتراكات' },
+                          { icon: ScrollText, label: 'سجلات المراجعة' },
+                          { icon: Database, label: 'الخدمات والإشعارات' },
+                        ].map((item, i) => (
+                          <div key={i} className="bg-red-50 dark:bg-red-900/10 rounded-xl p-2.5 flex items-center gap-2">
+                            <item.icon className="w-4 h-4 text-red-500" />
+                            <span className="text-xs font-bold text-red-600 dark:text-red-400">{item.label}</span>
+                          </div>
+                        ))}
+                      </div>
+
+                      <div className="bg-green-50 dark:bg-green-900/10 border border-green-200 dark:border-green-800 rounded-xl p-3">
+                        <p className="text-xs font-bold text-green-700 dark:text-green-400 mb-1">سيتم الاحتفاظ به فقط:</p>
+                        <div className="flex items-center gap-2">
+                          <Shield className="w-3.5 h-3.5 text-green-600" />
+                          <span className="text-[11px] text-green-700 dark:text-green-400">حساب الإدارة الرئيسية (مع كلمة المرور)</span>
+                        </div>
+                      </div>
+
+                      <button
+                        onClick={() => setResetStep(2)}
+                        className="w-full h-12 bg-gradient-to-l from-red-500 to-red-600 text-white font-bold rounded-xl flex items-center justify-center gap-2 active:scale-[0.98] transition-all"
+                      >
+                        <AlertTriangle className="w-4 h-4" />
+                        فهمت، أريد المتابعة
+                      </button>
+                    </motion.div>
+                  )}
+
+                  {/* STEP 2: Confirmation */}
+                  {resetStep === 2 && (
+                    <motion.div initial={{ opacity: 0, x: 20 }} animate={{ opacity: 1, x: 0 }} className="space-y-4">
+                      <div className="bg-red-50 dark:bg-red-900/20 border border-red-200 dark:border-red-800 rounded-2xl p-4 text-center">
+                        <div className="w-12 h-12 mx-auto mb-2 bg-red-100 dark:bg-red-900/40 rounded-full flex items-center justify-center">
+                          <Lock className="w-6 h-6 text-red-600" />
+                        </div>
+                        <h3 className="text-sm font-bold text-red-700 dark:text-red-400">تأكيد نهائي - لا يمكن التراجع</h3>
+                      </div>
+
+                      {/* Confirmation text */}
+                      <div className="space-y-2">
+                        <label className="text-xs font-medium text-muted-foreground">اكتب بالضبط:</label>
+                        <div className="bg-gray-50 dark:bg-gray-800 border border-border rounded-xl p-3 text-center">
+                          <p className="text-sm font-bold text-red-500 font-mono">{RESET_CONFIRM_TEXT}</p>
+                        </div>
+                        <input
+                          type="text"
+                          value={resetConfirmText}
+                          onChange={(e) => setResetConfirmText(e.target.value)}
+                          placeholder={RESET_CONFIRM_TEXT}
+                          className="w-full h-12 px-4 bg-gray-50 dark:bg-gray-800 border border-border rounded-xl text-sm text-center font-mono focus:outline-none focus:ring-2 focus:ring-red-500"
+                          dir="rtl"
+                        />
+                      </div>
+
+                      {/* Password */}
+                      <div className="space-y-2">
+                        <label className="text-xs font-medium text-muted-foreground">كلمة مرور الإدارة الرئيسية</label>
+                        <div className="relative">
+                          <input
+                            type={showResetPassword ? 'text' : 'password'}
+                            value={resetPassword}
+                            onChange={(e) => setResetPassword(e.target.value)}
+                            placeholder="أدخل كلمة المرور"
+                            className="w-full h-12 px-4 pl-10 bg-gray-50 dark:bg-gray-800 border border-border rounded-xl text-sm focus:outline-none focus:ring-2 focus:ring-red-500"
+                          />
+                          <button
+                            type="button"
+                            onClick={() => setShowResetPassword(!showResetPassword)}
+                            className="absolute left-3 top-1/2 -translate-y-1/2 text-muted-foreground"
+                          >
+                            {showResetPassword ? <EyeOff className="w-4 h-4" /> : <Eye className="w-4 h-4" />}
+                          </button>
+                        </div>
+                      </div>
+
+                      <div className="flex gap-2">
+                        <button
+                          onClick={handlePlatformReset}
+                          disabled={resetConfirmText !== RESET_CONFIRM_TEXT || !resetPassword}
+                          className={`flex-1 h-12 rounded-xl text-sm font-bold flex items-center justify-center gap-2 transition-all ${
+                            resetConfirmText === RESET_CONFIRM_TEXT && resetPassword
+                              ? 'bg-gradient-to-l from-red-500 to-red-600 text-white active:scale-[0.98]'
+                              : 'bg-gray-200 dark:bg-gray-700 text-gray-500 cursor-not-allowed'
+                          }`}
+                        >
+                          <Trash2 className="w-4 h-4" />
+                          تنفيذ حذف كامل المنصة
+                        </button>
+                        <button
+                          onClick={closeResetModal}
+                          className="h-12 px-5 bg-gray-100 dark:bg-gray-800 font-bold rounded-xl text-sm"
+                        >
+                          إلغاء
+                        </button>
+                      </div>
+                    </motion.div>
+                  )}
+
+                  {/* STEP 3: Processing / Success */}
+                  {resetStep === 3 && (
+                    <motion.div initial={{ opacity: 0, scale: 0.9 }} animate={{ opacity: 1, scale: 1 }} className="py-8 flex flex-col items-center">
+                      {resetProcessing ? (
+                        <>
+                          <div className="relative mb-4">
+                            <div className="w-16 h-16 rounded-full border-4 border-red-200 flex items-center justify-center">
+                              <Loader2 className="w-7 h-7 text-red-500 animate-spin" />
+                            </div>
+                          </div>
+                          <h3 className="text-base font-bold mb-1">جارٍ حذف بيانات المنصة</h3>
+                          <p className="text-xs text-muted-foreground">يرجى الانتظار، لا تغلق التطبيق...</p>
+                        </>
+                      ) : resetSuccess ? (
+                        <>
+                          <div className="w-16 h-16 rounded-full bg-green-100 dark:bg-green-900/40 flex items-center justify-center mb-4">
+                            <CheckCircle className="w-8 h-8 text-green-500" />
+                          </div>
+                          <h3 className="text-base font-bold mb-1">تم بنجاح!</h3>
+                          <p className="text-xs text-muted-foreground mb-4 text-center">تم حذف جميع بيانات المنصة. تم الاحتفاظ بحساب الإدارة الرئيسية فقط.</p>
+                          <button
+                            onClick={() => { closeResetModal(); loadClinics(); }}
+                            className="w-full h-12 bg-gradient-to-l from-green-500 to-green-600 text-white font-bold rounded-xl active:scale-[0.98] transition-all"
+                          >
+                            تم
+                          </button>
+                        </>
+                      ) : null}
+                    </motion.div>
+                  )}
+                </div>
+              </motion.div>
+            </motion.div>
+          )}
+        </AnimatePresence>
+      </>
     );
   }
 
