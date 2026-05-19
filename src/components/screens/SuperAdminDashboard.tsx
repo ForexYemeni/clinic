@@ -2,7 +2,7 @@
 
 import React, { useEffect, useState } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
-import { Shield, Building2, Users, Clock, CreditCard, AlertTriangle, Database, ChevronLeft, Plus, Search, Moon, Sun, Key, ScrollText, FileText, BarChart3, Trash2, RotateCcw, Eye, EyeOff, Loader2, CheckCircle, Lock } from 'lucide-react';
+import { Shield, Building2, Users, Clock, CreditCard, AlertTriangle, Database, ChevronLeft, Plus, Search, Moon, Sun, Key, ScrollText, FileText, BarChart3, Trash2, RotateCcw, Eye, EyeOff, Loader2, CheckCircle, Lock, Phone, MessageCircle } from 'lucide-react';
 import { useAppStore } from '@/lib/store';
 import { apiGet, apiPost, apiPut, apiDelete } from '@/lib/api';
 import { toast } from 'sonner';
@@ -62,6 +62,11 @@ export function SuperAdminDashboard({ initialTab = 'dashboard' }: Props) {
   const [confirmNewPassword, setConfirmNewPassword] = useState('');
   const [changingPassword, setChangingPassword] = useState(false);
 
+  // Support contact state
+  const [supportPhone, setSupportPhone] = useState('');
+  const [supportWhatsApp, setSupportWhatsApp] = useState('');
+  const [savingContact, setSavingContact] = useState(false);
+
   // Platform reset state
   const [showResetModal, setShowResetModal] = useState(false);
   const [resetStep, setResetStep] = useState<1 | 2 | 3>(1);
@@ -88,7 +93,27 @@ export function SuperAdminDashboard({ initialTab = 'dashboard' }: Props) {
     }
   };
 
-  useEffect(() => { loadClinics(); }, []);
+  useEffect(() => { loadClinics(); loadPlatformSettings(); }, []);
+
+  const loadPlatformSettings = async () => {
+    try {
+      const data = await apiGet<any>('/api/platform');
+      if (data.supportPhone) setSupportPhone(data.supportPhone);
+      if (data.supportWhatsApp) setSupportWhatsApp(data.supportWhatsApp);
+    } catch {}
+  };
+
+  const handleSaveContact = async () => {
+    setSavingContact(true);
+    try {
+      await apiPut('/api/platform', { supportPhone, supportWhatsApp });
+      toast.success('تم حفظ معلومات التواصل');
+    } catch (err: any) {
+      toast.error(err.message || 'خطأ في حفظ المعلومات');
+    } finally {
+      setSavingContact(false);
+    }
+  };
 
   const handleAddClinic = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -640,6 +665,64 @@ export function SuperAdminDashboard({ initialTab = 'dashboard' }: Props) {
               <ChevronLeft className="w-5 h-5 rotate-180" />
             </button>
             <h2 className="text-lg font-bold">إعدادات المنصة</h2>
+          </div>
+
+          {/* Support Contact Info */}
+          <div className="bg-white dark:bg-gray-800 rounded-2xl border border-border overflow-hidden">
+            <div className="p-4 border-b border-border">
+              <h3 className="text-sm font-bold flex items-center gap-2">
+                <Phone className="w-4 h-4" />
+                معلومات التواصل
+              </h3>
+            </div>
+            <div className="p-4 space-y-3">
+              <p className="text-[11px] text-muted-foreground leading-relaxed">
+                رقم التواصل الذي يظهر للعيادات عند انتهاء الاشتراك أو إيقاف الحساب. يمكنهم الاتصال أو مراسلة واتساب مباشرة.
+              </p>
+              <div className="space-y-1">
+                <label className="text-xs font-medium text-muted-foreground">رقم الهاتف للدعم</label>
+                <div className="relative">
+                  <div className="absolute left-3 top-1/2 -translate-y-1/2 text-xs text-muted-foreground font-mono">967+</div>
+                  <input
+                    type="tel"
+                    value={supportPhone}
+                    onChange={(e) => setSupportPhone(e.target.value.replace(/\D/g, '').slice(0, 9))}
+                    placeholder="7XXXXXXXX"
+                    className="w-full h-10 px-3 pl-12 bg-gray-50 dark:bg-gray-700 border border-border rounded-xl text-sm font-mono focus:outline-none focus:ring-2 focus:ring-purple-500"
+                    dir="ltr"
+                  />
+                </div>
+              </div>
+              <div className="space-y-1">
+                <label className="text-xs font-medium text-muted-foreground">رقم واتساب (إن مختلف)</label>
+                <div className="relative">
+                  <div className="absolute left-3 top-1/2 -translate-y-1/2 text-xs text-muted-foreground font-mono">967+</div>
+                  <input
+                    type="tel"
+                    value={supportWhatsApp}
+                    onChange={(e) => setSupportWhatsApp(e.target.value.replace(/\D/g, '').slice(0, 9))}
+                    placeholder="اتركه فارغاً لاستخدام رقم الهاتف"
+                    className="w-full h-10 px-3 pl-12 bg-gray-50 dark:bg-gray-700 border border-border rounded-xl text-sm font-mono focus:outline-none focus:ring-2 focus:ring-purple-500"
+                    dir="ltr"
+                  />
+                </div>
+              </div>
+              {supportPhone && (
+                <div className="bg-blue-50 dark:bg-blue-900/20 rounded-xl p-2.5 flex items-center gap-2">
+                  <MessageCircle className="w-4 h-4 text-green-600" />
+                  <span className="text-[11px] text-blue-700 dark:text-blue-300">
+                    المعاينة: اتصال أو واتساب على {supportPhone}
+                  </span>
+                </div>
+              )}
+              <button
+                onClick={handleSaveContact}
+                disabled={savingContact}
+                className="w-full h-10 bg-blue-600 text-white text-sm font-bold rounded-xl disabled:opacity-60 active:scale-[0.98] transition-all"
+              >
+                {savingContact ? 'جارٍ الحفظ...' : 'حفظ معلومات التواصل'}
+              </button>
+            </div>
           </div>
 
           {/* Appearance */}

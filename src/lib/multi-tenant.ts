@@ -271,6 +271,8 @@ export interface PlatformConfig {
   firebaseConfig?: Record<string, string>;
   defaultClinicId?: string;
   jwtSecret?: string;
+  supportPhone?: string;
+  supportWhatsApp?: string;
 }
 
 export async function getPlatformConfig(): Promise<PlatformConfig | null> {

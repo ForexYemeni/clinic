@@ -1,14 +1,41 @@
 'use client';
 
-import React from 'react';
-import { motion } from 'framer-motion';
-import { Clock, AlertTriangle, Shield, Phone } from 'lucide-react';
+import React, { useEffect, useState } from 'react';
+import { motion, AnimatePresence } from 'framer-motion';
+import { Clock, AlertTriangle, Shield, Phone, MessageCircle, X } from 'lucide-react';
 import { useAppStore } from '@/lib/store';
+
+interface PlatformContact {
+  supportPhone: string;
+  supportWhatsApp: string;
+}
 
 export function SubscriptionExpired() {
   const { clinicName, subscription, logout } = useAppStore();
   const status = subscription.status;
   const daysRemaining = subscription.daysRemaining;
+  const [contact, setContact] = useState<PlatformContact | null>(null);
+  const [showCallCard, setShowCallCard] = useState(false);
+
+  useEffect(() => {
+    const fetchContact = async () => {
+      try {
+        const res = await fetch('/api/platform');
+        if (res.ok) {
+          const data = await res.json();
+          setContact({
+            supportPhone: data.supportPhone || '',
+            supportWhatsApp: data.supportWhatsApp || '',
+          });
+        }
+      } catch {}
+    };
+    fetchContact();
+  }, []);
+
+  const supportPhone = contact?.supportPhone || '';
+  const supportWhatsApp = contact?.supportWhatsApp || contact?.supportPhone || '';
+  const hasPhone = supportPhone.length > 0;
 
   return (
     <div className="min-h-screen flex flex-col items-center justify-center bg-gradient-to-br from-red-50 via-white to-orange-50 dark:from-gray-950 dark:via-gray-900 dark:to-gray-950 p-6">
@@ -75,13 +102,81 @@ export function SubscriptionExpired() {
           </div>
         </div>
 
-        {/* Contact Info */}
-        <div className="bg-blue-50 dark:bg-blue-900/20 rounded-2xl p-4 text-center">
-          <Phone className="w-5 h-5 text-blue-600 mx-auto mb-2" />
-          <p className="text-xs text-blue-700 dark:text-blue-300">
-            للتجديد أو الاستفسار، تواصل مع إدارة المنصة
-          </p>
-        </div>
+        {/* Contact Admin - Professional Card */}
+        <AnimatePresence>
+          {showCallCard ? (
+            <motion.div
+              key="call-card"
+              initial={{ opacity: 0, scale: 0.95 }}
+              animate={{ opacity: 1, scale: 1 }}
+              exit={{ opacity: 0, scale: 0.95 }}
+              className="bg-gradient-to-br from-blue-500 to-blue-600 rounded-2xl p-4 shadow-lg shadow-blue-500/20 relative"
+            >
+              <button
+                onClick={() => setShowCallCard(false)}
+                className="absolute top-2 left-2 w-6 h-6 rounded-full bg-white/20 flex items-center justify-center"
+              >
+                <X className="w-3 h-3 text-white" />
+              </button>
+
+              <div className="flex items-center gap-3 mb-3">
+                <div className="w-11 h-11 bg-white/20 rounded-xl flex items-center justify-center backdrop-blur-sm">
+                  <Phone className="w-6 h-6 text-white" />
+                </div>
+                <div>
+                  <p className="text-sm font-bold text-white">تواصل مع إدارة المنصة</p>
+                  <p className="text-[10px] text-white/80">للتجديد أو الاستفسار أو إعادة التفعيل</p>
+                </div>
+              </div>
+
+              {hasPhone ? (
+                <div className="space-y-2">
+                  {/* Call button */}
+                  <a
+                    href={`tel:+967${supportPhone}`}
+                    className="flex items-center justify-center gap-2 h-11 bg-white text-blue-600 rounded-xl text-sm font-bold shadow-sm active:scale-[0.97] transition-transform"
+                  >
+                    <Phone className="w-4 h-4" />
+                    اتصال: {supportPhone}
+                  </a>
+
+                  {/* WhatsApp button */}
+                  {supportWhatsApp && (
+                    <a
+                      href={`https://wa.me/967${supportWhatsApp}`}
+                      target="_blank"
+                      rel="noopener noreferrer"
+                      className="flex items-center justify-center gap-2 h-11 bg-green-500 text-white rounded-xl text-sm font-bold shadow-sm active:scale-[0.97] transition-transform"
+                    >
+                      <MessageCircle className="w-4 h-4" />
+                      واتساب
+                    </a>
+                  )}
+                </div>
+              ) : (
+                <div className="bg-white/20 rounded-xl p-3 text-center">
+                  <p className="text-xs text-white/90">لم يتم إضافة رقم تواصل بعد</p>
+                  <p className="text-[10px] text-white/70 mt-1">يرجى التواصل مع مشرف النظام</p>
+                </div>
+              )}
+            </motion.div>
+          ) : (
+            <motion.button
+              key="contact-btn"
+              initial={{ opacity: 0 }}
+              animate={{ opacity: 1 }}
+              exit={{ opacity: 0 }}
+              onClick={() => setShowCallCard(true)}
+              className="w-full bg-blue-50 dark:bg-blue-900/20 rounded-2xl p-4 text-center active:scale-[0.98] transition-transform border border-blue-200 dark:border-blue-800"
+            >
+              <Phone className="w-5 h-5 text-blue-600 mx-auto mb-2" />
+              <p className="text-xs font-bold text-blue-700 dark:text-blue-300">
+                للتجديد أو الاستفسار، تواصل مع إدارة المنصة
+              </p>
+              <p className="text-[10px] text-blue-500 dark:text-blue-400 mt-1">اضغط للتواصل</p>
+            </motion.button>
+          )}
+        </AnimatePresence>
 
         {/* Logout Button */}
         <button
