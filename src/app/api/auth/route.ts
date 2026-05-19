@@ -277,6 +277,7 @@ export async function GET(request: NextRequest) {
     });
   } catch (error) {
     console.error('Setup check error:', error);
-    return NextResponse.json({ setupNeeded: true, platformSetup: false });
+    // On error, default to setupNeeded: false so we don't trap users on setup page
+    return NextResponse.json({ setupNeeded: false, platformSetup: true });
   }
 }

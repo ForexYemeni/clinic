@@ -82,6 +82,14 @@ export function FirstSetupScreen() {
 
       {/* Form */}
       <div className="flex-1 px-6 pb-8">
+        {/* Go to login button */}
+        <button
+          onClick={() => useAppStore.getState().setScreen('login')}
+          className="w-full p-2 mb-2 text-center text-sm text-muted-foreground hover:text-clinic-600 transition-colors"
+        >
+          لديك حساب بالفعل؟ تسجيل الدخول
+        </button>
+
         {step === 1 ? (
           <motion.div key="step1" initial={{ opacity: 0, x: 30 }} animate={{ opacity: 1, x: 0 }} exit={{ opacity: 0, x: -30 }} className="space-y-4">
             <div className="space-y-2">

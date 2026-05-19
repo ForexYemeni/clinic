@@ -29,10 +29,12 @@ export async function GET() {
     });
   } catch (error) {
     console.error('Migration check error:', error);
+    // On error, default to migrationNeeded: false so we don't trap users on setup page
+    // If there really is no super_admin, the setup check in /api/auth will handle it
     return NextResponse.json({
-      superAdminExists: false,
-      platformConfigured: false,
-      migrationNeeded: true,
+      superAdminExists: true,
+      platformConfigured: true,
+      migrationNeeded: false,
     });
   }
 }

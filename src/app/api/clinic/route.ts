@@ -11,20 +11,16 @@ import { DEFAULT_SERVICES } from '@/lib/services-data';
 // Route segment config for larger body size (logo uploads)
 export const maxDuration = 30;
 
-// Helper to get clinic data from either new 'clinics' or old 'clinic' collection
+// Helper to get clinic data from clinics collection only (multi-tenant)
 async function getClinicData(clinicId: string | null) {
-  if (clinicId) {
-    // New multi-tenant system
-    const doc = await adminDb.collection('clinics').doc(clinicId).get();
-    if (doc.exists) {
-      return { source: 'clinics', id: doc.id, ...doc.data() };
-    }
+  if (!clinicId) {
+    return null;
   }
 
-  // Fallback to old single-clinic collection (legacy)
-  const snapshot = await adminDb.collection('clinic').limit(1).get();
-  if (!snapshot.empty) {
-    return { source: 'clinic', id: snapshot.docs[0].id, ...snapshot.docs[0].data() };
+  // Multi-tenant system - always use clinics collection with clinicId
+  const doc = await adminDb.collection('clinics').doc(clinicId).get();
+  if (doc.exists) {
+    return { source: 'clinics', id: doc.id, ...doc.data() };
   }
 
   return null;
@@ -96,24 +92,11 @@ export async function PUT(request: NextRequest) {
       }
     }
 
-    // Fallback to old clinic collection (legacy)
-    const snapshot = await adminDb.collection('clinic').limit(1).get();
-    if (!snapshot.empty) {
-      const docId = snapshot.docs[0].id;
-      await adminDb.collection('clinic').doc(docId).update(updateData);
-      const existingData = snapshot.docs[0].data();
-      return NextResponse.json({
-        id: docId,
-        name: updateData.name ?? existingData.name ?? '',
-        description: updateData.description ?? existingData.description ?? '',
-        phone: updateData.phone ?? existingData.phone ?? '',
-        address: updateData.address ?? existingData.address ?? '',
-        logo: updateData.logo ?? existingData.logo ?? '',
-        primaryColor: updateData.primaryColor ?? existingData.primaryColor ?? 'emerald',
-      });
+    // No clinic document found in clinics collection - create one with effectiveClinicId
+    if (!effectiveClinicId) {
+      return NextResponse.json({ error: 'لم يتم تحديد العيادة' }, { status: 400 });
     }
 
-    // No clinic document exists - create one
     const createData = {
       name: String(name || 'عيادتي'),
       description: String(description || ''),
@@ -126,14 +109,8 @@ export async function PUT(request: NextRequest) {
       updatedAt: new Date().toISOString(),
     };
 
-    if (effectiveClinicId) {
-      // Create in new collection
-      await adminDb.collection('clinics').doc(effectiveClinicId).set(createData, { merge: true });
-      return NextResponse.json({ id: effectiveClinicId, ...createData });
-    } else {
-      const docRef = await adminDb.collection('clinic').add(createData);
-      return NextResponse.json({ id: docRef.id, ...createData });
-    }
+    await adminDb.collection('clinics').doc(effectiveClinicId).set(createData, { merge: true });
+    return NextResponse.json({ id: effectiveClinicId, ...createData });
   } catch (error: any) {
     console.error('Update clinic error:', error);
     const errorMessage = error?.message || 'خطأ في تحديث بيانات العيادة';

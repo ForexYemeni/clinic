@@ -21,9 +21,9 @@ export async function PUT(
       );
     }
 
-    // Verify clinic ownership
+    // Verify clinic ownership (strict)
     const emergencyClinicId = emergencyDoc.data()?.clinicId;
-    if (effectiveClinicId && emergencyClinicId && emergencyClinicId !== effectiveClinicId) {
+    if (!effectiveClinicId || (emergencyClinicId && emergencyClinicId !== effectiveClinicId)) {
       return NextResponse.json({ error: 'غير مصرح' }, { status: 403 });
     }
 

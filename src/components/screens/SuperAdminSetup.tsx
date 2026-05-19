@@ -57,6 +57,13 @@ export function SuperAdminSetup() {
           transition={{ delay: 0.4 }}
           className="flex-1 px-6 pb-8 space-y-4"
         >
+          {/* Go to login button */}
+          <button
+            onClick={() => setScreen('login')}
+            className="w-full p-3 text-center text-sm text-muted-foreground hover:text-purple-600 transition-colors"
+          >
+            لديك حساب بالفعل؟ تسجيل الدخول
+          </button>
           {/* Option 1: Migrate existing admin */}
           <button
             onClick={() => setMode('migrate')}

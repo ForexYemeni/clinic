@@ -59,6 +59,10 @@ export async function POST(request: NextRequest) {
         const serviceDoc = await adminDb.collection('services').doc(serviceId).get();
         if (serviceDoc.exists) {
           const serviceData = serviceDoc.data();
+          // Verify service belongs to the same clinic
+          if (serviceData.clinicId && serviceData.clinicId !== effectiveClinicId) {
+            continue; // Skip services from other clinics
+          }
           if (serviceData.status !== 'deleted') {
             const price = serviceData.price || 0;
             items.push({ serviceId, serviceName: serviceData.nameAr || '', price, quantity: 1, nurseName: nurseName || '' });

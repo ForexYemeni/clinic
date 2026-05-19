@@ -18,8 +18,18 @@ export async function GET(request: NextRequest) {
         .where('clinicId', '==', effectiveClinicId)
         .get();
     } catch {
-      // Fallback - fetch all nurses and filter client-side
-      snapshot = await adminDb.collection('users').where('role', '==', 'nurse').get();
+      // If compound query fails, try single-field query and filter
+      try {
+        const allSnapshot = await adminDb.collection('users')
+          .where('clinicId', '==', effectiveClinicId)
+          .get();
+        snapshot = {
+          docs: allSnapshot.docs.filter(doc => doc.data().role === 'nurse'),
+        } as any;
+      } catch {
+        // If all queries fail, return empty array instead of leaking cross-clinic data
+        return NextResponse.json([]);
+      }
     }
 
     const nurses = snapshot.docs

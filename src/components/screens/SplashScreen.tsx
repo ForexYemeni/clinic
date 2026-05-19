@@ -79,30 +79,40 @@ export function SplashScreen() {
       // No valid token - check if setup is needed
       try {
         // First, check if a super_admin exists (for migration from old system)
-        const migrateRes = await fetch('/api/platform/migrate');
-        if (migrateRes.ok) {
-          const migrateData = await migrateRes.json();
-          if (migrateData.migrationNeeded) {
-            // No super_admin exists - show migration/upgrade screen
-            setIsFirstSetup(true);
-            useAppStore.getState().setScreen('super-admin-setup');
-            setTimeout(() => setSplashDone(true), 1800);
-            return;
+        try {
+          const migrateRes = await fetch('/api/platform/migrate');
+          if (migrateRes.ok) {
+            const migrateData = await migrateRes.json();
+            if (migrateData.migrationNeeded) {
+              // No super_admin exists - show migration/upgrade screen
+              setIsFirstSetup(true);
+              useAppStore.getState().setScreen('super-admin-setup');
+              setTimeout(() => setSplashDone(true), 1800);
+              return;
+            }
           }
+          // If migrateRes is not ok (server error), DON'T trap on setup - fall through to login
+        } catch {
+          // Network error on migrate check - don't trap, fall through to login
         }
 
         // Check regular setup status
-        const res = await fetch('/api/auth');
-        if (res.ok) {
-          const data = await res.json();
-          if (data.setupNeeded) {
-            setIsFirstSetup(true);
-            if (!data.platformSetup) {
-              useAppStore.getState().setScreen('super-admin-setup');
-            } else {
-              useAppStore.getState().setScreen('admin-setup');
+        try {
+          const res = await fetch('/api/auth');
+          if (res.ok) {
+            const data = await res.json();
+            if (data.setupNeeded) {
+              setIsFirstSetup(true);
+              if (!data.platformSetup) {
+                useAppStore.getState().setScreen('super-admin-setup');
+              } else {
+                useAppStore.getState().setScreen('admin-setup');
+              }
             }
           }
+          // If res is not ok, fall through to login screen
+        } catch {
+          // Network error - fall through to login screen
         }
       } catch {}
 

@@ -19,9 +19,9 @@ export async function GET(
       );
     }
 
-    // Verify clinic ownership
+    // Verify clinic ownership (strict: reject if clinicId mismatch or missing)
     const patientClinicId = doc.data()?.clinicId;
-    if (effectiveClinicId && patientClinicId && patientClinicId !== effectiveClinicId) {
+    if (!effectiveClinicId || (patientClinicId && patientClinicId !== effectiveClinicId)) {
       return NextResponse.json({ error: 'غير مصرح' }, { status: 403 });
     }
 
@@ -137,9 +137,9 @@ export async function PUT(
       );
     }
 
-    // Verify clinic ownership
+    // Verify clinic ownership (strict: reject if clinicId mismatch or missing)
     const patientClinicId = patientDoc.data()?.clinicId;
-    if (effectiveClinicId && patientClinicId && patientClinicId !== effectiveClinicId) {
+    if (!effectiveClinicId || (patientClinicId && patientClinicId !== effectiveClinicId)) {
       return NextResponse.json({ error: 'غير مصرح' }, { status: 403 });
     }
 
@@ -186,21 +186,20 @@ export async function DELETE(
       );
     }
 
-    // Verify clinic ownership
+    // Verify clinic ownership (strict: reject if clinicId mismatch or missing)
     const patientClinicId = patientDoc.data()?.clinicId;
-    if (effectiveClinicId && patientClinicId && patientClinicId !== effectiveClinicId) {
+    if (!effectiveClinicId || (patientClinicId && patientClinicId !== effectiveClinicId)) {
       return NextResponse.json({ error: 'غير مصرح' }, { status: 403 });
     }
 
-    // Delete related visits, invoices (only for this clinic)
+    // Delete related visits, invoices (strict: require clinicId)
     const clinicFilter = effectiveClinicId || patientClinicId;
+    if (!clinicFilter) {
+      return NextResponse.json({ error: 'لم يتم تحديد العيادة' }, { status: 400 });
+    }
     const [visitsSnap, invoicesSnap] = await Promise.all([
-      clinicFilter
-        ? adminDb.collection('visits').where('patientId', '==', id).where('clinicId', '==', clinicFilter).get()
-        : adminDb.collection('visits').where('patientId', '==', id).get(),
-      clinicFilter
-        ? adminDb.collection('invoices').where('patientId', '==', id).where('clinicId', '==', clinicFilter).get()
-        : adminDb.collection('invoices').where('patientId', '==', id).get(),
+      adminDb.collection('visits').where('patientId', '==', id).where('clinicId', '==', clinicFilter).get(),
+      adminDb.collection('invoices').where('patientId', '==', id).where('clinicId', '==', clinicFilter).get(),
     ]);
 
     const batch = adminDb.batch();

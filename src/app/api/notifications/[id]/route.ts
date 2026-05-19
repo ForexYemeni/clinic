@@ -21,9 +21,9 @@ export async function PUT(
       );
     }
 
-    // Verify clinic ownership
+    // Verify clinic ownership (strict)
     const notifClinicId = notifDoc.data()?.clinicId;
-    if (effectiveClinicId && notifClinicId && notifClinicId !== effectiveClinicId) {
+    if (!effectiveClinicId || (notifClinicId && notifClinicId !== effectiveClinicId)) {
       return NextResponse.json({ error: 'غير مصرح' }, { status: 403 });
     }
 

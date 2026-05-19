@@ -21,9 +21,9 @@ export async function PUT(
       );
     }
 
-    // Verify clinic ownership
+    // Verify clinic ownership (strict)
     const invoiceClinicId = invoiceDoc.data()?.clinicId;
-    if (effectiveClinicId && invoiceClinicId && invoiceClinicId !== effectiveClinicId) {
+    if (!effectiveClinicId || (invoiceClinicId && invoiceClinicId !== effectiveClinicId)) {
       return NextResponse.json({ error: 'غير مصرح' }, { status: 403 });
     }
 

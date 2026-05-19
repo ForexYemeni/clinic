@@ -19,9 +19,11 @@ export async function PUT(
 
     const userData = userDoc.data();
 
-    // Verify clinic ownership (unless super_admin editing any user)
-    if (auth?.role !== 'super_admin' && effectiveClinicId && userData.clinicId && userData.clinicId !== effectiveClinicId) {
-      return NextResponse.json({ error: 'غير مصرح' }, { status: 403 });
+    // Verify clinic ownership (strict: unless super_admin)
+    if (auth?.role !== 'super_admin') {
+      if (!effectiveClinicId || (userData.clinicId && userData.clinicId !== effectiveClinicId)) {
+        return NextResponse.json({ error: 'غير مصرح' }, { status: 403 });
+      }
     }
 
     // Only allow updating nurses or self (not other admins)
@@ -64,9 +66,11 @@ export async function DELETE(
 
     const userData = userDoc.data();
 
-    // Verify clinic ownership (unless super_admin)
-    if (auth?.role !== 'super_admin' && effectiveClinicId && userData.clinicId && userData.clinicId !== effectiveClinicId) {
-      return NextResponse.json({ error: 'غير مصرح' }, { status: 403 });
+    // Verify clinic ownership (strict: unless super_admin)
+    if (auth?.role !== 'super_admin') {
+      if (!effectiveClinicId || (userData.clinicId && userData.clinicId !== effectiveClinicId)) {
+        return NextResponse.json({ error: 'غير مصرح' }, { status: 403 });
+      }
     }
 
     // Prevent deleting admin or super_admin

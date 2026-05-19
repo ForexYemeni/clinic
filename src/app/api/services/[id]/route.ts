@@ -21,9 +21,9 @@ export async function PUT(
       );
     }
 
-    // Verify clinic ownership
+    // Verify clinic ownership (strict)
     const serviceClinicId = serviceDoc.data()?.clinicId;
-    if (effectiveClinicId && serviceClinicId && serviceClinicId !== effectiveClinicId) {
+    if (!effectiveClinicId || (serviceClinicId && serviceClinicId !== effectiveClinicId)) {
       return NextResponse.json({ error: 'غير مصرح' }, { status: 403 });
     }
 
@@ -86,9 +86,9 @@ export async function DELETE(
       );
     }
 
-    // Verify clinic ownership
+    // Verify clinic ownership (strict)
     const serviceClinicId = serviceDoc.data()?.clinicId;
-    if (effectiveClinicId && serviceClinicId && serviceClinicId !== effectiveClinicId) {
+    if (!effectiveClinicId || (serviceClinicId && serviceClinicId !== effectiveClinicId)) {
       return NextResponse.json({ error: 'غير مصرح' }, { status: 403 });
     }
 
