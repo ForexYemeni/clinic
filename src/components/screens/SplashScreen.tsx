@@ -73,6 +73,20 @@ export function SplashScreen() {
 
       // No valid token - check if setup is needed
       try {
+        // First, check if a super_admin exists (for migration from old system)
+        const migrateRes = await fetch('/api/platform/migrate');
+        if (migrateRes.ok) {
+          const migrateData = await migrateRes.json();
+          if (migrateData.migrationNeeded) {
+            // No super_admin exists - show migration/upgrade screen
+            setIsFirstSetup(true);
+            useAppStore.getState().setScreen('super-admin-setup');
+            setTimeout(() => setSplashDone(true), 1800);
+            return;
+          }
+        }
+
+        // Check regular setup status
         const res = await fetch('/api/auth');
         if (res.ok) {
           const data = await res.json();
