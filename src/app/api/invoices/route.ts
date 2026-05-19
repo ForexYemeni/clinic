@@ -1,30 +1,32 @@
 import { adminDb } from '@/lib/firebase-admin';
 import { NextRequest, NextResponse } from 'next/server';
-import { extractAuthFromRequest } from '@/lib/auth';
+import { extractAuthAndClinicId } from '@/lib/auth';
 
 // GET: List invoices (?patientId=xxx, ?status=unpaid, filtered by clinicId)
 export async function GET(request: NextRequest) {
   try {
-    const auth = extractAuthFromRequest(request);
-    const clinicId = auth?.clinicId || null;
+    const { auth, effectiveClinicId } = extractAuthAndClinicId(request);
     const { searchParams } = new URL(request.url);
     const patientId = searchParams.get('patientId');
     const status = searchParams.get('status');
 
+    if (!effectiveClinicId) {
+      return NextResponse.json([]);
+    }
+
     let docs: FirebaseFirestore.QueryDocumentSnapshot[] = [];
 
-    // Build query with clinicId filter
+    // Build query with clinicId filter always
     const buildQuery = (baseQuery: FirebaseFirestore.Query) => {
-      let q = baseQuery;
-      if (clinicId) q = q.where('clinicId', '==', clinicId);
+      let q = baseQuery.where('clinicId', '==', effectiveClinicId);
       if (patientId) q = q.where('patientId', '==', patientId);
       else if (status) q = q.where('status', '==', status);
       return q;
     };
 
     try {
-      const snapshot = buildQuery(adminDb.collection('invoices')).orderBy('createdAt', 'desc').get();
-      docs = (await snapshot).docs;
+      const snapshot = await buildQuery(adminDb.collection('invoices')).orderBy('createdAt', 'desc').get();
+      docs = snapshot.docs;
     } catch (idxErr) {
       console.warn('Invoices ordered query failed, fallback:', idxErr);
       try {
@@ -35,10 +37,10 @@ export async function GET(request: NextRequest) {
           return db.localeCompare(da);
         });
       } catch {
-        const snapshot = await adminDb.collection('invoices').get();
+        // Last resort - fetch with just clinicId
+        const snapshot = await adminDb.collection('invoices').where('clinicId', '==', effectiveClinicId).get();
         docs = snapshot.docs.filter(doc => {
           const data = doc.data();
-          if (clinicId && data.clinicId !== clinicId) return false;
           if (patientId && data.patientId !== patientId) return false;
           if (status && data.status !== status) return false;
           return true;
@@ -78,13 +80,16 @@ export async function GET(request: NextRequest) {
 // POST: Create invoice manually
 export async function POST(request: NextRequest) {
   try {
-    const auth = extractAuthFromRequest(request);
-    const clinicId = auth?.clinicId || null;
+    const { auth, effectiveClinicId } = extractAuthAndClinicId(request);
     const body = await request.json();
     const { patientId, visitId, items } = body;
 
     if (!patientId) {
       return NextResponse.json({ error: 'يرجى تحديد المريض' }, { status: 400 });
+    }
+
+    if (!effectiveClinicId) {
+      return NextResponse.json({ error: 'لم يتم تحديد العيادة' }, { status: 400 });
     }
 
     const invoiceItems = items || [];
@@ -99,7 +104,7 @@ export async function POST(request: NextRequest) {
     const invoiceData = {
       patientId,
       visitId: visitId || null,
-      clinicId,
+      clinicId: effectiveClinicId,
       items: invoiceItems,
       total,
       paid,

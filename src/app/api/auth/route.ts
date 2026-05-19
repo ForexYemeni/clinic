@@ -103,12 +103,12 @@ export async function POST(request: NextRequest) {
         clinicName = clinic.name;
       }
     } else {
-      // User without clinicId - try to find their clinic from old data
+      // User without clinicId - check if they exist in old 'clinic' collection
       try {
-        const clinicSnapshot = await adminDb.collection('clinics').limit(1).get();
-        if (!clinicSnapshot.empty) {
-          clinicId = clinicSnapshot.docs[0].id;
-          clinicName = clinicSnapshot.docs[0].data().name || '';
+        const oldClinicSnapshot = await adminDb.collection('clinic').limit(1).get();
+        if (!oldClinicSnapshot.empty) {
+          clinicId = oldClinicSnapshot.docs[0].id;
+          clinicName = oldClinicSnapshot.docs[0].data().name || '';
           // Update user with clinicId
           await adminDb.collection('users').doc(userDoc.id).update({ clinicId });
 

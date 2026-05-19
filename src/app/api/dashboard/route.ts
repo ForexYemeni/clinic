@@ -1,31 +1,41 @@
 import { adminDb } from '@/lib/firebase-admin';
 import { NextRequest, NextResponse } from 'next/server';
-import { extractAuthFromRequest } from '@/lib/auth';
+import { extractAuthAndClinicId } from '@/lib/auth';
 
 // GET: Dashboard stats based on role (filtered by clinicId)
 export async function GET(request: NextRequest) {
   try {
-    const auth = extractAuthFromRequest(request);
-    const clinicId = auth?.clinicId || null;
+    const { auth, effectiveClinicId } = extractAuthAndClinicId(request);
     const { searchParams } = new URL(request.url);
     const role = searchParams.get('role') || 'admin';
     const nurseId = searchParams.get('nurseId');
+
+    if (!effectiveClinicId) {
+      return NextResponse.json({
+        role,
+        totalPatients: 0, totalVisits: 0, totalEmergencies: 0,
+        activeEmergencies: 0, activeServices: 0, activeNurses: 0,
+        totalRevenue: 0, todayRevenue: 0, todayPatients: 0, todayVisits: 0,
+        pendingInvoices: 0, unpaidAmount: 0,
+        servicesByCategory: [], topServices: [], recentEmergencies: [],
+      });
+    }
 
     const today = new Date();
     today.setHours(0, 0, 0, 0);
     const todayStr = today.toISOString();
 
-    // Helper to add clinicId filter
+    // Helper to build clinic-scoped query
     const withClinic = (col: string) => {
-      let q: FirebaseFirestore.Query = adminDb.collection(col);
-      if (clinicId) q = q.where('clinicId', '==', clinicId);
-      return q;
+      return adminDb.collection(col).where('clinicId', '==', effectiveClinicId);
     };
 
     if (role === 'nurse' && nurseId) {
       const [todayVisitsSnap, activeEmergenciesSnap] = await Promise.all([
-        withClinic('visits').where('nurseId', '==', nurseId).where('visitDate', '>=', todayStr).get().catch(() => withClinic('visits').where('nurseId', '==', nurseId).get()),
-        withClinic('emergencies').where('nurseId', '==', nurseId).where('status', '==', 'active').get().catch(() => adminDb.collection('emergencies').where('nurseId', '==', nurseId).where('status', '==', 'active').get()),
+        withClinic('visits').where('nurseId', '==', nurseId).where('visitDate', '>=', todayStr).get()
+          .catch(() => withClinic('visits').where('nurseId', '==', nurseId).get()),
+        withClinic('emergencies').where('nurseId', '==', nurseId).where('status', '==', 'active').get()
+          .catch(() => adminDb.collection('emergencies').where('nurseId', '==', nurseId).where('status', '==', 'active').where('clinicId', '==', effectiveClinicId).get()),
       ]);
 
       const patientIds = new Set<string>();
@@ -43,21 +53,24 @@ export async function GET(request: NextRequest) {
       });
     }
 
-    // Admin dashboard
+    // Admin dashboard - all queries scoped to effectiveClinicId
     const [
       patientsSnap, visitsSnap, emergenciesSnap, servicesSnap, nursesSnap, invoicesSnap,
     ] = await Promise.all([
-      withClinic('patients').get().catch(() => adminDb.collection('patients').get()),
-      withClinic('visits').get().catch(() => adminDb.collection('visits').get()),
-      withClinic('emergencies').get().catch(() => adminDb.collection('emergencies').get()),
-      withClinic('services').where('status', '==', 'active').get().catch(() => adminDb.collection('services').where('status', '==', 'active').get()),
-      clinicId ? adminDb.collection('users').where('role', '==', 'nurse').where('clinicId', '==', clinicId).where('active', '==', true).get() : adminDb.collection('users').where('role', '==', 'nurse').where('active', '==', true).get(),
-      withClinic('invoices').where('status', 'in', ['unpaid', 'partial']).get().catch(() => adminDb.collection('invoices').get()),
+      withClinic('patients').get().catch(() => adminDb.collection('patients').where('clinicId', '==', effectiveClinicId).get()),
+      withClinic('visits').get().catch(() => adminDb.collection('visits').where('clinicId', '==', effectiveClinicId).get()),
+      withClinic('emergencies').get().catch(() => adminDb.collection('emergencies').where('clinicId', '==', effectiveClinicId).get()),
+      withClinic('services').where('status', '==', 'active').get().catch(() => adminDb.collection('services').where('status', '==', 'active').where('clinicId', '==', effectiveClinicId).get()),
+      adminDb.collection('users').where('role', '==', 'nurse').where('clinicId', '==', effectiveClinicId).where('active', '==', true).get(),
+      withClinic('invoices').where('status', 'in', ['unpaid', 'partial']).get()
+        .catch(() => adminDb.collection('invoices').where('clinicId', '==', effectiveClinicId).get()),
     ]);
 
     // Today stats
-    const todayVisitsSnap = await withClinic('visits').where('visitDate', '>=', todayStr).get().catch(() => withClinic('visits').get());
-    const todayEmergenciesSnap = await withClinic('emergencies').where('status', '==', 'active').get().catch(() => adminDb.collection('emergencies').where('status', '==', 'active').get());
+    const todayVisitsSnap = await withClinic('visits').where('visitDate', '>=', todayStr).get()
+      .catch(() => withClinic('visits').get());
+    const todayEmergenciesSnap = await withClinic('emergencies').where('status', '==', 'active').get()
+      .catch(() => adminDb.collection('emergencies').where('status', '==', 'active').where('clinicId', '==', effectiveClinicId).get());
 
     const totalPatients = patientsSnap.size;
     const activeEmergencies = todayEmergenciesSnap.size;

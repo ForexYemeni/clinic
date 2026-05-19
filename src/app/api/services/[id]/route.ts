@@ -1,5 +1,6 @@
 import { adminDb } from '@/lib/firebase-admin';
 import { NextRequest, NextResponse } from 'next/server';
+import { extractAuthAndClinicId } from '@/lib/auth';
 
 // PUT: Update service (change price, name, pause, activate)
 export async function PUT(
@@ -7,6 +8,7 @@ export async function PUT(
   { params }: { params: Promise<{ id: string }> }
 ) {
   try {
+    const { auth, effectiveClinicId } = extractAuthAndClinicId(request);
     const { id } = await params;
     const body = await request.json();
 
@@ -17,6 +19,12 @@ export async function PUT(
         { error: 'الخدمة غير موجودة' },
         { status: 404 }
       );
+    }
+
+    // Verify clinic ownership
+    const serviceClinicId = serviceDoc.data()?.clinicId;
+    if (effectiveClinicId && serviceClinicId && serviceClinicId !== effectiveClinicId) {
+      return NextResponse.json({ error: 'غير مصرح' }, { status: 403 });
     }
 
     const updateData: Record<string, unknown> = {};
@@ -66,6 +74,7 @@ export async function DELETE(
   { params }: { params: Promise<{ id: string }> }
 ) {
   try {
+    const { auth, effectiveClinicId } = extractAuthAndClinicId(request);
     const { id } = await params;
 
     // Check if service exists
@@ -75,6 +84,12 @@ export async function DELETE(
         { error: 'الخدمة غير موجودة' },
         { status: 404 }
       );
+    }
+
+    // Verify clinic ownership
+    const serviceClinicId = serviceDoc.data()?.clinicId;
+    if (effectiveClinicId && serviceClinicId && serviceClinicId !== effectiveClinicId) {
+      return NextResponse.json({ error: 'غير مصرح' }, { status: 403 });
     }
 
     // Soft delete - set status to 'deleted'

@@ -1,5 +1,6 @@
 import { adminDb } from '@/lib/firebase-admin';
 import { NextRequest, NextResponse } from 'next/server';
+import { extractAuthAndClinicId } from '@/lib/auth';
 
 // GET: Get patient detail with visits, services, invoices
 export async function GET(
@@ -7,6 +8,7 @@ export async function GET(
   { params }: { params: Promise<{ id: string }> }
 ) {
   try {
+    const { auth, effectiveClinicId } = extractAuthAndClinicId(request);
     const { id } = await params;
     const doc = await adminDb.collection('patients').doc(id).get();
 
@@ -17,14 +19,21 @@ export async function GET(
       );
     }
 
+    // Verify clinic ownership
+    const patientClinicId = doc.data()?.clinicId;
+    if (effectiveClinicId && patientClinicId && patientClinicId !== effectiveClinicId) {
+      return NextResponse.json({ error: 'غير مصرح' }, { status: 403 });
+    }
+
     const patientData = { id: doc.id, ...doc.data() };
 
-    // Get related visits (resilient to missing indexes)
+    // Get related visits (filtered by clinicId)
     let visits: any[] = [];
     try {
       const visitsSnap = await adminDb
         .collection('visits')
         .where('patientId', '==', id)
+        .where('clinicId', '==', effectiveClinicId || patientClinicId)
         .orderBy('visitDate', 'desc')
         .get();
       visits = visitsSnap.docs.map((d) => ({ id: d.id, ...d.data() }));
@@ -34,6 +43,7 @@ export async function GET(
         const visitsSnap = await adminDb
           .collection('visits')
           .where('patientId', '==', id)
+          .where('clinicId', '==', effectiveClinicId || patientClinicId)
           .get();
         visits = visitsSnap.docs.map((d) => ({ id: d.id, ...d.data() }))
           .sort((a: any, b: any) => (b.visitDate || '').localeCompare(a.visitDate || ''));
@@ -42,12 +52,13 @@ export async function GET(
       }
     }
 
-    // Get related invoices (resilient to missing indexes)
+    // Get related invoices (filtered by clinicId)
     let invoices: any[] = [];
     try {
       const invoicesSnap = await adminDb
         .collection('invoices')
         .where('patientId', '==', id)
+        .where('clinicId', '==', effectiveClinicId || patientClinicId)
         .orderBy('createdAt', 'desc')
         .get();
       invoices = invoicesSnap.docs.map((d) => {
@@ -61,6 +72,7 @@ export async function GET(
         const invoicesSnap = await adminDb
           .collection('invoices')
           .where('patientId', '==', id)
+          .where('clinicId', '==', effectiveClinicId || patientClinicId)
           .get();
         invoices = invoicesSnap.docs.map((d) => {
           const data = { id: d.id, ...d.data() } as any;
@@ -112,6 +124,7 @@ export async function PUT(
   { params }: { params: Promise<{ id: string }> }
 ) {
   try {
+    const { auth, effectiveClinicId } = extractAuthAndClinicId(request);
     const { id } = await params;
     const body = await request.json();
 
@@ -122,6 +135,12 @@ export async function PUT(
         { error: 'المريض غير موجود' },
         { status: 404 }
       );
+    }
+
+    // Verify clinic ownership
+    const patientClinicId = patientDoc.data()?.clinicId;
+    if (effectiveClinicId && patientClinicId && patientClinicId !== effectiveClinicId) {
+      return NextResponse.json({ error: 'غير مصرح' }, { status: 403 });
     }
 
     const updateData: Record<string, unknown> = {};
@@ -155,6 +174,7 @@ export async function DELETE(
   { params }: { params: Promise<{ id: string }> }
 ) {
   try {
+    const { auth, effectiveClinicId } = extractAuthAndClinicId(request);
     const { id } = await params;
 
     // Check if patient exists
@@ -166,10 +186,21 @@ export async function DELETE(
       );
     }
 
-    // Delete related visits, invoices
+    // Verify clinic ownership
+    const patientClinicId = patientDoc.data()?.clinicId;
+    if (effectiveClinicId && patientClinicId && patientClinicId !== effectiveClinicId) {
+      return NextResponse.json({ error: 'غير مصرح' }, { status: 403 });
+    }
+
+    // Delete related visits, invoices (only for this clinic)
+    const clinicFilter = effectiveClinicId || patientClinicId;
     const [visitsSnap, invoicesSnap] = await Promise.all([
-      adminDb.collection('visits').where('patientId', '==', id).get(),
-      adminDb.collection('invoices').where('patientId', '==', id).get(),
+      clinicFilter
+        ? adminDb.collection('visits').where('patientId', '==', id).where('clinicId', '==', clinicFilter).get()
+        : adminDb.collection('visits').where('patientId', '==', id).get(),
+      clinicFilter
+        ? adminDb.collection('invoices').where('patientId', '==', id).where('clinicId', '==', clinicFilter).get()
+        : adminDb.collection('invoices').where('patientId', '==', id).get(),
     ]);
 
     const batch = adminDb.batch();

@@ -68,6 +68,33 @@ export function extractAuthFromRequest(request: Request): AuthResult | null {
   return verifyToken(token);
 }
 
+// ═══ Effective ClinicId Extraction ═══
+// For super_admin: reads clinicId from query parameter (set by apiFetch)
+// For regular users: uses JWT's clinicId
+// Returns { auth, effectiveClinicId }
+export function extractAuthAndClinicId(request: Request): {
+  auth: AuthResult | null;
+  effectiveClinicId: string | null;
+} {
+  const auth = extractAuthFromRequest(request);
+
+  // Check for clinicId query parameter (used by super_admin)
+  const url = new URL(request.url);
+  const queryClinicId = url.searchParams.get('clinicId');
+
+  let effectiveClinicId: string | null = null;
+
+  if (auth?.role === 'super_admin' && queryClinicId) {
+    // Super admin explicitly viewing a specific clinic
+    effectiveClinicId = queryClinicId;
+  } else if (auth?.clinicId) {
+    // Regular user - use their assigned clinicId
+    effectiveClinicId = auth.clinicId;
+  }
+
+  return { auth, effectiveClinicId };
+}
+
 // ═══ Recovery Code Generation ═══
 export function generateRecoveryCode(): string {
   const chars = 'ABCDEFGHJKLMNPQRSTUVWXYZ23456789';

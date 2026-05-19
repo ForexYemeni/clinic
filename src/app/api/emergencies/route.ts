@@ -1,20 +1,23 @@
 import { adminDb } from '@/lib/firebase-admin';
 import { NextRequest, NextResponse } from 'next/server';
-import { extractAuthFromRequest } from '@/lib/auth';
+import { extractAuthAndClinicId } from '@/lib/auth';
 
 // GET: List emergencies (?status=active, filtered by clinicId)
 export async function GET(request: NextRequest) {
   try {
-    const auth = extractAuthFromRequest(request);
-    const clinicId = auth?.clinicId || null;
+    const { auth, effectiveClinicId } = extractAuthAndClinicId(request);
     const { searchParams } = new URL(request.url);
     const status = searchParams.get('status');
+
+    if (!effectiveClinicId) {
+      return NextResponse.json([]);
+    }
 
     let docs: FirebaseFirestore.QueryDocumentSnapshot[] = [];
 
     const buildQuery = (baseQuery: FirebaseFirestore.Query) => {
       let q = baseQuery;
-      if (clinicId) q = q.where('clinicId', '==', clinicId);
+      q = q.where('clinicId', '==', effectiveClinicId);
       if (status) q = q.where('status', '==', status);
       return q;
     };
@@ -31,11 +34,10 @@ export async function GET(request: NextRequest) {
           return db.localeCompare(da);
         });
       } catch {
-        const snapshot = await adminDb.collection('emergencies').get();
+        // Last resort - fetch with clinicId filter only and filter status client-side
+        const snapshot = await adminDb.collection('emergencies').where('clinicId', '==', effectiveClinicId).get();
         docs = snapshot.docs.filter(doc => {
-          const data = doc.data();
-          if (clinicId && data.clinicId !== clinicId) return false;
-          if (status && data.status !== status) return false;
+          if (status && doc.data().status !== status) return false;
           return true;
         });
       }
@@ -69,13 +71,16 @@ export async function GET(request: NextRequest) {
 // POST: Add new emergency
 export async function POST(request: NextRequest) {
   try {
-    const auth = extractAuthFromRequest(request);
-    const clinicId = auth?.clinicId || null;
+    const { auth, effectiveClinicId } = extractAuthAndClinicId(request);
     const body = await request.json();
     const { patientId, nurseId, severity, notes, actions, procedures } = body;
 
     if (!patientId) {
       return NextResponse.json({ error: 'يرجى تحديد المريض' }, { status: 400 });
+    }
+
+    if (!effectiveClinicId) {
+      return NextResponse.json({ error: 'لم يتم تحديد العيادة' }, { status: 400 });
     }
 
     let patientName = '';
@@ -94,7 +99,7 @@ export async function POST(request: NextRequest) {
       patientId, patientName, nurseId: nurseId || '', nurseName,
       severity: severity || 'moderate', status: 'active',
       notes: notes || '', actions: actions || '', procedures: procedures || '',
-      arrivalTime: new Date().toISOString(), clinicId,
+      arrivalTime: new Date().toISOString(), clinicId: effectiveClinicId,
       createdAt: new Date().toISOString(),
     };
 

@@ -1,9 +1,28 @@
 // ═══════════════════════════════════════════════════════════
 // 🌐 API Helper
 // Wrapper for fetch that automatically adds JWT token
+// Super Admin: auto-appends selectedClinicId for data isolation
 // ═══════════════════════════════════════════════════════════
 
 import { useAppStore } from './store';
+
+/**
+ * Build URL with clinicId query param for super_admin data isolation.
+ * When a super_admin is viewing a specific clinic, we append ?clinicId=xxx
+ * to all data API calls so the backend knows which clinic's data to return.
+ */
+function buildUrlWithClinicContext(url: string): string {
+  const state = useAppStore.getState();
+  const user = state.user;
+
+  // Only for super_admin who has selected a specific clinic to view
+  if (user?.role === 'super_admin' && state.selectedClinicId) {
+    const separator = url.includes('?') ? '&' : '?';
+    return `${url}${separator}clinicId=${state.selectedClinicId}`;
+  }
+
+  return url;
+}
 
 export function apiFetch(url: string, options: RequestInit = {}): Promise<Response> {
   const token = useAppStore.getState().token;
@@ -22,7 +41,10 @@ export function apiFetch(url: string, options: RequestInit = {}): Promise<Respon
     headers['Authorization'] = `Bearer ${token}`;
   }
 
-  return fetch(url, {
+  // Auto-append clinicId for super_admin context
+  const finalUrl = buildUrlWithClinicContext(url);
+
+  return fetch(finalUrl, {
     ...options,
     headers,
   });

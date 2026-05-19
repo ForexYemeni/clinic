@@ -1,38 +1,30 @@
 import { adminDb } from '@/lib/firebase-admin';
 import { NextRequest, NextResponse } from 'next/server';
-import { extractAuthFromRequest } from '@/lib/auth';
+import { extractAuthAndClinicId } from '@/lib/auth';
 
 // GET: List all patients (with search by name, filtered by clinicId)
 export async function GET(request: NextRequest) {
   try {
-    const auth = extractAuthFromRequest(request);
-    const clinicId = auth?.clinicId || null;
+    const { auth, effectiveClinicId } = extractAuthAndClinicId(request);
     const { searchParams } = new URL(request.url);
     const search = searchParams.get('search') || '';
 
+    if (!effectiveClinicId) {
+      return NextResponse.json([]);
+    }
+
     let snapshot;
-    if (clinicId) {
-      try {
-        snapshot = await adminDb
-          .collection('patients')
-          .where('clinicId', '==', clinicId)
-          .orderBy('createdAt', 'desc')
-          .get();
-      } catch {
-        snapshot = await adminDb
-          .collection('patients')
-          .where('clinicId', '==', clinicId)
-          .get();
-      }
-    } else {
-      try {
-        snapshot = await adminDb
-          .collection('patients')
-          .orderBy('createdAt', 'desc')
-          .get();
-      } catch {
-        snapshot = await adminDb.collection('patients').get();
-      }
+    try {
+      snapshot = await adminDb
+        .collection('patients')
+        .where('clinicId', '==', effectiveClinicId)
+        .orderBy('createdAt', 'desc')
+        .get();
+    } catch {
+      snapshot = await adminDb
+        .collection('patients')
+        .where('clinicId', '==', effectiveClinicId)
+        .get();
     }
 
     let patients = snapshot.docs.map((doc) => ({ id: doc.id, ...doc.data() }));
@@ -55,13 +47,16 @@ export async function GET(request: NextRequest) {
 // POST: Add new patient
 export async function POST(request: NextRequest) {
   try {
-    const auth = extractAuthFromRequest(request);
-    const clinicId = auth?.clinicId || null;
+    const { auth, effectiveClinicId } = extractAuthAndClinicId(request);
     const body = await request.json();
     const { name, age, gender, phone, emergencyPhone, address, bloodType, chronicDiseases, allergies, medicalHistory, notes } = body;
 
     if (!name) {
       return NextResponse.json({ error: 'يرجى إدخال اسم المريض' }, { status: 400 });
+    }
+
+    if (!effectiveClinicId) {
+      return NextResponse.json({ error: 'لم يتم تحديد العيادة' }, { status: 400 });
     }
 
     const patientData = {
@@ -76,7 +71,7 @@ export async function POST(request: NextRequest) {
       allergies: allergies || '',
       medicalHistory: medicalHistory || '',
       notes: notes || '',
-      clinicId,
+      clinicId: effectiveClinicId,
       createdAt: new Date().toISOString(),
     };
 

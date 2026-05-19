@@ -1,24 +1,25 @@
 import { adminDb } from '@/lib/firebase-admin';
 import { NextRequest, NextResponse } from 'next/server';
-import { extractAuthFromRequest } from '@/lib/auth';
+import { extractAuthAndClinicId } from '@/lib/auth';
 
 // GET: List visits (?patientId=xxx, filtered by clinicId)
 export async function GET(request: NextRequest) {
   try {
-    const auth = extractAuthFromRequest(request);
-    const clinicId = auth?.clinicId || null;
+    const { auth, effectiveClinicId } = extractAuthAndClinicId(request);
     const { searchParams } = new URL(request.url);
     const patientId = searchParams.get('patientId');
 
+    if (!effectiveClinicId) {
+      return NextResponse.json([]);
+    }
+
     let snapshot;
     try {
-      let q = adminDb.collection('visits');
-      if (clinicId) q = q.where('clinicId', '==', clinicId);
+      let q = adminDb.collection('visits').where('clinicId', '==', effectiveClinicId);
       if (patientId) q = q.where('patientId', '==', patientId);
       snapshot = await q.orderBy('visitDate', 'desc').get();
     } catch {
-      let q = adminDb.collection('visits');
-      if (clinicId) q = q.where('clinicId', '==', clinicId);
+      let q = adminDb.collection('visits').where('clinicId', '==', effectiveClinicId);
       if (patientId) q = q.where('patientId', '==', patientId);
       snapshot = await q.get();
     }
@@ -34,8 +35,7 @@ export async function GET(request: NextRequest) {
 // POST: Add new visit with services (auto-generate invoice)
 export async function POST(request: NextRequest) {
   try {
-    const auth = extractAuthFromRequest(request);
-    const clinicId = auth?.clinicId || null;
+    const { auth, effectiveClinicId } = extractAuthAndClinicId(request);
     const body = await request.json();
     const { patientId, nurseId, nurseName, reason, diagnosis, vitalSigns, medications, serviceIds, notes } = body;
 
@@ -44,6 +44,10 @@ export async function POST(request: NextRequest) {
     }
     if (!nurseId) {
       return NextResponse.json({ error: 'يرجى تحديد الممرض' }, { status: 400 });
+    }
+
+    if (!effectiveClinicId) {
+      return NextResponse.json({ error: 'لم يتم تحديد العيادة' }, { status: 400 });
     }
 
     // Auto-calculate total price from service IDs
@@ -72,7 +76,7 @@ export async function POST(request: NextRequest) {
       notes: notes || '',
       vitalSigns: vitalSigns || { bloodPressure: '', heartRate: '', temperature: '', oxygenLevel: '', sugarLevel: '' },
       medications: medications || [], serviceIds: serviceIds || [],
-      totalPrice, clinicId,
+      totalPrice, clinicId: effectiveClinicId,
       createdAt: new Date().toISOString(),
     };
 
@@ -82,7 +86,7 @@ export async function POST(request: NextRequest) {
     let invoiceData = null;
     if (items.length > 0) {
       const invoice = {
-        patientId, visitId: visitRef.id, clinicId,
+        patientId, visitId: visitRef.id, clinicId: effectiveClinicId,
         items, total: totalPrice, paid: 0, remaining: totalPrice,
         status: 'unpaid', createdAt: new Date().toISOString(),
       };

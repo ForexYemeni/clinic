@@ -1,18 +1,22 @@
 import { adminDb } from '@/lib/firebase-admin';
 import { NextRequest, NextResponse } from 'next/server';
 import { DEFAULT_SERVICES } from '@/lib/services-data';
-import { extractAuthFromRequest } from '@/lib/auth';
+import { extractAuthAndClinicId } from '@/lib/auth';
 
 // POST: Re-seed missing services (adds services that don't exist yet, with clinicId)
 export async function POST(request: NextRequest) {
   try {
-    const auth = extractAuthFromRequest(request);
-    const clinicId = auth?.clinicId || null;
+    const { auth, effectiveClinicId } = extractAuthAndClinicId(request);
 
-    const existingSnap = await adminDb.collection('services').get();
+    if (!effectiveClinicId) {
+      return NextResponse.json({ error: 'لم يتم تحديد العيادة' }, { status: 400 });
+    }
+
+    const existingSnap = await adminDb.collection('services')
+      .where('clinicId', '==', effectiveClinicId)
+      .get();
     const existingNames = new Set(
       existingSnap.docs
-        .filter(doc => !clinicId || doc.data()?.clinicId === clinicId)
         .map(doc => doc.data()?.nameAr)
         .filter(Boolean)
     );
@@ -36,7 +40,7 @@ export async function POST(request: NextRequest) {
         const ref = adminDb.collection('services').doc();
         batch.set(ref, {
           ...service,
-          clinicId,
+          clinicId: effectiveClinicId,
           active: true,
           status: 'active',
           createdAt: new Date().toISOString(),
@@ -60,20 +64,16 @@ export async function POST(request: NextRequest) {
 // DELETE: Delete all services and re-seed from defaults (for current clinic)
 export async function DELETE(request: NextRequest) {
   try {
-    const auth = extractAuthFromRequest(request);
-    const clinicId = auth?.clinicId || null;
+    const { auth, effectiveClinicId } = extractAuthAndClinicId(request);
 
-    // Delete existing services for this clinic
-    let existingSnap;
-    if (clinicId) {
-      try {
-        existingSnap = await adminDb.collection('services').where('clinicId', '==', clinicId).get();
-      } catch {
-        existingSnap = await adminDb.collection('services').get();
-      }
-    } else {
-      existingSnap = await adminDb.collection('services').get();
+    if (!effectiveClinicId) {
+      return NextResponse.json({ error: 'لم يتم تحديد العيادة' }, { status: 400 });
     }
+
+    // Delete existing services for this clinic ONLY
+    const existingSnap = await adminDb.collection('services')
+      .where('clinicId', '==', effectiveClinicId)
+      .get();
 
     if (!existingSnap.empty) {
       const BATCH_SIZE = 450;
@@ -94,7 +94,7 @@ export async function DELETE(request: NextRequest) {
         const ref = adminDb.collection('services').doc();
         batch.set(ref, {
           ...service,
-          clinicId,
+          clinicId: effectiveClinicId,
           active: true,
           status: 'active',
           createdAt: new Date().toISOString(),

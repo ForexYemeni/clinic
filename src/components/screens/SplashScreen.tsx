@@ -29,6 +29,11 @@ export function SplashScreen() {
                 useAppStore.getState().setSubscription(data.subscription);
               }
 
+              // Set clinicId in store for proper data isolation
+              if (data.user.clinicId) {
+                useAppStore.getState().setClinicId(data.user.clinicId);
+              }
+
               // Load clinic settings
               try {
                 const cRes = await fetch('/api/clinic', {

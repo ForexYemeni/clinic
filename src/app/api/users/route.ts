@@ -1,36 +1,41 @@
 import { adminDb } from '@/lib/firebase-admin';
 import { NextRequest, NextResponse } from 'next/server';
-import { extractAuthFromRequest, hashPassword } from '@/lib/auth';
+import { extractAuthAndClinicId, hashPassword } from '@/lib/auth';
 
 // GET: List nurses (filtered by clinicId)
 export async function GET(request: NextRequest) {
   try {
-    const auth = extractAuthFromRequest(request);
-    const clinicId = auth?.clinicId || null;
+    const { auth, effectiveClinicId } = extractAuthAndClinicId(request);
+
+    if (!effectiveClinicId) {
+      return NextResponse.json([]);
+    }
 
     let snapshot;
-    if (clinicId) {
-      try {
-        snapshot = await adminDb.collection('users').where('role', '==', 'nurse').where('clinicId', '==', clinicId).get();
-      } catch {
-        snapshot = await adminDb.collection('users').where('role', '==', 'nurse').get();
-      }
-    } else {
+    try {
+      snapshot = await adminDb.collection('users')
+        .where('role', '==', 'nurse')
+        .where('clinicId', '==', effectiveClinicId)
+        .get();
+    } catch {
+      // Fallback - fetch all nurses and filter client-side
       snapshot = await adminDb.collection('users').where('role', '==', 'nurse').get();
     }
 
-    const nurses = snapshot.docs.map((doc) => {
-      const data = doc.data();
-      return {
-        id: doc.id,
-        name: data.name || '',
-        phone: data.phone || '',
-        role: data.role,
-        active: data.active !== false,
-        clinicId: data.clinicId || null,
-        createdAt: data.createdAt || '',
-      };
-    });
+    const nurses = snapshot.docs
+      .map((doc) => {
+        const data = doc.data();
+        return {
+          id: doc.id,
+          name: data.name || '',
+          phone: data.phone || '',
+          role: data.role,
+          active: data.active !== false,
+          clinicId: data.clinicId || null,
+          createdAt: data.createdAt || '',
+        };
+      })
+      .filter(nurse => nurse.clinicId === effectiveClinicId);
 
     return NextResponse.json(nurses);
   } catch (error) {
@@ -42,8 +47,7 @@ export async function GET(request: NextRequest) {
 // POST: Add nurse (hashed password, linked to clinicId)
 export async function POST(request: NextRequest) {
   try {
-    const auth = extractAuthFromRequest(request);
-    const clinicId = auth?.clinicId || null;
+    const { auth, effectiveClinicId } = extractAuthAndClinicId(request);
     const body = await request.json();
     const { name, phone, password } = body;
 
@@ -54,6 +58,10 @@ export async function POST(request: NextRequest) {
     const phoneRegex = /^\d{9}$/;
     if (!phoneRegex.test(phone)) {
       return NextResponse.json({ error: 'رقم الهاتف يجب أن يكون 9 أرقام' }, { status: 400 });
+    }
+
+    if (!effectiveClinicId) {
+      return NextResponse.json({ error: 'لم يتم تحديد العيادة' }, { status: 400 });
     }
 
     // Check if phone already exists
@@ -69,14 +77,14 @@ export async function POST(request: NextRequest) {
       name, phone,
       password: hashedPassword,
       role: 'nurse',
-      clinicId,
+      clinicId: effectiveClinicId,
       active: true,
       createdAt: new Date().toISOString(),
     };
 
     const docRef = await adminDb.collection('users').add(nurseData);
 
-    return NextResponse.json({ id: docRef.id, name, phone, role: 'nurse', active: true, clinicId }, { status: 201 });
+    return NextResponse.json({ id: docRef.id, name, phone, role: 'nurse', active: true, clinicId: effectiveClinicId }, { status: 201 });
   } catch (error) {
     console.error('Create nurse error:', error);
     return NextResponse.json({ error: 'خطأ في إضافة الممرض' }, { status: 500 });

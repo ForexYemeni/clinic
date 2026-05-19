@@ -1,19 +1,25 @@
 import { adminDb } from '@/lib/firebase-admin';
 import { NextRequest, NextResponse } from 'next/server';
-import { extractAuthFromRequest } from '@/lib/auth';
+import { extractAuthAndClinicId } from '@/lib/auth';
 
 // GET: Get reports data (filtered by clinicId)
 export async function GET(request: NextRequest) {
   try {
-    const auth = extractAuthFromRequest(request);
-    const clinicId = auth?.clinicId || null;
+    const { auth, effectiveClinicId } = extractAuthAndClinicId(request);
     const { searchParams } = new URL(request.url);
     const type = searchParams.get('type') || 'daily';
 
+    if (!effectiveClinicId) {
+      return NextResponse.json({
+        type,
+        startDate: new Date().toISOString(),
+        endDate: new Date().toISOString(),
+        stats: { newPatients: 0, totalVisits: 0, servicesProvided: 0, revenue: 0, totalInvoiced: 0, unpaidAmount: 0, paidInvoices: 0, unpaidInvoices: 0, emergencies: 0 },
+      });
+    }
+
     const withClinic = (col: string) => {
-      let q: FirebaseFirestore.Query = adminDb.collection(col);
-      if (clinicId) q = q.where('clinicId', '==', clinicId);
-      return q;
+      return adminDb.collection(col).where('clinicId', '==', effectiveClinicId);
     };
 
     const now = new Date();
@@ -23,12 +29,12 @@ export async function GET(request: NextRequest) {
     const startStr = startDate.toISOString();
 
     if (type === 'services') {
-      const visitsSnapshot = await withClinic('visits').get().catch(() => adminDb.collection('visits').get());
+      const visitsSnapshot = await withClinic('visits').get()
+        .catch(() => adminDb.collection('visits').where('clinicId', '==', effectiveClinicId).get());
       const serviceCountMap: Record<string, { count: number; name: string; revenue: number }> = {};
 
       for (const visitDoc of visitsSnapshot.docs) {
         const visitData = visitDoc.data();
-        if (clinicId && visitData.clinicId && visitData.clinicId !== clinicId) continue;
         const serviceIds: string[] = visitData.serviceIds || [];
         for (const serviceId of serviceIds) {
           if (!serviceCountMap[serviceId]) {
@@ -69,7 +75,8 @@ export async function GET(request: NextRequest) {
     const paidInvoices = invoicesSnap.docs.filter((d) => d.data().status === 'paid').length;
     const unpaidInvoices = invoicesSnap.docs.filter((d) => d.data().status === 'unpaid' || d.data().status === 'partial').length;
 
-    const emergenciesSnap = await withClinic('emergencies').where('createdAt', '>=', startStr).get().catch(() => withClinic('emergencies').get());
+    const emergenciesSnap = await withClinic('emergencies').where('createdAt', '>=', startStr).get()
+      .catch(() => withClinic('emergencies').get());
 
     return NextResponse.json({
       type, startDate: startStr, endDate: now.toISOString(),

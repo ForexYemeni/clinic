@@ -1,5 +1,6 @@
 import { adminDb } from '@/lib/firebase-admin';
 import { NextRequest, NextResponse } from 'next/server';
+import { extractAuthAndClinicId } from '@/lib/auth';
 
 // PUT: Update notification (mark as read)
 export async function PUT(
@@ -7,6 +8,7 @@ export async function PUT(
   { params }: { params: Promise<{ id: string }> }
 ) {
   try {
+    const { auth, effectiveClinicId } = extractAuthAndClinicId(request);
     const { id } = await params;
     const body = await request.json();
 
@@ -17,6 +19,12 @@ export async function PUT(
         { error: 'الإشعار غير موجود' },
         { status: 404 }
       );
+    }
+
+    // Verify clinic ownership
+    const notifClinicId = notifDoc.data()?.clinicId;
+    if (effectiveClinicId && notifClinicId && notifClinicId !== effectiveClinicId) {
+      return NextResponse.json({ error: 'غير مصرح' }, { status: 403 });
     }
 
     const updateData: Record<string, unknown> = {};

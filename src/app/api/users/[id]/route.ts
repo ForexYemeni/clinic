@@ -1,6 +1,6 @@
 import { adminDb } from '@/lib/firebase-admin';
 import { NextRequest, NextResponse } from 'next/server';
-import { hashPassword, extractAuthFromRequest } from '@/lib/auth';
+import { hashPassword, extractAuthAndClinicId } from '@/lib/auth';
 
 // PUT: Update user (change password, toggle active) - with bcrypt
 export async function PUT(
@@ -8,7 +8,7 @@ export async function PUT(
   { params }: { params: Promise<{ id: string }> }
 ) {
   try {
-    const auth = extractAuthFromRequest(request);
+    const { auth, effectiveClinicId } = extractAuthAndClinicId(request);
     const { id } = await params;
     const body = await request.json();
 
@@ -18,6 +18,11 @@ export async function PUT(
     }
 
     const userData = userDoc.data();
+
+    // Verify clinic ownership (unless super_admin editing any user)
+    if (auth?.role !== 'super_admin' && effectiveClinicId && userData.clinicId && userData.clinicId !== effectiveClinicId) {
+      return NextResponse.json({ error: 'غير مصرح' }, { status: 403 });
+    }
 
     // Only allow updating nurses or self (not other admins)
     if (userData.role === 'admin' && auth?.role !== 'super_admin' && auth?.userId !== id) {
@@ -49,7 +54,7 @@ export async function DELETE(
   { params }: { params: Promise<{ id: string }> }
 ) {
   try {
-    const auth = extractAuthFromRequest(request);
+    const { auth, effectiveClinicId } = extractAuthAndClinicId(request);
     const { id } = await params;
 
     const userDoc = await adminDb.collection('users').doc(id).get();
@@ -58,6 +63,11 @@ export async function DELETE(
     }
 
     const userData = userDoc.data();
+
+    // Verify clinic ownership (unless super_admin)
+    if (auth?.role !== 'super_admin' && effectiveClinicId && userData.clinicId && userData.clinicId !== effectiveClinicId) {
+      return NextResponse.json({ error: 'غير مصرح' }, { status: 403 });
+    }
 
     // Prevent deleting admin or super_admin
     if (userData.role === 'admin' || userData.role === 'super_admin') {

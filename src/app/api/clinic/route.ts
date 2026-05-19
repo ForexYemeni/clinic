@@ -1,12 +1,11 @@
 // ═══════════════════════════════════════════════════════════
 // 🏥 Clinic Settings API
 // Multi-tenant: reads/writes to clinics collection using clinicId from JWT
-// Backward compatible with old 'clinic' collection
 // ═══════════════════════════════════════════════════════════
 
 import { adminDb } from '@/lib/firebase-admin';
 import { NextRequest, NextResponse } from 'next/server';
-import { extractAuthFromRequest } from '@/lib/auth';
+import { extractAuthAndClinicId } from '@/lib/auth';
 import { DEFAULT_SERVICES } from '@/lib/services-data';
 
 // Route segment config for larger body size (logo uploads)
@@ -22,7 +21,7 @@ async function getClinicData(clinicId: string | null) {
     }
   }
 
-  // Fallback to old single-clinic collection
+  // Fallback to old single-clinic collection (legacy)
   const snapshot = await adminDb.collection('clinic').limit(1).get();
   if (!snapshot.empty) {
     return { source: 'clinic', id: snapshot.docs[0].id, ...snapshot.docs[0].data() };
@@ -34,9 +33,8 @@ async function getClinicData(clinicId: string | null) {
 // GET: Get clinic settings
 export async function GET(request: NextRequest) {
   try {
-    const auth = extractAuthFromRequest(request);
-    const clinicId = auth?.clinicId || null;
-    const data = await getClinicData(clinicId);
+    const { auth, effectiveClinicId } = extractAuthAndClinicId(request);
+    const data = await getClinicData(effectiveClinicId);
 
     if (!data) {
       return NextResponse.json({ name: 'عيادتي', description: '', phone: '', address: '', logo: '', primaryColor: 'emerald' });
@@ -60,8 +58,7 @@ export async function GET(request: NextRequest) {
 // PUT: Update clinic settings
 export async function PUT(request: NextRequest) {
   try {
-    const auth = extractAuthFromRequest(request);
-    const clinicId = auth?.clinicId || null;
+    const { auth, effectiveClinicId } = extractAuthAndClinicId(request);
     const body = await request.json();
     const { name, description, phone, address, logo, primaryColor } = body;
 
@@ -81,14 +78,14 @@ export async function PUT(request: NextRequest) {
       }
     }
 
-    // Try new clinics collection first
-    if (clinicId) {
-      const clinicDoc = await adminDb.collection('clinics').doc(clinicId).get();
+    // Use effectiveClinicId to find the correct clinic document
+    if (effectiveClinicId) {
+      const clinicDoc = await adminDb.collection('clinics').doc(effectiveClinicId).get();
       if (clinicDoc.exists) {
-        await adminDb.collection('clinics').doc(clinicId).update(updateData);
+        await adminDb.collection('clinics').doc(effectiveClinicId).update(updateData);
         const existingData = clinicDoc.data();
         return NextResponse.json({
-          id: clinicId,
+          id: effectiveClinicId,
           name: updateData.name ?? existingData.name ?? '',
           description: updateData.description ?? existingData.description ?? '',
           phone: updateData.phone ?? existingData.phone ?? '',
@@ -99,7 +96,7 @@ export async function PUT(request: NextRequest) {
       }
     }
 
-    // Fallback to old clinic collection
+    // Fallback to old clinic collection (legacy)
     const snapshot = await adminDb.collection('clinic').limit(1).get();
     if (!snapshot.empty) {
       const docId = snapshot.docs[0].id;
@@ -129,10 +126,10 @@ export async function PUT(request: NextRequest) {
       updatedAt: new Date().toISOString(),
     };
 
-    if (clinicId) {
+    if (effectiveClinicId) {
       // Create in new collection
-      await adminDb.collection('clinics').doc(clinicId).set(createData, { merge: true });
-      return NextResponse.json({ id: clinicId, ...createData });
+      await adminDb.collection('clinics').doc(effectiveClinicId).set(createData, { merge: true });
+      return NextResponse.json({ id: effectiveClinicId, ...createData });
     } else {
       const docRef = await adminDb.collection('clinic').add(createData);
       return NextResponse.json({ id: docRef.id, ...createData });
@@ -147,8 +144,7 @@ export async function PUT(request: NextRequest) {
 // DELETE: Full system reset (for current clinic only)
 export async function DELETE(request: NextRequest) {
   try {
-    const auth = extractAuthFromRequest(request);
-    const clinicId = auth?.clinicId || null;
+    const { auth, effectiveClinicId } = extractAuthAndClinicId(request);
     const body = await request.json();
     const { confirmCode, adminPassword, adminId } = body;
 
@@ -158,6 +154,10 @@ export async function DELETE(request: NextRequest) {
 
     if (!adminId || !adminPassword) {
       return NextResponse.json({ error: 'يرجى إدخال كلمة المرور' }, { status: 400 });
+    }
+
+    if (!effectiveClinicId) {
+      return NextResponse.json({ error: 'لم يتم تحديد العيادة' }, { status: 400 });
     }
 
     // Verify admin password
@@ -170,24 +170,18 @@ export async function DELETE(request: NextRequest) {
     // Support both hashed and plaintext passwords
     const { verifyPassword } = await import('@/lib/auth');
     const passwordValid = await verifyPassword(adminPassword, adminData.password);
-    if (!passwordValid || adminData.role !== 'admin') {
+    if (!passwordValid || (adminData.role !== 'admin' && adminData.role !== 'super_admin')) {
       return NextResponse.json({ error: 'كلمة المرور غير صحيحة' }, { status: 401 });
     }
 
-    // Delete operational data in batches
+    // Delete operational data in batches - ONLY for this clinic
     const BATCH_LIMIT = 450;
     const collectionsToDelete = ['patients', 'visits', 'invoices', 'emergencies', 'notifications', 'services'];
 
-    // Filter by clinicId if available
-    const filterByClinic = !!clinicId;
-
-    // Delete all users except admin (for this clinic)
-    let usersSnapshot;
-    if (filterByClinic) {
-      usersSnapshot = await adminDb.collection('users').where('clinicId', '==', clinicId).get();
-    } else {
-      usersSnapshot = await adminDb.collection('users').get();
-    }
+    // Delete all users except admin (for this clinic ONLY)
+    const usersSnapshot = await adminDb.collection('users')
+      .where('clinicId', '==', effectiveClinicId)
+      .get();
 
     for (let i = 0; i < usersSnapshot.docs.length; i += BATCH_LIMIT) {
       const batch = adminDb.batch();
@@ -198,18 +192,15 @@ export async function DELETE(request: NextRequest) {
       await batch.commit();
     }
 
-    // Delete operational collections
+    // Delete operational collections - ONLY for this clinic
     for (const col of collectionsToDelete) {
       let snapshot;
-      if (filterByClinic) {
-        try {
-          snapshot = await adminDb.collection(col).where('clinicId', '==', clinicId).get();
-        } catch {
-          snapshot = await adminDb.collection(col).get();
-        }
-      } else {
-        snapshot = await adminDb.collection(col).get();
+      try {
+        snapshot = await adminDb.collection(col).where('clinicId', '==', effectiveClinicId).get();
+      } catch {
+        snapshot = await adminDb.collection(col).where('clinicId', '==', effectiveClinicId).get();
       }
+
       for (let i = 0; i < snapshot.docs.length; i += BATCH_LIMIT) {
         const batch = adminDb.batch();
         const chunk = snapshot.docs.slice(i, i + BATCH_LIMIT);
@@ -221,7 +212,7 @@ export async function DELETE(request: NextRequest) {
     // Re-seed default services for this clinic
     const servicesWithClinicId = DEFAULT_SERVICES.map(s => ({
       ...s,
-      clinicId: clinicId || null,
+      clinicId: effectiveClinicId,
       active: true,
       status: 'active',
       createdAt: new Date().toISOString(),

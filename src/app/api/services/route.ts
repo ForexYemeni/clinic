@@ -1,28 +1,26 @@
 import { adminDb } from '@/lib/firebase-admin';
 import { NextRequest, NextResponse } from 'next/server';
-import { extractAuthFromRequest } from '@/lib/auth';
+import { extractAuthAndClinicId } from '@/lib/auth';
 
 // GET: List all active services (filtered by clinicId)
 export async function GET(request: NextRequest) {
   try {
-    const auth = extractAuthFromRequest(request);
-    const clinicId = auth?.clinicId || null;
+    const { auth, effectiveClinicId } = extractAuthAndClinicId(request);
+
+    if (!effectiveClinicId) {
+      return NextResponse.json([]);
+    }
 
     let snapshot;
-    if (clinicId) {
-      try {
-        snapshot = await adminDb.collection('services').where('clinicId', '==', clinicId).get();
-      } catch {
-        snapshot = await adminDb.collection('services').get();
-      }
-    } else {
-      snapshot = await adminDb.collection('services').get();
+    try {
+      snapshot = await adminDb.collection('services').where('clinicId', '==', effectiveClinicId).get();
+    } catch {
+      snapshot = await adminDb.collection('services').where('clinicId', '==', effectiveClinicId).get();
     }
 
     const services = snapshot.docs
       .map((doc) => ({ id: doc.id, ...doc.data() }))
       .filter((service: any) => service.status !== 'deleted')
-      .filter((service: any) => !clinicId || service.clinicId === clinicId)
       .sort((a: any, b: any) => {
         const catA = a.category || '';
         const catB = b.category || '';
@@ -40,13 +38,16 @@ export async function GET(request: NextRequest) {
 // POST: Add new service (admin only)
 export async function POST(request: NextRequest) {
   try {
-    const auth = extractAuthFromRequest(request);
-    const clinicId = auth?.clinicId || null;
+    const { auth, effectiveClinicId } = extractAuthAndClinicId(request);
     const body = await request.json();
     const { nameAr, price, duration, category, description, icon, color } = body;
 
     if (!nameAr || price === undefined) {
       return NextResponse.json({ error: 'يرجى إدخال اسم الخدمة والسعر' }, { status: 400 });
+    }
+
+    if (!effectiveClinicId) {
+      return NextResponse.json({ error: 'لم يتم تحديد العيادة' }, { status: 400 });
     }
 
     const serviceData = {
@@ -59,7 +60,7 @@ export async function POST(request: NextRequest) {
       color: color || 'emerald',
       active: true,
       status: 'active',
-      clinicId,
+      clinicId: effectiveClinicId,
       createdAt: new Date().toISOString(),
     };
 
