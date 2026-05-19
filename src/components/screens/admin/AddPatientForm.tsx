@@ -75,9 +75,9 @@ const COMPLAINT_CATEGORIES = [
 ];
 
 const AGE_CATEGORIES = [
-  { value: 'infant', label: 'رضيع', icon: Baby, color: 'bg-amber-50 text-amber-700 border-amber-300 dark:bg-amber-900/20 dark:text-amber-300 dark:border-amber-700', activeColor: 'bg-amber-500 text-white border-amber-500' },
-  { value: 'child', label: 'طفل', icon: User, color: 'bg-blue-50 text-blue-700 border-blue-300 dark:bg-blue-900/20 dark:text-blue-300 dark:border-blue-700', activeColor: 'bg-blue-500 text-white border-blue-500' },
-  { value: 'adult', label: 'بالغ', icon: UserCheck, color: 'bg-green-50 text-green-700 border-green-300 dark:bg-green-900/20 dark:text-green-300 dark:border-green-700', activeColor: 'bg-green-500 text-white border-green-500' },
+  { value: 'elderly', label: 'كبير', icon: UserCheck, color: 'bg-amber-50 text-amber-700 border-amber-300 dark:bg-amber-900/20 dark:text-amber-300 dark:border-amber-700', activeColor: 'bg-amber-500 text-white border-amber-500' },
+  { value: 'child', label: 'طفل', icon: Baby, color: 'bg-blue-50 text-blue-700 border-blue-300 dark:bg-blue-900/20 dark:text-blue-300 dark:border-blue-700', activeColor: 'bg-blue-500 text-white border-blue-500' },
+  { value: 'adult', label: 'بالغ', icon: User, color: 'bg-green-50 text-green-700 border-green-300 dark:bg-green-900/20 dark:text-green-300 dark:border-green-700', activeColor: 'bg-green-500 text-white border-green-500' },
 ];
 
 const PAYMENT_METHODS = [
@@ -98,7 +98,7 @@ export function AddPatientForm() {
   // Basic info
   const [name, setName] = useState('');
   const [gender, setGender] = useState('male');
-  const [ageCategory, setAgeCategory] = useState('adult');
+  const [ageCategory, setAgeCategory] = useState('elderly');
   const [phone, setPhone] = useState('');
   const [bloodType, setBloodType] = useState('');
 
@@ -209,7 +209,7 @@ export function AddPatientForm() {
           phone,
           bloodType: bloodType || undefined,
           complaints: selectedComplaints,
-          age: ageCategory === 'infant' ? 1 : ageCategory === 'child' ? 8 : 30,
+          age: ageCategory === 'elderly' ? 65 : ageCategory === 'child' ? 8 : 30,
         }),
       });
 

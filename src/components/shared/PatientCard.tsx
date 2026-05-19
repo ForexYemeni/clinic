@@ -49,7 +49,7 @@ export function PatientCard({ patient, onClick }: PatientCardProps) {
             )}
           </div>
           <div className="flex items-center gap-3 text-sm text-muted-foreground">
-            <span>{patient.ageCategory === 'infant' ? 'رضيع' : patient.ageCategory === 'child' ? 'طفل' : patient.age ? `${patient.age} سنة` : 'بالغ'}</span>
+            <span>{patient.ageCategory === 'elderly' || patient.ageCategory === 'infant' ? 'كبير' : patient.ageCategory === 'child' ? 'طفل' : patient.ageCategory === 'adult' ? 'بالغ' : patient.age ? `${patient.age} سنة` : 'بالغ'}</span>
             <span>•</span>
             <span>{patient.gender === 'male' ? 'ذكر' : 'أنثى'}</span>
           </div>

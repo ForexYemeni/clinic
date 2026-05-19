@@ -15,6 +15,9 @@ function buildUrlWithClinicContext(url: string): string {
   const state = useAppStore.getState();
   const user = state.user;
 
+  // Skip clinicId injection for super-admin routes (they have their own clinic ID in the URL path)
+  if (url.startsWith('/api/super-admin/')) return url;
+
   // Only for super_admin who has selected a specific clinic to view
   if (user?.role === 'super_admin' && state.selectedClinicId) {
     const separator = url.includes('?') ? '&' : '?';
@@ -84,9 +87,12 @@ export function installGlobalApiFetch() {
         headers['Content-Type'] = 'application/json';
       }
 
-      // Build URL with clinic context for super_admin
+      // Build URL with clinic context for super_admin (skip super-admin routes)
       let finalUrl = url;
-      if (state.user?.role === 'super_admin' && state.selectedClinicId) {
+      if (url.startsWith('/api/super-admin/')) {
+        // Super-admin routes have their own clinic ID in the URL path
+        finalUrl = url;
+      } else if (state.user?.role === 'super_admin' && state.selectedClinicId) {
         const separator = url.includes('?') ? '&' : '?';
         finalUrl = `${url}${separator}clinicId=${state.selectedClinicId}`;
       }

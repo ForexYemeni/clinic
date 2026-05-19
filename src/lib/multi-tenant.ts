@@ -164,7 +164,7 @@ export async function setClinicSubscription(
     type: options.type,
     startDate: options.extendFromExisting ? originalStartDate : now.toISOString(),
     endDate: options.type === 'lifetime' ? '9999-12-31T23:59:59.999Z' : endDate.toISOString(),
-    trialDays: options.type === 'trial' ? days : undefined,
+    ...(options.type === 'trial' ? { trialDays: days } : {}),
   };
 
   await adminDb.collection('clinics').doc(clinicId).update({
@@ -225,7 +225,7 @@ export async function createClinic(data: {
       type: data.subscriptionType,
       startDate: now.toISOString(),
       endDate: data.subscriptionType === 'lifetime' ? '9999-12-31T23:59:59.999Z' : endDate.toISOString(),
-      trialDays: data.subscriptionType === 'trial' ? trialDays : undefined,
+      ...(data.subscriptionType === 'trial' ? { trialDays: trialDays } : {}),
     },
     ownerPhone: data.ownerPhone,
     active: true,

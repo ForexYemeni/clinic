@@ -50,6 +50,12 @@ const COMPLAINT_CATEGORIES = [
     items: ['ألم أذن', 'التهاب حلق', 'نزيف أنف', 'طنين أذن', 'صعوبة بلع'],
   },
   {
+    name: 'العين', icon: '👁️',
+    color: 'bg-indigo-50 text-indigo-700 border-indigo-200 dark:bg-indigo-900/20 dark:text-indigo-300 dark:border-indigo-800',
+    activeColor: 'bg-indigo-500 text-white border-indigo-500',
+    items: ['ألم عين', 'احمرار', 'رؤية ضبابية', 'دموع', 'حكة عين'],
+  },
+  {
     name: 'القلب والأوعية', icon: '❤️',
     color: 'bg-rose-50 text-rose-700 border-rose-200 dark:bg-rose-900/20 dark:text-rose-300 dark:border-rose-800',
     activeColor: 'bg-rose-500 text-white border-rose-500',
@@ -347,7 +353,7 @@ export function NurseAddVisit() {
                   <div>
                     <p className="font-medium text-sm">{patient.name}</p>
                     <p className="text-xs text-muted-foreground">
-                      {patient.ageCategory === 'infant' ? 'رضيع' : patient.ageCategory === 'child' ? 'طفل' : 'بالغ'}
+                      {patient.ageCategory === 'elderly' ? 'كبير' : patient.ageCategory === 'infant' ? 'كبير' : patient.ageCategory === 'child' ? 'طفل' : 'بالغ'}
                       {patient.gender ? ` - ${patient.gender === 'male' ? 'ذكر' : 'أنثى'}` : ''}
                       {patient.phone ? ` - ${patient.phone}` : ''}
                     </p>
