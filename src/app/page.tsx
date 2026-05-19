@@ -3,7 +3,7 @@
 import React, { useEffect, Suspense } from 'react';
 import dynamic from 'next/dynamic';
 import { motion, AnimatePresence } from 'framer-motion';
-import { Shield } from 'lucide-react';
+import { Shield, Building2, ScrollText, Settings } from 'lucide-react';
 import { useAppStore } from '@/lib/store';
 import { TopHeader } from '@/components/layout/TopHeader';
 import { BottomNav } from '@/components/layout/BottomNav';
@@ -42,6 +42,8 @@ const NurseMoreMenu = dynamic(() => import('@/components/screens/nurse/NurseMore
 
 // Lazy-loaded super admin screens
 const SuperAdminDashboard = dynamic(() => import('@/components/screens/SuperAdminDashboard').then(m => ({ default: m.SuperAdminDashboard })), { ssr: false });
+const SuperAdminClinicDetail = dynamic(() => import('@/components/screens/SuperAdminClinicDetail').then(m => ({ default: m.SuperAdminClinicDetail })), { ssr: false });
+const SuperAdminAuditLogs = dynamic(() => import('@/components/screens/SuperAdminAuditLogs').then(m => ({ default: m.SuperAdminAuditLogs })), { ssr: false });
 
 function ScreenFallback() {
   return (
@@ -55,21 +57,43 @@ function ScreenFallback() {
 
 // Super Admin bottom navigation
 function SuperAdminBottomNav() {
-  const { logout } = useAppStore();
+  const { currentScreen, setScreen, logout } = useAppStore();
+
+  const navItems = [
+    { screen: 'super-admin-dashboard' as ScreenType, icon: Shield, label: 'المنصة' },
+    { screen: 'super-admin-clinics' as ScreenType, icon: Building2, label: 'العيادات' },
+    { screen: 'super-admin-audit-logs' as ScreenType, icon: ScrollText, label: 'السجل' },
+    { screen: 'super-admin-settings' as ScreenType, icon: Settings, label: 'إعدادات' },
+  ];
+
+  const isActive = (screen: ScreenType) => {
+    if (screen === 'super-admin-dashboard') {
+      return currentScreen === 'super-admin-dashboard';
+    }
+    return currentScreen === screen;
+  };
 
   return (
     <nav className="fixed bottom-0 left-0 right-0 z-40 glass-nav border-t border-border pb-safe">
       <div className="flex items-center justify-around h-16 max-w-lg mx-auto">
-        <div className="flex flex-col items-center justify-center py-1 px-3 rounded-xl text-purple-600 dark:text-purple-400">
-          <div className="p-1.5 rounded-xl bg-purple-50 dark:bg-purple-900/30 scale-110">
-            <Shield className="w-5 h-5" />
-          </div>
-          <span className="text-[10px] mt-0.5 font-bold">المنصة</span>
-        </div>
-
+        {navItems.map((item) => {
+          const active = isActive(item.screen);
+          return (
+            <button
+              key={item.screen}
+              onClick={() => setScreen(item.screen)}
+              className="flex flex-col items-center justify-center py-1 px-2 rounded-xl touch-feedback"
+            >
+              <div className={`p-1.5 rounded-xl transition-all ${active ? 'bg-purple-50 dark:bg-purple-900/30 scale-110' : ''}`}>
+                <item.icon className={`w-5 h-5 transition-colors ${active ? 'text-purple-600 dark:text-purple-400' : 'text-muted-foreground'}`} />
+              </div>
+              <span className={`text-[10px] mt-0.5 transition-colors ${active ? 'font-bold text-purple-600 dark:text-purple-400' : 'text-muted-foreground'}`}>{item.label}</span>
+            </button>
+          );
+        })}
         <button
           onClick={logout}
-          className="flex flex-col items-center justify-center py-1 px-3 rounded-xl text-muted-foreground touch-feedback"
+          className="flex flex-col items-center justify-center py-1 px-2 rounded-xl text-muted-foreground touch-feedback"
         >
           <div className="p-1.5 rounded-xl">
             <svg xmlns="http://www.w3.org/2000/svg" className="w-5 h-5" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
@@ -125,6 +149,26 @@ export default function ClinicApp() {
 
   // Super Admin screens
   if (isSuperAdmin) {
+    const renderSuperAdminScreen = () => {
+      switch (currentScreen) {
+        case 'super-admin-clinic-detail':
+          return <SuperAdminClinicDetail />;
+        case 'super-admin-audit-logs':
+          return <SuperAdminAuditLogs />;
+        case 'super-admin-clinics':
+          return <SuperAdminDashboard initialTab="clinics" />;
+        case 'super-admin-add-clinic':
+          return <SuperAdminDashboard initialTab="add" />;
+        case 'super-admin-firebase-config':
+          return <SuperAdminDashboard initialTab="firebase" />;
+        case 'super-admin-settings':
+          return <SuperAdminDashboard initialTab="settings" />;
+        case 'super-admin-dashboard':
+        default:
+          return <SuperAdminDashboard initialTab="dashboard" />;
+      }
+    };
+
     return (
       <div className="min-h-screen bg-background max-w-lg mx-auto relative">
         <ThemeUpdater />
@@ -132,7 +176,7 @@ export default function ClinicApp() {
           <AnimatePresence mode="wait">
             <motion.div key={currentScreen} initial={{ opacity: 0, y: 4 }} animate={{ opacity: 1, y: 0 }} exit={{ opacity: 0, y: -4 }} transition={{ duration: 0.18, ease: 'easeOut' }}>
               <Suspense fallback={<ScreenFallback />}>
-                <SuperAdminDashboard />
+                {renderSuperAdminScreen()}
               </Suspense>
             </motion.div>
           </AnimatePresence>

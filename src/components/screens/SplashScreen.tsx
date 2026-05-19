@@ -12,15 +12,73 @@ export function SplashScreen() {
 
   useEffect(() => {
     const checkSetup = async () => {
+      const savedToken = typeof window !== 'undefined' ? localStorage.getItem('clinic-token') : null;
+
+      // If we have a saved token, try to restore session
+      if (savedToken) {
+        try {
+          const res = await fetch('/api/auth', {
+            headers: { 'Authorization': `Bearer ${savedToken}` },
+          });
+          if (res.ok) {
+            const data = await res.json();
+            if (data.user) {
+              // Restore user session
+              useAppStore.getState().setUser(data.user);
+              if (data.subscription) {
+                useAppStore.getState().setSubscription(data.subscription);
+              }
+
+              // Load clinic settings
+              try {
+                const cRes = await fetch('/api/clinic', {
+                  headers: { 'Authorization': `Bearer ${savedToken}` },
+                });
+                if (cRes.ok) {
+                  const cData = await cRes.json();
+                  useAppStore.getState().setClinicSettings({
+                    name: cData.name || 'عيادتي',
+                    description: cData.description || '',
+                    phone: cData.phone || '',
+                    address: cData.address || '',
+                    logo: cData.logo || '',
+                    primaryColor: cData.primaryColor || 'emerald',
+                  });
+                }
+              } catch {}
+
+              // Route based on role
+              if (data.user.role === 'super_admin') {
+                useAppStore.getState().setScreen('super-admin-dashboard');
+              } else if (!data.subscription?.valid) {
+                useAppStore.getState().setScreen('subscription-expired');
+              } else if (data.user.role === 'admin') {
+                useAppStore.getState().setScreen('admin-dashboard');
+              } else {
+                useAppStore.getState().setScreen('nurse-patients');
+              }
+
+              setTimeout(() => setSplashDone(true), 1800);
+              return;
+            }
+          } else {
+            // Token is invalid, clear it
+            localStorage.removeItem('clinic-token');
+            useAppStore.getState().setToken(null);
+          }
+        } catch {
+          // Network error, continue with setup check
+        }
+      }
+
+      // No valid token - check if setup is needed
       try {
         const res = await fetch('/api/auth');
         if (res.ok) {
           const data = await res.json();
           if (data.setupNeeded) {
             setIsFirstSetup(true);
-            // Check if platform has been set up
             if (!data.platformSetup) {
-              // Need super admin setup first
               useAppStore.getState().setScreen('super-admin-setup');
             } else {
               useAppStore.getState().setScreen('admin-setup');

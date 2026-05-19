@@ -2,9 +2,9 @@
 
 import React, { useEffect, useState } from 'react';
 import { motion } from 'framer-motion';
-import { Shield, Building2, Users, Clock, CreditCard, AlertTriangle, Settings, Database, ChevronLeft, Plus, Search } from 'lucide-react';
+import { Shield, Building2, Users, Clock, CreditCard, AlertTriangle, Database, ChevronLeft, Plus, Search, Moon, Sun, Key, ScrollText, FileText, BarChart3 } from 'lucide-react';
 import { useAppStore } from '@/lib/store';
-import { apiGet, apiPost, apiPut, apiDelete } from '@/lib/api';
+import { apiGet, apiPost, apiPut } from '@/lib/api';
 import { toast } from 'sonner';
 import { formatCurrency, formatDate } from '@/lib/constants';
 
@@ -23,11 +23,19 @@ interface ClinicData {
   userCount: number;
   patientCount: number;
   createdAt: string;
+  primaryColor?: string;
+  logo?: string;
+  address?: string;
+  description?: string;
 }
 
-export function SuperAdminDashboard() {
-  const { setScreen, setSelectedClinicId } = useAppStore();
-  const [activeTab, setActiveTab] = useState<'dashboard' | 'clinics' | 'add' | 'firebase' | 'settings'>('dashboard');
+interface Props {
+  initialTab?: 'dashboard' | 'clinics' | 'add' | 'firebase' | 'settings';
+}
+
+export function SuperAdminDashboard({ initialTab = 'dashboard' }: Props) {
+  const { setScreen, setSelectedClinicId, theme, toggleTheme } = useAppStore();
+  const [activeTab, setActiveTab] = useState<'dashboard' | 'clinics' | 'add' | 'firebase' | 'settings'>(initialTab);
   const [clinics, setClinics] = useState<ClinicData[]>([]);
   const [loading, setLoading] = useState(true);
   const [searchQuery, setSearchQuery] = useState('');
@@ -47,6 +55,17 @@ export function SuperAdminDashboard() {
   const [firebaseClientEmail, setFirebaseClientEmail] = useState('');
   const [firebasePrivateKey, setFirebasePrivateKey] = useState('');
   const [savingFirebase, setSavingFirebase] = useState(false);
+
+  // Password change state
+  const [currentPassword, setCurrentPassword] = useState('');
+  const [newPassword, setNewPassword] = useState('');
+  const [confirmNewPassword, setConfirmNewPassword] = useState('');
+  const [changingPassword, setChangingPassword] = useState(false);
+
+  // Sync tab with initialTab prop
+  useEffect(() => {
+    setActiveTab(initialTab);
+  }, [initialTab]);
 
   const loadClinics = async () => {
     try {
@@ -116,17 +135,6 @@ export function SuperAdminDashboard() {
     }
   };
 
-  const handleDeleteClinic = async (clinicId: string, clinicName: string) => {
-    if (!confirm(`هل أنت متأكد من حذف عيادة "${clinicName}"؟ سيتم حذف جميع البيانات نهائياً!`)) return;
-    try {
-      await apiDelete(`/api/super-admin/clinics/${clinicId}`);
-      toast.success('تم حذف العيادة');
-      loadClinics();
-    } catch (err: any) {
-      toast.error(err.message || 'خطأ');
-    }
-  };
-
   const handleSaveFirebase = async (e: React.FormEvent) => {
     e.preventDefault();
     setSavingFirebase(true);
@@ -141,6 +149,28 @@ export function SuperAdminDashboard() {
       toast.error(err.message || 'خطأ في تحديث Firebase');
     } finally {
       setSavingFirebase(false);
+    }
+  };
+
+  const handleChangePassword = async (e: React.FormEvent) => {
+    e.preventDefault();
+    if (newPassword !== confirmNewPassword) {
+      toast.error('كلمات المرور غير متطابقة');
+      return;
+    }
+    if (newPassword.length < 6) {
+      toast.error('كلمة المرور يجب أن تكون 6 أحرف على الأقل');
+      return;
+    }
+    setChangingPassword(true);
+    try {
+      await apiPut('/api/users/me', { currentPassword, newPassword });
+      toast.success('تم تغيير كلمة المرور بنجاح');
+      setCurrentPassword(''); setNewPassword(''); setConfirmNewPassword('');
+    } catch (err: any) {
+      toast.error(err.message || 'خطأ في تغيير كلمة المرور');
+    } finally {
+      setChangingPassword(false);
     }
   };
 
@@ -172,8 +202,9 @@ export function SuperAdminDashboard() {
   const totalClinics = clinics.length;
   const activeClinics = clinics.filter(c => c.subscription?.status === 'active' || c.subscription?.status === 'trial').length;
   const expiredClinics = clinics.filter(c => c.subscription?.status === 'expired').length;
+  const totalPatients = clinics.reduce((sum, c) => sum + (c.patientCount || 0), 0);
 
-  // Dashboard Tab
+  // ═══ DASHBOARD TAB ═══
   if (activeTab === 'dashboard') {
     return (
       <div className="p-4 space-y-4 pb-20">
@@ -206,29 +237,36 @@ export function SuperAdminDashboard() {
           </div>
           <div className="bg-gradient-to-br from-blue-500 to-blue-600 rounded-2xl p-4 text-white">
             <CreditCard className="w-6 h-6 mb-2 opacity-80" />
-            <p className="text-2xl font-bold">{clinics.filter(c => c.subscription?.type === 'trial').length}</p>
-            <p className="text-xs opacity-80">فترة تجريبية</p>
+            <p className="text-2xl font-bold">{totalPatients}</p>
+            <p className="text-xs opacity-80">إجمالي المرضى</p>
           </div>
         </div>
 
         {/* Quick Actions */}
         <div className="space-y-2">
           <h3 className="text-sm font-bold text-muted-foreground">إجراءات سريعة</h3>
-          <button onClick={() => setActiveTab('add')} className="w-full flex items-center gap-3 p-3 bg-purple-50 dark:bg-purple-900/20 rounded-xl text-purple-700 dark:text-purple-300 touch-feedback">
+          <button onClick={() => setScreen('super-admin-add-clinic')} className="w-full flex items-center gap-3 p-3 bg-purple-50 dark:bg-purple-900/20 rounded-xl text-purple-700 dark:text-purple-300 touch-feedback">
             <Plus className="w-5 h-5" />
             <div className="text-right">
               <p className="text-sm font-bold">إضافة عيادة جديدة</p>
               <p className="text-xs opacity-70">إنشاء عيادة بفترة تجريبية</p>
             </div>
           </button>
-          <button onClick={() => setActiveTab('clinics')} className="w-full flex items-center gap-3 p-3 bg-blue-50 dark:bg-blue-900/20 rounded-xl text-blue-700 dark:text-blue-300 touch-feedback">
+          <button onClick={() => setScreen('super-admin-clinics')} className="w-full flex items-center gap-3 p-3 bg-blue-50 dark:bg-blue-900/20 rounded-xl text-blue-700 dark:text-blue-300 touch-feedback">
             <Building2 className="w-5 h-5" />
             <div className="text-right">
               <p className="text-sm font-bold">إدارة العيادات</p>
               <p className="text-xs opacity-70">عرض وتعديل وحذف العيادات</p>
             </div>
           </button>
-          <button onClick={() => setActiveTab('firebase')} className="w-full flex items-center gap-3 p-3 bg-orange-50 dark:bg-orange-900/20 rounded-xl text-orange-700 dark:text-orange-300 touch-feedback">
+          <button onClick={() => setScreen('super-admin-audit-logs')} className="w-full flex items-center gap-3 p-3 bg-amber-50 dark:bg-amber-900/20 rounded-xl text-amber-700 dark:text-amber-300 touch-feedback">
+            <ScrollText className="w-5 h-5" />
+            <div className="text-right">
+              <p className="text-sm font-bold">سجل المراجعة</p>
+              <p className="text-xs opacity-70">تتبع جميع العمليات والإجراءات</p>
+            </div>
+          </button>
+          <button onClick={() => setScreen('super-admin-firebase-config')} className="w-full flex items-center gap-3 p-3 bg-orange-50 dark:bg-orange-900/20 rounded-xl text-orange-700 dark:text-orange-300 touch-feedback">
             <Database className="w-5 h-5" />
             <div className="text-right">
               <p className="text-sm font-bold">إعدادات Firebase</p>
@@ -237,37 +275,79 @@ export function SuperAdminDashboard() {
           </button>
         </div>
 
+        {/* Subscription Summary */}
+        <div className="space-y-2">
+          <h3 className="text-sm font-bold text-muted-foreground">ملخص الاشتراكات</h3>
+          <div className="bg-white dark:bg-gray-800 rounded-2xl border border-border p-4 space-y-3">
+            <div className="flex items-center justify-between">
+              <span className="text-xs text-muted-foreground">فترة تجريبية</span>
+              <span className="text-sm font-bold text-blue-600 dark:text-blue-400">{clinics.filter(c => c.subscription?.type === 'trial').length}</span>
+            </div>
+            <div className="flex items-center justify-between">
+              <span className="text-xs text-muted-foreground">اشتراك نشط</span>
+              <span className="text-sm font-bold text-green-600 dark:text-green-400">{clinics.filter(c => c.subscription?.status === 'active' && c.subscription?.type !== 'trial').length}</span>
+            </div>
+            <div className="flex items-center justify-between">
+              <span className="text-xs text-muted-foreground">موقوفة</span>
+              <span className="text-sm font-bold text-yellow-600 dark:text-yellow-400">{clinics.filter(c => c.subscription?.status === 'suspended').length}</span>
+            </div>
+            <div className="flex items-center justify-between">
+              <span className="text-xs text-muted-foreground">منتهية</span>
+              <span className="text-sm font-bold text-red-600 dark:text-red-400">{expiredClinics}</span>
+            </div>
+          </div>
+        </div>
+
         {/* Recent Clinics */}
         <div className="space-y-2">
           <h3 className="text-sm font-bold text-muted-foreground">آخر العيادات</h3>
           {clinics.slice(0, 5).map(clinic => (
-            <div key={clinic.id} className="flex items-center justify-between p-3 bg-white dark:bg-gray-800 rounded-xl border border-border">
-              <div>
-                <p className="text-sm font-bold">{clinic.name}</p>
-                <p className="text-xs text-muted-foreground">{formatDate(clinic.createdAt)}</p>
+            <div key={clinic.id} onClick={() => { setSelectedClinicId(clinic.id); setScreen('super-admin-clinic-detail'); }} className="flex items-center justify-between p-3 bg-white dark:bg-gray-800 rounded-xl border border-border cursor-pointer active:scale-[0.98] transition-transform">
+              <div className="flex items-center gap-3">
+                <div className="w-9 h-9 rounded-xl bg-gradient-to-br from-purple-100 to-purple-200 dark:from-purple-900/30 dark:to-purple-800/30 flex items-center justify-center">
+                  {clinic.logo ? (
+                    <img src={clinic.logo} alt="" className="w-6 h-6 object-contain rounded" />
+                  ) : (
+                    <Building2 className="w-4 h-4 text-purple-600 dark:text-purple-400" />
+                  )}
+                </div>
+                <div>
+                  <p className="text-sm font-bold">{clinic.name}</p>
+                  <p className="text-xs text-muted-foreground">{formatDate(clinic.createdAt)}</p>
+                </div>
               </div>
               <span className={`text-[10px] px-2 py-1 rounded-full ${statusColor(clinic.subscription?.status || 'expired')}`}>
                 {statusLabel(clinic.subscription?.status || 'expired')}
               </span>
             </div>
           ))}
+          {clinics.length === 0 && !loading && (
+            <div className="text-center py-8 text-muted-foreground">
+              <Building2 className="w-10 h-10 mx-auto mb-2 opacity-30" />
+              <p className="text-sm">لا توجد عيادات بعد</p>
+              <button onClick={() => setScreen('super-admin-add-clinic')} className="text-purple-600 text-sm font-bold mt-2">إضافة عيادة جديدة</button>
+            </div>
+          )}
         </div>
       </div>
     );
   }
 
-  // Clinics List Tab
+  // ═══ CLINICS LIST TAB ═══
   if (activeTab === 'clinics') {
     return (
       <div className="p-4 space-y-4 pb-20">
         <div className="flex items-center gap-3 mb-2">
-          <button onClick={() => setActiveTab('dashboard')} className="h-9 w-9 rounded-xl flex items-center justify-center hover:bg-gray-100 dark:hover:bg-gray-800">
+          <button onClick={() => setScreen('super-admin-dashboard')} className="h-9 w-9 rounded-xl flex items-center justify-center hover:bg-gray-100 dark:hover:bg-gray-800">
             <ChevronLeft className="w-5 h-5 rotate-180" />
           </button>
-          <div>
+          <div className="flex-1">
             <h2 className="text-lg font-bold">إدارة العيادات</h2>
             <p className="text-xs text-muted-foreground">{filteredClinics.length} عيادة</p>
           </div>
+          <button onClick={() => setScreen('super-admin-add-clinic')} className="h-9 w-9 rounded-xl bg-purple-100 dark:bg-purple-900/30 flex items-center justify-center text-purple-600 dark:text-purple-400">
+            <Plus className="w-5 h-5" />
+          </button>
         </div>
 
         {/* Search */}
@@ -300,9 +380,18 @@ export function SuperAdminDashboard() {
                   className="bg-white dark:bg-gray-800 rounded-2xl border border-border p-4 space-y-3"
                 >
                   <div className="flex items-start justify-between">
-                    <div>
-                      <h3 className="font-bold">{clinic.name}</h3>
-                      <p className="text-xs text-muted-foreground mt-0.5">{clinic.phone} • {clinic.userCount} مستخدم • {clinic.patientCount} مريض</p>
+                    <div className="flex items-center gap-3">
+                      <div className="w-10 h-10 rounded-xl bg-gradient-to-br from-purple-100 to-purple-200 dark:from-purple-900/30 dark:to-purple-800/30 flex items-center justify-center">
+                        {clinic.logo ? (
+                          <img src={clinic.logo} alt="" className="w-7 h-7 object-contain rounded" />
+                        ) : (
+                          <Building2 className="w-5 h-5 text-purple-600 dark:text-purple-400" />
+                        )}
+                      </div>
+                      <div>
+                        <h3 className="font-bold">{clinic.name}</h3>
+                        <p className="text-xs text-muted-foreground mt-0.5">{clinic.phone} • {clinic.userCount} مستخدم • {clinic.patientCount} مريض</p>
+                      </div>
                     </div>
                     <span className={`text-[10px] px-2 py-1 rounded-full ${statusColor(clinic.subscription?.status || 'expired')}`}>
                       {statusLabel(clinic.subscription?.status || 'expired')}
@@ -313,7 +402,7 @@ export function SuperAdminDashboard() {
                   <div className="flex items-center gap-4 text-xs text-muted-foreground">
                     <div className="flex items-center gap-1">
                       <Clock className="w-3 h-3" />
-                      <span>{clinic.subscription?.type === 'trial' ? 'تجريبي' : clinic.subscription?.type === 'lifetime' ? 'مدى الحياة' : 'اشتراك'}</span>
+                      <span>{clinic.subscription?.type === 'trial' ? 'تجريبي' : clinic.subscription?.type === 'lifetime' ? 'مدى الحياة' : clinic.subscription?.type === 'yearly' ? 'سنوي' : 'شهري'}</span>
                     </div>
                     {endDate && clinic.subscription?.type !== 'lifetime' && (
                       <div className={daysRemaining <= 7 ? 'text-red-500 font-bold' : ''}>
@@ -351,26 +440,28 @@ export function SuperAdminDashboard() {
                       className="text-xs px-3 py-1.5 bg-blue-50 dark:bg-blue-900/20 text-blue-700 dark:text-blue-300 rounded-lg font-bold touch-feedback">
                       تمديد 30 يوم
                     </button>
-                    <button onClick={() => handleDeleteClinic(clinic.id, clinic.name)}
-                      className="text-xs px-3 py-1.5 bg-red-50 dark:bg-red-900/20 text-red-700 dark:text-red-300 rounded-lg font-bold touch-feedback">
-                      حذف
-                    </button>
                   </div>
                 </motion.div>
               );
             })}
+            {filteredClinics.length === 0 && !loading && (
+              <div className="text-center py-8 text-muted-foreground">
+                <Building2 className="w-10 h-10 mx-auto mb-2 opacity-30" />
+                <p className="text-sm">لا توجد نتائج</p>
+              </div>
+            )}
           </div>
         )}
       </div>
     );
   }
 
-  // Add Clinic Tab
+  // ═══ ADD CLINIC TAB ═══
   if (activeTab === 'add') {
     return (
       <div className="p-4 space-y-4 pb-20">
         <div className="flex items-center gap-3 mb-2">
-          <button onClick={() => setActiveTab('dashboard')} className="h-9 w-9 rounded-xl flex items-center justify-center hover:bg-gray-100 dark:hover:bg-gray-800">
+          <button onClick={() => setScreen('super-admin-clinics')} className="h-9 w-9 rounded-xl flex items-center justify-center hover:bg-gray-100 dark:hover:bg-gray-800">
             <ChevronLeft className="w-5 h-5 rotate-180" />
           </button>
           <h2 className="text-lg font-bold">إضافة عيادة جديدة</h2>
@@ -382,7 +473,7 @@ export function SuperAdminDashboard() {
           </div>
 
           <div className="space-y-2">
-            <label className="text-sm font-medium">اسم العيادة</label>
+            <label className="text-sm font-medium">اسم العيادة *</label>
             <input type="text" value={newClinicName} onChange={(e) => setNewClinicName(e.target.value)} placeholder="اسم العيادة"
               className="w-full h-12 px-4 bg-white dark:bg-gray-800 border border-border rounded-xl text-base focus:outline-none focus:ring-2 focus:ring-purple-500" required />
           </div>
@@ -404,30 +495,32 @@ export function SuperAdminDashboard() {
             </select>
           </div>
 
-          <div className="space-y-2">
-            <label className="text-sm font-medium">مدة الفترة التجريبية (أيام)</label>
-            <select value={trialDays} onChange={(e) => setTrialDays(Number(e.target.value))}
-              className="w-full h-12 px-4 bg-white dark:bg-gray-800 border border-border rounded-xl text-base focus:outline-none focus:ring-2 focus:ring-purple-500">
-              <option value={7}>7 أيام</option>
-              <option value={14}>14 يوم</option>
-              <option value={30}>30 يوم</option>
-              <option value={60}>60 يوم</option>
-              <option value={90}>90 يوم</option>
-            </select>
-          </div>
+          {subType === 'trial' && (
+            <div className="space-y-2">
+              <label className="text-sm font-medium">مدة الفترة التجريبية (أيام)</label>
+              <select value={trialDays} onChange={(e) => setTrialDays(Number(e.target.value))}
+                className="w-full h-12 px-4 bg-white dark:bg-gray-800 border border-border rounded-xl text-base focus:outline-none focus:ring-2 focus:ring-purple-500">
+                <option value={7}>7 أيام</option>
+                <option value={14}>14 يوم</option>
+                <option value={30}>30 يوم</option>
+                <option value={60}>60 يوم</option>
+                <option value={90}>90 يوم</option>
+              </select>
+            </div>
+          )}
 
           <div className="p-4 bg-blue-50 dark:bg-blue-900/20 rounded-xl">
             <h3 className="text-sm font-bold text-blue-800 dark:text-blue-300 mb-1">معلومات مدير العيادة</h3>
           </div>
 
           <div className="space-y-2">
-            <label className="text-sm font-medium">اسم المدير</label>
+            <label className="text-sm font-medium">اسم المدير *</label>
             <input type="text" value={newAdminName} onChange={(e) => setNewAdminName(e.target.value)} placeholder="الاسم الكامل"
               className="w-full h-12 px-4 bg-white dark:bg-gray-800 border border-border rounded-xl text-base focus:outline-none focus:ring-2 focus:ring-purple-500" />
           </div>
 
           <div className="space-y-2">
-            <label className="text-sm font-medium">رقم هاتف المدير</label>
+            <label className="text-sm font-medium">رقم هاتف المدير *</label>
             <input type="tel" value={newAdminPhone} onChange={(e) => setNewAdminPhone(e.target.value.replace(/\D/g, '').slice(0, 9))} placeholder="7XXXXXXXX"
               className="w-full h-12 px-4 bg-white dark:bg-gray-800 border border-border rounded-xl text-base font-mono focus:outline-none focus:ring-2 focus:ring-purple-500" dir="ltr" inputMode="numeric" />
           </div>
@@ -446,12 +539,12 @@ export function SuperAdminDashboard() {
     );
   }
 
-  // Firebase Config Tab
+  // ═══ FIREBASE CONFIG TAB ═══
   if (activeTab === 'firebase') {
     return (
       <div className="p-4 space-y-4 pb-20">
         <div className="flex items-center gap-3 mb-2">
-          <button onClick={() => setActiveTab('dashboard')} className="h-9 w-9 rounded-xl flex items-center justify-center hover:bg-gray-100 dark:hover:bg-gray-800">
+          <button onClick={() => setScreen('super-admin-settings')} className="h-9 w-9 rounded-xl flex items-center justify-center hover:bg-gray-100 dark:hover:bg-gray-800">
             <ChevronLeft className="w-5 h-5 rotate-180" />
           </button>
           <div>
@@ -462,7 +555,7 @@ export function SuperAdminDashboard() {
 
         <div className="p-4 bg-orange-50 dark:bg-orange-900/20 rounded-xl">
           <p className="text-xs text-orange-700 dark:text-orange-300">
-            ⚠️ تغيير إعدادات Firebase سيؤثر على اتصال التطبيق بقاعدة البيانات. تأكد من صحة البيانات قبل الحفظ.
+            تحذير: تغيير إعدادات Firebase سيؤثر على اتصال التطبيق بقاعدة البيانات. تأكد من صحة البيانات قبل الحفظ.
           </p>
         </div>
 
@@ -489,6 +582,113 @@ export function SuperAdminDashboard() {
             {savingFirebase ? <div className="w-6 h-6 border-2 border-white/30 border-t-white rounded-full animate-spin mx-auto" /> : 'حفظ إعدادات Firebase'}
           </button>
         </form>
+      </div>
+    );
+  }
+
+  // ═══ SETTINGS TAB ═══
+  if (activeTab === 'settings') {
+    return (
+      <div className="p-4 space-y-4 pb-20">
+        <div className="flex items-center gap-3 mb-2">
+          <button onClick={() => setScreen('super-admin-dashboard')} className="h-9 w-9 rounded-xl flex items-center justify-center hover:bg-gray-100 dark:hover:bg-gray-800">
+            <ChevronLeft className="w-5 h-5 rotate-180" />
+          </button>
+          <h2 className="text-lg font-bold">إعدادات المنصة</h2>
+        </div>
+
+        {/* Appearance */}
+        <div className="bg-white dark:bg-gray-800 rounded-2xl border border-border overflow-hidden">
+          <div className="p-4 border-b border-border">
+            <h3 className="text-sm font-bold flex items-center gap-2">
+              <Moon className="w-4 h-4" />
+              المظهر
+            </h3>
+          </div>
+          <button onClick={toggleTheme} className="w-full flex items-center justify-between p-4 hover:bg-gray-50 dark:hover:bg-gray-700/50 transition-colors">
+            <div className="flex items-center gap-3">
+              {theme === 'light' ? <Sun className="w-5 h-5 text-amber-500" /> : <Moon className="w-5 h-5 text-blue-500" />}
+              <div className="text-right">
+                <p className="text-sm font-medium">الوضع</p>
+                <p className="text-xs text-muted-foreground">{theme === 'light' ? 'فاتح' : 'داكن'}</p>
+              </div>
+            </div>
+            <div className={`w-12 h-7 rounded-full transition-colors ${theme === 'dark' ? 'bg-purple-600' : 'bg-gray-200'} relative`}>
+              <div className={`absolute top-0.5 w-6 h-6 bg-white rounded-full shadow transition-transform ${theme === 'dark' ? 'translate-x-5.5 left-0' : 'left-0.5'}`} />
+            </div>
+          </button>
+        </div>
+
+        {/* Security */}
+        <div className="bg-white dark:bg-gray-800 rounded-2xl border border-border overflow-hidden">
+          <div className="p-4 border-b border-border">
+            <h3 className="text-sm font-bold flex items-center gap-2">
+              <Key className="w-4 h-4" />
+              الأمان
+            </h3>
+          </div>
+
+          <form onSubmit={handleChangePassword} className="p-4 space-y-3">
+            <div className="space-y-1">
+              <label className="text-xs font-medium text-muted-foreground">كلمة المرور الحالية</label>
+              <input type="password" value={currentPassword} onChange={(e) => setCurrentPassword(e.target.value)} placeholder="أدخل كلمة المرور الحالية"
+                className="w-full h-10 px-3 bg-gray-50 dark:bg-gray-700 border border-border rounded-xl text-sm focus:outline-none focus:ring-2 focus:ring-purple-500" required />
+            </div>
+            <div className="space-y-1">
+              <label className="text-xs font-medium text-muted-foreground">كلمة المرور الجديدة</label>
+              <input type="password" value={newPassword} onChange={(e) => setNewPassword(e.target.value)} placeholder="6 أحرف على الأقل"
+                className="w-full h-10 px-3 bg-gray-50 dark:bg-gray-700 border border-border rounded-xl text-sm focus:outline-none focus:ring-2 focus:ring-purple-500" required />
+            </div>
+            <div className="space-y-1">
+              <label className="text-xs font-medium text-muted-foreground">تأكيد كلمة المرور الجديدة</label>
+              <input type="password" value={confirmNewPassword} onChange={(e) => setConfirmNewPassword(e.target.value)} placeholder="أعد كتابة كلمة المرور"
+                className="w-full h-10 px-3 bg-gray-50 dark:bg-gray-700 border border-border rounded-xl text-sm focus:outline-none focus:ring-2 focus:ring-purple-500" required />
+            </div>
+            <button type="submit" disabled={changingPassword} className="w-full h-10 bg-purple-600 text-white text-sm font-bold rounded-xl disabled:opacity-60 active:scale-[0.98] transition-all">
+              {changingPassword ? 'جارٍ التغيير...' : 'تغيير كلمة المرور'}
+            </button>
+          </form>
+        </div>
+
+        {/* Platform */}
+        <div className="bg-white dark:bg-gray-800 rounded-2xl border border-border overflow-hidden">
+          <div className="p-4 border-b border-border">
+            <h3 className="text-sm font-bold flex items-center gap-2">
+              <Database className="w-4 h-4" />
+              قاعدة البيانات
+            </h3>
+          </div>
+          <button onClick={() => setScreen('super-admin-firebase-config')} className="w-full flex items-center justify-between p-4 hover:bg-gray-50 dark:hover:bg-gray-700/50 transition-colors">
+            <div className="flex items-center gap-3">
+              <Database className="w-5 h-5 text-orange-500" />
+              <div className="text-right">
+                <p className="text-sm font-medium">إعدادات Firebase</p>
+                <p className="text-xs text-muted-foreground">ربط قاعدة بيانات Firebase جديدة</p>
+              </div>
+            </div>
+            <ChevronLeft className="w-4 h-4 rotate-90 text-muted-foreground" />
+          </button>
+        </div>
+
+        {/* Reports */}
+        <div className="bg-white dark:bg-gray-800 rounded-2xl border border-border overflow-hidden">
+          <div className="p-4 border-b border-border">
+            <h3 className="text-sm font-bold flex items-center gap-2">
+              <BarChart3 className="w-4 h-4" />
+              التقارير
+            </h3>
+          </div>
+          <button onClick={() => setScreen('super-admin-audit-logs')} className="w-full flex items-center justify-between p-4 hover:bg-gray-50 dark:hover:bg-gray-700/50 transition-colors">
+            <div className="flex items-center gap-3">
+              <ScrollText className="w-5 h-5 text-amber-500" />
+              <div className="text-right">
+                <p className="text-sm font-medium">سجل المراجعة</p>
+                <p className="text-xs text-muted-foreground">عرض جميع العمليات والإجراءات</p>
+              </div>
+            </div>
+            <ChevronLeft className="w-4 h-4 rotate-90 text-muted-foreground" />
+          </button>
+        </div>
       </div>
     );
   }

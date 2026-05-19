@@ -177,8 +177,74 @@ export async function POST(request: NextRequest) {
   }
 }
 
-// GET: Check if setup is needed
-export async function GET() {
+// GET: Check if setup is needed OR validate existing token (session restore)
+export async function GET(request: NextRequest) {
+  // If Authorization header is present, validate token and restore session
+  const authHeader = request.headers.get('Authorization');
+  if (authHeader && authHeader.startsWith('Bearer ')) {
+    try {
+      const { verifyToken } = await import('@/lib/auth');
+      const token = authHeader.substring(7);
+      const authResult = verifyToken(token);
+
+      if (!authResult) {
+        return NextResponse.json({ error: 'جلسة منتهية' }, { status: 401 });
+      }
+
+      // Get user data from Firestore
+      const userDoc = await adminDb.collection('users').doc(authResult.userId).get();
+      if (!userDoc.exists) {
+        return NextResponse.json({ error: 'المستخدم غير موجود' }, { status: 401 });
+      }
+
+      const userData = userDoc.data();
+      if (!userData.active) {
+        return NextResponse.json({ error: 'الحساب معطل' }, { status: 403 });
+      }
+
+      // Check subscription for non-super_admin
+      let subscriptionValid = true;
+      let subscriptionStatus = 'active';
+      let subscriptionEndDate = '';
+      let daysRemaining = 0;
+      let clinicId = authResult.clinicId || userData.clinicId || null;
+      let clinicName = '';
+
+      if (authResult.role === 'super_admin') {
+        subscriptionValid = true;
+      } else if (clinicId) {
+        const subCheck = await checkClinicSubscription(clinicId);
+        subscriptionValid = subCheck.valid;
+        subscriptionStatus = subCheck.status;
+        subscriptionEndDate = subCheck.endDate;
+        daysRemaining = subCheck.daysRemaining;
+
+        const clinic = await getClinicById(clinicId);
+        if (clinic) clinicName = clinic.name;
+      }
+
+      return NextResponse.json({
+        user: {
+          id: userDoc.id,
+          name: userData.name || '',
+          phone: userData.phone || '',
+          role: userData.role || 'nurse',
+          active: userData.active !== false,
+          clinicId,
+        },
+        subscription: {
+          valid: subscriptionValid,
+          status: subscriptionStatus,
+          endDate: subscriptionEndDate,
+          daysRemaining,
+        },
+      });
+    } catch {
+      return NextResponse.json({ error: 'جلسة منتهية' }, { status: 401 });
+    }
+  }
+
+  // No token - check if setup is needed
   try {
     // Check if platform has been set up
     const platformConfig = await getPlatformConfig();
