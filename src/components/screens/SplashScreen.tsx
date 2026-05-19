@@ -2,7 +2,7 @@
 
 import React, { useEffect } from 'react';
 import { motion } from 'framer-motion';
-import { Heart } from 'lucide-react';
+import { Heart, Shield } from 'lucide-react';
 import { useAppStore } from '@/lib/store';
 
 export function SplashScreen() {
@@ -18,10 +18,17 @@ export function SplashScreen() {
           const data = await res.json();
           if (data.setupNeeded) {
             setIsFirstSetup(true);
-            useAppStore.getState().setScreen('admin-setup');
+            // Check if platform has been set up
+            if (!data.platformSetup) {
+              // Need super admin setup first
+              useAppStore.getState().setScreen('super-admin-setup');
+            } else {
+              useAppStore.getState().setScreen('admin-setup');
+            }
           }
         }
       } catch {}
+
       // Load clinic settings
       try {
         const cRes = await fetch('/api/clinic');
@@ -37,6 +44,7 @@ export function SplashScreen() {
           });
         }
       } catch {}
+
       setTimeout(() => setSplashDone(true), 1800);
     };
     checkSetup();
@@ -71,7 +79,7 @@ export function SplashScreen() {
         className="mt-8 text-center"
       >
         <h1 className="text-2xl font-bold text-white">{clinicName}</h1>
-        <p className="text-white/70 text-sm mt-2">إدارة طبية احترافية</p>
+        <p className="text-white/70 text-sm mt-2">منصة إدارة العيادات</p>
       </motion.div>
 
       <motion.div

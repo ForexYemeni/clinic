@@ -1,8 +1,15 @@
+// ═══════════════════════════════════════════════════════════
+// 🏗️ Clinic Setup API
+// First-time clinic admin setup (creates clinic in new multi-tenant system)
+// ═══════════════════════════════════════════════════════════
+
 import { adminDb } from '@/lib/firebase-admin';
 import { NextRequest, NextResponse } from 'next/server';
+import { hashPassword, generateToken, generateRecoveryCode } from '@/lib/auth';
+import { createClinic, setPlatformConfig, getPlatformConfig } from '@/lib/multi-tenant';
 import { DEFAULT_SERVICES } from '@/lib/services-data';
 
-// POST: First-time admin setup
+// POST: First-time clinic admin setup
 export async function POST(request: NextRequest) {
   try {
     const body = await request.json();
@@ -31,29 +38,60 @@ export async function POST(request: NextRequest) {
       );
     }
 
-    // Delete all seed/default data first
-    const collectionsToDelete = [
-      'users',
-      'patients',
-      'services',
-      'visits',
-      'invoices',
-      'emergencies',
-      'notifications',
-      'clinic',
-    ];
+    // Hash password
+    const hashedPassword = await hashPassword(password);
+    const recoveryCode = generateRecoveryCode();
 
-    for (const col of collectionsToDelete) {
-      const snapshot = await adminDb.collection(col).get();
-      if (!snapshot.empty) {
-        const batch = adminDb.batch();
-        snapshot.docs.forEach((doc) => batch.delete(doc.ref));
-        await batch.commit();
-      }
+    // Create clinic using multi-tenant system
+    const result = await createClinic({
+      name: clinicName,
+      phone: adminPhone,
+      ownerPhone: adminPhone,
+      subscriptionType: 'trial',
+      trialDays: 30,
+    });
+
+    const clinicId = result.clinicId;
+
+    // Create admin user linked to the clinic
+    const adminRef = await adminDb.collection('users').add({
+      name: adminName,
+      phone: adminPhone,
+      password: hashedPassword,
+      role: 'admin',
+      clinicId,
+      active: true,
+      recoveryCode,
+      createdAt: new Date().toISOString(),
+    });
+
+    // Mark clinic as setup complete
+    await adminDb.collection('clinics').doc(clinicId).update({
+      setupComplete: true,
+    });
+
+    // Seed default services for the clinic
+    const BATCH_LIMIT = 450;
+    const servicesWithClinicId = DEFAULT_SERVICES.map(s => ({
+      ...s,
+      clinicId,
+      active: true,
+      status: 'active',
+      createdAt: new Date().toISOString(),
+    }));
+
+    for (let i = 0; i < servicesWithClinicId.length; i += BATCH_LIMIT) {
+      const batch = adminDb.batch();
+      const chunk = servicesWithClinicId.slice(i, i + BATCH_LIMIT);
+      chunk.forEach(service => {
+        const ref = adminDb.collection('services').doc();
+        batch.set(ref, service);
+      });
+      await batch.commit();
     }
 
-    // Create clinic document
-    const clinicRef = await adminDb.collection('clinic').add({
+    // Also create a legacy clinic document for backward compatibility
+    await adminDb.collection('clinic').add({
       name: clinicName,
       description: '',
       phone: adminPhone,
@@ -61,33 +99,30 @@ export async function POST(request: NextRequest) {
       logo: '',
       primaryColor: 'emerald',
       adminPhone,
+      clinicId, // Link to new system
       setupComplete: true,
       createdAt: new Date().toISOString(),
     });
 
-    // Create admin user
-    const adminRef = await adminDb.collection('users').add({
-      name: adminName,
-      phone: adminPhone,
-      password,
-      role: 'admin',
-      active: true,
-      createdAt: new Date().toISOString(),
-    });
-
-    // Create default 14 services
-    const batch = adminDb.batch();
-    DEFAULT_SERVICES.forEach((service) => {
-      const ref = adminDb.collection('services').doc();
-      batch.set(ref, {
-        ...service,
-        createdAt: new Date().toISOString(),
+    // Ensure platform config is set up
+    const platformConfig = await getPlatformConfig();
+    if (!platformConfig?.superAdminCreated) {
+      await setPlatformConfig({
+        superAdminCreated: true,
+        version: '2.0.0',
+        defaultClinicId: clinicId,
       });
-    });
-    await batch.commit();
+    } else if (!platformConfig.defaultClinicId) {
+      await setPlatformConfig({ defaultClinicId: clinicId });
+    }
 
-    // Generate token
-    const token = Buffer.from(`${adminRef.id}:${Date.now()}`).toString('base64');
+    // Generate JWT token
+    const token = generateToken({
+      userId: adminRef.id,
+      role: 'admin',
+      clinicId,
+      clinicName,
+    });
 
     return NextResponse.json({
       success: true,
@@ -97,10 +132,12 @@ export async function POST(request: NextRequest) {
         phone: adminPhone,
         role: 'admin',
         active: true,
+        clinicId,
       },
       token,
+      recoveryCode,
       clinic: {
-        id: clinicRef.id,
+        id: clinicId,
         name: clinicName,
       },
     });

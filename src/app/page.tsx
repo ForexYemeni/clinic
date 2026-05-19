@@ -3,6 +3,7 @@
 import React, { useEffect, Suspense } from 'react';
 import dynamic from 'next/dynamic';
 import { motion, AnimatePresence } from 'framer-motion';
+import { Shield } from 'lucide-react';
 import { useAppStore } from '@/lib/store';
 import { TopHeader } from '@/components/layout/TopHeader';
 import { BottomNav } from '@/components/layout/BottomNav';
@@ -10,6 +11,8 @@ import { SplashScreen } from '@/components/screens/SplashScreen';
 import { LoginScreen } from '@/components/screens/LoginScreen';
 import { FirstSetupScreen } from '@/components/screens/FirstSetupScreen';
 import { ThemeUpdater } from '@/components/shared/ThemeUpdater';
+import { SubscriptionExpired } from '@/components/screens/SubscriptionExpired';
+import { SuperAdminSetup } from '@/components/screens/SuperAdminSetup';
 
 // Lazy-loaded admin screens
 const AdminDashboard = dynamic(() => import('@/components/screens/admin/AdminDashboard').then(m => ({ default: m.AdminDashboard })), { ssr: false });
@@ -37,6 +40,9 @@ const NurseChangePassword = dynamic(() => import('@/components/screens/nurse/Nur
 const NurseFinance = dynamic(() => import('@/components/screens/nurse/NurseFinance').then(m => ({ default: m.NurseFinance })), { ssr: false });
 const NurseMoreMenu = dynamic(() => import('@/components/screens/nurse/NurseMoreMenu').then(m => ({ default: m.NurseMoreMenu })), { ssr: false });
 
+// Lazy-loaded super admin screens
+const SuperAdminDashboard = dynamic(() => import('@/components/screens/SuperAdminDashboard').then(m => ({ default: m.SuperAdminDashboard })), { ssr: false });
+
 function ScreenFallback() {
   return (
     <div className="p-4 space-y-3">
@@ -47,14 +53,50 @@ function ScreenFallback() {
   );
 }
 
-export default function ClinicApp() {
-  const { currentScreen, isSplashDone, user, theme } = useAppStore();
+// Super Admin bottom navigation
+function SuperAdminBottomNav() {
+  const { logout } = useAppStore();
 
-  // Initialize theme from localStorage
+  return (
+    <nav className="fixed bottom-0 left-0 right-0 z-40 glass-nav border-t border-border pb-safe">
+      <div className="flex items-center justify-around h-16 max-w-lg mx-auto">
+        <div className="flex flex-col items-center justify-center py-1 px-3 rounded-xl text-purple-600 dark:text-purple-400">
+          <div className="p-1.5 rounded-xl bg-purple-50 dark:bg-purple-900/30 scale-110">
+            <Shield className="w-5 h-5" />
+          </div>
+          <span className="text-[10px] mt-0.5 font-bold">المنصة</span>
+        </div>
+
+        <button
+          onClick={logout}
+          className="flex flex-col items-center justify-center py-1 px-3 rounded-xl text-muted-foreground touch-feedback"
+        >
+          <div className="p-1.5 rounded-xl">
+            <svg xmlns="http://www.w3.org/2000/svg" className="w-5 h-5" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+              <path d="M9 21H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h4" />
+              <polyline points="16 17 21 12 16 7" />
+              <line x1="21" y1="12" x2="9" y2="12" />
+            </svg>
+          </div>
+          <span className="text-[10px] mt-0.5">خروج</span>
+        </button>
+      </div>
+    </nav>
+  );
+}
+
+export default function ClinicApp() {
+  const { currentScreen, isSplashDone, user, theme, subscription } = useAppStore();
+
+  // Initialize theme and token from localStorage
   useEffect(() => {
     const saved = localStorage.getItem('clinic-theme') as 'light' | 'dark' | null;
     if (saved) {
       useAppStore.getState().setTheme(saved);
+    }
+    const savedToken = localStorage.getItem('clinic-token');
+    if (savedToken) {
+      useAppStore.getState().setToken(savedToken);
     }
   }, []);
 
@@ -64,16 +106,45 @@ export default function ClinicApp() {
   // Show login if not authenticated
   if (!user) {
     if (currentScreen === 'admin-setup') return <FirstSetupScreen />;
+    if (currentScreen === 'super-admin-setup') return <SuperAdminSetup />;
     return <LoginScreen />;
   }
 
-  // Determine if we need the app shell (header + bottom nav)
-  const needsShell = !['splash', 'login', 'admin-setup'].includes(currentScreen);
+  // Check subscription for non-super_admin users
+  if (user.role !== 'super_admin' && !subscription.valid && currentScreen === 'subscription-expired') {
+    return <SubscriptionExpired />;
+  }
 
-  // Render current screen
+  // Auto-redirect if subscription expired
+  if (user.role !== 'super_admin' && !subscription.valid && currentScreen !== 'subscription-expired') {
+    return <SubscriptionExpired />;
+  }
+
+  const isSuperAdmin = user.role === 'super_admin';
+  const needsShell = !['splash', 'login', 'admin-setup', 'super-admin-setup', 'subscription-expired'].includes(currentScreen) && !isSuperAdmin;
+
+  // Super Admin screens
+  if (isSuperAdmin) {
+    return (
+      <div className="min-h-screen bg-background max-w-lg mx-auto relative">
+        <ThemeUpdater />
+        <main>
+          <AnimatePresence mode="wait">
+            <motion.div key={currentScreen} initial={{ opacity: 0, y: 4 }} animate={{ opacity: 1, y: 0 }} exit={{ opacity: 0, y: -4 }} transition={{ duration: 0.18, ease: 'easeOut' }}>
+              <Suspense fallback={<ScreenFallback />}>
+                <SuperAdminDashboard />
+              </Suspense>
+            </motion.div>
+          </AnimatePresence>
+        </main>
+        <SuperAdminBottomNav />
+      </div>
+    );
+  }
+
+  // Regular user screens
   const renderScreen = () => {
     switch (currentScreen) {
-      // Admin screens
       case 'admin-dashboard': return <AdminDashboard />;
       case 'admin-patients': return <PatientList role="admin" />;
       case 'admin-patient-detail': return <PatientDetail role="admin" />;
@@ -89,8 +160,6 @@ export default function ClinicApp() {
       case 'admin-reports': return <AdminReports />;
       case 'admin-clinic-settings': return <ClinicSettings />;
       case 'admin-system-reset': return <SystemReset />;
-
-      // Nurse screens (no dashboard, no appointments)
       case 'nurse-patients': return <PatientList role="nurse" />;
       case 'nurse-patient-detail': return <PatientDetail role="nurse" />;
       case 'nurse-add-visit': return <NurseAddVisit />;
@@ -100,7 +169,7 @@ export default function ClinicApp() {
       case 'nurse-change-password': return <NurseChangePassword />;
       case 'nurse-finance': return <NurseFinance />;
       case 'nurse-more': return <NurseMoreMenu />;
-
+      case 'subscription-expired': return <SubscriptionExpired />;
       default: return user?.role === 'admin' ? <AdminDashboard /> : <PatientList role="nurse" />;
     }
   };
@@ -111,13 +180,7 @@ export default function ClinicApp() {
       {needsShell && <TopHeader />}
       <main>
         <AnimatePresence mode="wait">
-          <motion.div
-            key={currentScreen}
-            initial={{ opacity: 0, y: 4 }}
-            animate={{ opacity: 1, y: 0 }}
-            exit={{ opacity: 0, y: -4 }}
-            transition={{ duration: 0.18, ease: 'easeOut' }}
-          >
+          <motion.div key={currentScreen} initial={{ opacity: 0, y: 4 }} animate={{ opacity: 1, y: 0 }} exit={{ opacity: 0, y: -4 }} transition={{ duration: 0.18, ease: 'easeOut' }}>
             <Suspense fallback={<ScreenFallback />}>
               {renderScreen()}
             </Suspense>

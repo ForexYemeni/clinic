@@ -5,9 +5,10 @@ import { motion } from 'framer-motion';
 import { Heart, Phone, Lock, Eye, EyeOff, AlertCircle } from 'lucide-react';
 import { useAppStore } from '@/lib/store';
 import { toast } from 'sonner';
+import { apiPost } from '@/lib/api';
 
 export function LoginScreen() {
-  const { setScreen, setUser, setIsFirstSetup, clinicName, clinicSettings } = useAppStore();
+  const { setScreen, setUser, setIsFirstSetup, clinicName, clinicSettings, setClinicId, setToken, setSubscription } = useAppStore();
   const logo = clinicSettings.logo;
   const [phone, setPhone] = useState('');
   const [password, setPassword] = useState('');
@@ -30,27 +31,22 @@ export function LoginScreen() {
 
     setLoading(true);
     try {
-      const res = await fetch('/api/auth', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ phone, password }),
-      });
-      const data = await res.json();
-
-      if (!res.ok) {
-        if (data.setupNeeded) {
-          setIsFirstSetup(true);
-          setScreen('admin-setup');
-          return;
-        }
-        setError(data.error || 'خطأ في تسجيل الدخول');
-        return;
-      }
+      const data = await apiPost('/api/auth', { phone, password });
 
       setUser(data.user);
+      setToken(data.token);
+      if (data.clinic?.id) setClinicId(data.clinic.id);
+
+      // Update subscription info
+      if (data.subscription) {
+        setSubscription(data.subscription);
+      }
+
       // Fetch and update clinic settings on login
       try {
-        const cRes = await fetch('/api/clinic');
+        const cRes = await fetch('/api/clinic', {
+          headers: { 'Authorization': `Bearer ${data.token}` },
+        });
         if (cRes.ok) {
           const cData = await cRes.json();
           useAppStore.getState().setClinicSettings({
@@ -64,14 +60,22 @@ export function LoginScreen() {
         }
       } catch {}
 
-      if (data.user.role === 'admin') {
+      // Route based on role and subscription
+      if (data.user.role === 'super_admin') {
+        setScreen('super-admin-dashboard');
+      } else if (data.subscriptionExpired) {
+        setScreen('subscription-expired');
+      } else if (!data.subscription?.valid) {
+        setScreen('subscription-expired');
+      } else if (data.user.role === 'admin') {
         setScreen('admin-dashboard');
       } else {
         setScreen('nurse-patients');
       }
+
       toast.success(`مرحباً ${data.user.name}`);
-    } catch {
-      setError('خطأ في الاتصال بالخادم');
+    } catch (err: any) {
+      setError(err.message || 'خطأ في تسجيل الدخول');
     } finally {
       setLoading(false);
     }
@@ -194,10 +198,6 @@ export function LoginScreen() {
             )}
           </button>
         </form>
-
-        <p className="text-center text-xs text-muted-foreground mt-6">
-          لأول مرة؟ سيتم إنشاء حساب الإدارة تلقائياً
-        </p>
       </motion.div>
     </div>
   );

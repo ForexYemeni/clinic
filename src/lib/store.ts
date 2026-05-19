@@ -1,20 +1,26 @@
 import { create } from 'zustand';
 
-export type ScreenType = 
-  | 'splash' | 'login' | 'admin-setup'
+export type ScreenType =
+  | 'splash' | 'login' | 'admin-setup' | 'super-admin-setup'
   | 'admin-dashboard' | 'admin-patients' | 'admin-services' | 'admin-emergencies' | 'admin-more'
   | 'admin-nurses' | 'admin-finance' | 'admin-reports' | 'admin-notifications' | 'admin-settings'
   | 'admin-patient-detail' | 'admin-add-patient' | 'admin-add-nurse' | 'admin-add-emergency'
   | 'admin-add-payment' | 'admin-add-service' | 'admin-clinic-settings' | 'admin-system-reset'
   | 'nurse-patients' | 'nurse-emergencies' | 'nurse-reports' | 'nurse-more' | 'nurse-finance'
-  | 'nurse-patient-detail' | 'nurse-add-emergency' | 'nurse-add-visit' | 'nurse-change-password';
+  | 'nurse-patient-detail' | 'nurse-add-emergency' | 'nurse-add-visit' | 'nurse-change-password'
+  | 'subscription-expired'
+  // Super Admin screens
+  | 'super-admin-dashboard' | 'super-admin-clinics' | 'super-admin-clinic-detail'
+  | 'super-admin-add-clinic' | 'super-admin-firebase-config' | 'super-admin-settings'
+  | 'super-admin-audit-logs';
 
 export interface User {
   id: string;
   name: string;
   phone: string;
-  role: 'admin' | 'nurse';
+  role: 'super_admin' | 'admin' | 'nurse';
   active: boolean;
+  clinicId?: string | null;
 }
 
 export interface ClinicSettings {
@@ -26,6 +32,13 @@ export interface ClinicSettings {
   primaryColor: string;
 }
 
+export interface SubscriptionInfo {
+  valid: boolean;
+  status: 'active' | 'trial' | 'expired' | 'suspended';
+  endDate: string;
+  daysRemaining: number;
+}
+
 interface AppState {
   currentScreen: ScreenType;
   user: User | null;
@@ -34,10 +47,14 @@ interface AppState {
   isFirstSetup: boolean;
   clinicName: string;
   clinicSettings: ClinicSettings;
+  clinicId: string | null;
+  token: string | null;
+  subscription: SubscriptionInfo;
   selectedPatientId: string | null;
   selectedEmergencyId: string | null;
+  selectedClinicId: string | null; // For super admin viewing clinic details
   searchQuery: string;
-  
+
   setScreen: (screen: ScreenType) => void;
   setUser: (user: User | null) => void;
   setTheme: (theme: 'light' | 'dark') => void;
@@ -46,8 +63,12 @@ interface AppState {
   setIsFirstSetup: (val: boolean) => void;
   setClinicName: (name: string) => void;
   setClinicSettings: (settings: Partial<ClinicSettings>) => void;
+  setClinicId: (id: string | null) => void;
+  setToken: (token: string | null) => void;
+  setSubscription: (sub: Partial<SubscriptionInfo>) => void;
   setSelectedPatientId: (id: string | null) => void;
   setSelectedEmergencyId: (id: string | null) => void;
+  setSelectedClinicId: (id: string | null) => void;
   setSearchQuery: (query: string) => void;
   logout: () => void;
 }
@@ -61,6 +82,13 @@ const DEFAULT_CLINIC_SETTINGS: ClinicSettings = {
   primaryColor: 'emerald',
 };
 
+const DEFAULT_SUBSCRIPTION: SubscriptionInfo = {
+  valid: true,
+  status: 'active',
+  endDate: '',
+  daysRemaining: 0,
+};
+
 export const useAppStore = create<AppState>((set) => ({
   currentScreen: 'splash',
   user: null,
@@ -69,8 +97,12 @@ export const useAppStore = create<AppState>((set) => ({
   isFirstSetup: false,
   clinicName: 'عيادتي',
   clinicSettings: DEFAULT_CLINIC_SETTINGS,
+  clinicId: null,
+  token: null,
+  subscription: DEFAULT_SUBSCRIPTION,
   selectedPatientId: null,
   selectedEmergencyId: null,
+  selectedClinicId: null,
   searchQuery: '',
 
   setScreen: (screen) => set({ currentScreen: screen }),
@@ -97,13 +129,34 @@ export const useAppStore = create<AppState>((set) => ({
     const newSettings = { ...state.clinicSettings, ...settings };
     return { clinicSettings: newSettings, clinicName: newSettings.name };
   }),
+  setClinicId: (id) => set({ clinicId: id }),
+  setToken: (token) => {
+    set({ token });
+    if (typeof window !== 'undefined') {
+      if (token) localStorage.setItem('clinic-token', token);
+      else localStorage.removeItem('clinic-token');
+    }
+  },
+  setSubscription: (sub) => set((state) => ({
+    subscription: { ...state.subscription, ...sub },
+  })),
   setSelectedPatientId: (id) => set({ selectedPatientId: id }),
   setSelectedEmergencyId: (id) => set({ selectedEmergencyId: id }),
+  setSelectedClinicId: (id) => set({ selectedClinicId: id }),
   setSearchQuery: (query) => set({ searchQuery: query }),
-  logout: () => set({ 
-    user: null, 
-    currentScreen: 'login',
-    selectedPatientId: null,
-    selectedEmergencyId: null,
-  }),
+  logout: () => {
+    if (typeof window !== 'undefined') {
+      localStorage.removeItem('clinic-token');
+    }
+    set({
+      user: null,
+      currentScreen: 'login',
+      selectedPatientId: null,
+      selectedEmergencyId: null,
+      selectedClinicId: null,
+      token: null,
+      clinicId: null,
+      subscription: DEFAULT_SUBSCRIPTION,
+    });
+  },
 }));
