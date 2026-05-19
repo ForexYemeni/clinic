@@ -42,6 +42,7 @@ export async function GET(request: NextRequest) {
           role: data.role,
           active: data.active !== false,
           clinicId: data.clinicId || null,
+          salary: data.salary || 0,
           createdAt: data.createdAt || '',
         };
       })
@@ -59,7 +60,7 @@ export async function POST(request: NextRequest) {
   try {
     const { auth, effectiveClinicId } = extractAuthAndClinicId(request);
     const body = await request.json();
-    const { name, phone, password } = body;
+    const { name, phone, password, salary } = body;
 
     if (!name || !phone) {
       return NextResponse.json({ error: 'يرجى إدخال اسم الممرض ورقم الهاتف' }, { status: 400 });
@@ -89,12 +90,13 @@ export async function POST(request: NextRequest) {
       role: 'nurse',
       clinicId: effectiveClinicId,
       active: true,
+      salary: Number(salary) || 0,
       createdAt: new Date().toISOString(),
     };
 
     const docRef = await adminDb.collection('users').add(nurseData);
 
-    return NextResponse.json({ id: docRef.id, name, phone, role: 'nurse', active: true, clinicId: effectiveClinicId }, { status: 201 });
+    return NextResponse.json({ id: docRef.id, name, phone, role: 'nurse', active: true, clinicId: effectiveClinicId, salary: nurseData.salary }, { status: 201 });
   } catch (error) {
     console.error('Create nurse error:', error);
     return NextResponse.json({ error: 'خطأ في إضافة الممرض' }, { status: 500 });

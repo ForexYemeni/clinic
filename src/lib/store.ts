@@ -6,8 +6,10 @@ export type ScreenType =
   | 'admin-nurses' | 'admin-finance' | 'admin-reports' | 'admin-notifications' | 'admin-settings'
   | 'admin-patient-detail' | 'admin-add-patient' | 'admin-add-nurse' | 'admin-add-emergency'
   | 'admin-add-payment' | 'admin-add-service' | 'admin-clinic-settings' | 'admin-system-reset'
+  | 'admin-nurse-salary'
   | 'nurse-patients' | 'nurse-emergencies' | 'nurse-reports' | 'nurse-more' | 'nurse-finance'
   | 'nurse-patient-detail' | 'nurse-add-emergency' | 'nurse-add-visit' | 'nurse-change-password'
+  | 'nurse-salary'
   | 'subscription-expired'
   // Super Admin screens
   | 'super-admin-dashboard' | 'super-admin-clinics' | 'super-admin-clinic-detail'
@@ -53,6 +55,7 @@ interface AppState {
   selectedPatientId: string | null;
   selectedEmergencyId: string | null;
   selectedClinicId: string | null; // For super admin viewing clinic details
+  selectedNurseId: string | null; // For admin viewing nurse salary details
   searchQuery: string;
 
   setScreen: (screen: ScreenType) => void;
@@ -69,6 +72,7 @@ interface AppState {
   setSelectedPatientId: (id: string | null) => void;
   setSelectedEmergencyId: (id: string | null) => void;
   setSelectedClinicId: (id: string | null) => void;
+  setSelectedNurseId: (id: string | null) => void;
   setSearchQuery: (query: string) => void;
   logout: () => void;
 }
@@ -103,6 +107,7 @@ export const useAppStore = create<AppState>((set) => ({
   selectedPatientId: null,
   selectedEmergencyId: null,
   selectedClinicId: null,
+  selectedNurseId: null,
   searchQuery: '',
 
   setScreen: (screen) => set({ currentScreen: screen }),
@@ -143,6 +148,7 @@ export const useAppStore = create<AppState>((set) => ({
   setSelectedPatientId: (id) => set({ selectedPatientId: id }),
   setSelectedEmergencyId: (id) => set({ selectedEmergencyId: id }),
   setSelectedClinicId: (id) => set({ selectedClinicId: id }),
+  setSelectedNurseId: (id) => set({ selectedNurseId: id }),
   setSearchQuery: (query) => set({ searchQuery: query }),
   logout: () => {
     if (typeof window !== 'undefined') {
@@ -154,6 +160,7 @@ export const useAppStore = create<AppState>((set) => ({
       selectedPatientId: null,
       selectedEmergencyId: null,
       selectedClinicId: null,
+      selectedNurseId: null,
       token: null,
       clinicId: null,
       subscription: DEFAULT_SUBSCRIPTION,

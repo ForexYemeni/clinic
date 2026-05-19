@@ -134,6 +134,7 @@ export function ServiceManagement() {
   // Confirm dialogs
   const [showReseedConfirm, setShowReseedConfirm] = useState(false);
   const [showResetConfirm, setShowResetConfirm] = useState(false);
+  const [deleteService, setDeleteService] = useState<ServiceItem | null>(null);
 
   // Ref for tabs scroll container
   const tabsRef = useRef<HTMLDivElement>(null);
@@ -287,12 +288,12 @@ export function ServiceManagement() {
   };
 
   // ─── Delete ────────────────────────────────────────────
-  const handleDelete = async (id: string, name: string) => {
-    if (!confirm(`هل تريد حذف خدمة "${name}"؟`)) return;
+  const handleDelete = async (id: string) => {
     try {
       const res = await fetch(`/api/services/${id}`, { method: 'DELETE' });
       if (res.ok) {
         toast.success('تم حذف الخدمة');
+        setDeleteService(null);
         fetchServices();
       }
     } catch {
@@ -593,6 +594,89 @@ export function ServiceManagement() {
         </AnimatePresence>
       </div>
 
+      {/* ═══════ Delete Service Confirmation Card ═══════ */}
+      <AnimatePresence>
+        {deleteService && (
+          <motion.div
+            initial={{ opacity: 0, scale: 0.95, y: -10 }}
+            animate={{ opacity: 1, scale: 1, y: 0 }}
+            exit={{ opacity: 0, scale: 0.95, y: -10 }}
+            className="mb-4 bg-gradient-to-br from-red-500 to-red-600 rounded-2xl p-4 shadow-lg shadow-red-500/20 relative overflow-hidden"
+          >
+            {/* Decorative */}
+            <div className="absolute -top-6 -left-6 w-20 h-20 bg-white/5 rounded-full" />
+
+            {/* Close button */}
+            <button
+              onClick={() => setDeleteService(null)}
+              className="absolute top-3 left-3 w-7 h-7 rounded-full bg-white/20 flex items-center justify-center z-10"
+            >
+              <X className="w-3.5 h-3.5 text-white" />
+            </button>
+
+            <div className="relative">
+              <div className="flex items-center gap-3 mb-3">
+                <div className="w-12 h-12 bg-white/20 rounded-xl flex items-center justify-center backdrop-blur-sm">
+                  <Trash2 className="w-6 h-6 text-white" />
+                </div>
+                <div>
+                  <p className="text-sm font-bold text-white">حذف الخدمة</p>
+                  <p className="text-[11px] text-white/80">{deleteService.nameAr}</p>
+                </div>
+              </div>
+
+              <div className="bg-white/10 rounded-xl p-3 mb-3 space-y-1.5">
+                <p className="text-xs text-white/90 leading-relaxed">
+                  سيتم حذف خدمة <span className="font-bold">{deleteService.nameAr}</span> نهائياً.
+                </p>
+                <p className="text-[10px] text-white/70">
+                  • لن تظهر الخدمة في الزيارات الجديدة
+                </p>
+                <p className="text-[10px] text-white/70">
+                  • الزيارات السابقة التي استخدمت هذه الخدمة ستبقى محفوظة
+                </p>
+                <p className="text-[10px] text-white/70">
+                  • لا يمكن التراجع عن هذا الإجراء
+                </p>
+              </div>
+
+              <div className="flex items-center justify-between mb-3 px-1">
+                <div className="text-center">
+                  <p className="text-[10px] text-white/60">السعر</p>
+                  <p className="text-sm font-bold text-white">{formatCurrency(deleteService.price)}</p>
+                </div>
+                <div className="w-px h-8 bg-white/20" />
+                <div className="text-center">
+                  <p className="text-[10px] text-white/60">المدة</p>
+                  <p className="text-sm font-bold text-white">{deleteService.duration} دقيقة</p>
+                </div>
+                <div className="w-px h-8 bg-white/20" />
+                <div className="text-center">
+                  <p className="text-[10px] text-white/60">الحالة</p>
+                  <p className="text-sm font-bold text-white">{deleteService.status === 'active' ? 'نشطة' : 'متوقفة'}</p>
+                </div>
+              </div>
+
+              <div className="flex gap-2">
+                <button
+                  onClick={() => handleDelete(deleteService.id)}
+                  className="flex-1 h-10 bg-white text-red-600 rounded-xl text-sm font-bold active:scale-[0.97] transition-transform shadow-sm flex items-center justify-center gap-1.5"
+                >
+                  <Trash2 className="w-4 h-4" />
+                  نعم، حذف نهائي
+                </button>
+                <button
+                  onClick={() => setDeleteService(null)}
+                  className="flex-1 h-10 bg-white/20 text-white rounded-xl text-sm font-medium backdrop-blur-sm active:scale-[0.97] transition-transform"
+                >
+                  إلغاء
+                </button>
+              </div>
+            </div>
+          </motion.div>
+        )}
+      </AnimatePresence>
+
       {/* ═══════ Search ═══════ */}
       <div className="relative mb-4">
         <Search className="absolute right-3 top-1/2 -translate-y-1/2 w-4 h-4 text-muted-foreground" />
@@ -835,7 +919,7 @@ export function ServiceManagement() {
                         )}
                       </button>
                       <button
-                        onClick={() => handleDelete(service.id, service.nameAr)}
+                        onClick={() => setDeleteService(service)}
                         className="p-1.5 rounded-lg hover:bg-red-50 dark:hover:bg-red-900/20 transition-colors"
                         title="حذف"
                       >

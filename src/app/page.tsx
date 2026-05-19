@@ -33,6 +33,7 @@ const AdminMoreMenu = dynamic(() => import('@/components/screens/admin/AdminMore
 const AdminReports = dynamic(() => import('@/components/screens/admin/AdminReports').then(m => ({ default: m.AdminReports })), { ssr: false });
 const ClinicSettings = dynamic(() => import('@/components/screens/admin/ClinicSettings').then(m => ({ default: m.ClinicSettings })), { ssr: false });
 const SystemReset = dynamic(() => import('@/components/screens/admin/SystemReset').then(m => ({ default: m.SystemReset })), { ssr: false });
+const AdminNurseSalary = dynamic(() => import('@/components/screens/admin/AdminNurseSalary').then(m => ({ default: m.AdminNurseSalary })), { ssr: false });
 
 // Lazy-loaded nurse screens
 const NurseAddVisit = dynamic(() => import('@/components/screens/nurse/NurseAddVisit').then(m => ({ default: m.NurseAddVisit })), { ssr: false });
@@ -42,6 +43,7 @@ const NurseAddCase = dynamic(() => import('@/components/screens/nurse/NurseAddCa
 const NurseChangePassword = dynamic(() => import('@/components/screens/nurse/NurseChangePassword').then(m => ({ default: m.NurseChangePassword })), { ssr: false });
 const NurseFinance = dynamic(() => import('@/components/screens/nurse/NurseFinance').then(m => ({ default: m.NurseFinance })), { ssr: false });
 const NurseMoreMenu = dynamic(() => import('@/components/screens/nurse/NurseMoreMenu').then(m => ({ default: m.NurseMoreMenu })), { ssr: false });
+const NurseSalary = dynamic(() => import('@/components/screens/nurse/NurseSalary').then(m => ({ default: m.NurseSalary })), { ssr: false });
 
 // Lazy-loaded super admin screens
 const SuperAdminDashboard = dynamic(() => import('@/components/screens/SuperAdminDashboard').then(m => ({ default: m.SuperAdminDashboard })), { ssr: false });
@@ -208,6 +210,7 @@ export default function ClinicApp() {
       case 'admin-add-emergency': return <AddEmergencyForm />;
       case 'admin-finance': return <FinanceManagement />;
       case 'admin-nurses': return <NurseManagement />;
+      case 'admin-nurse-salary': return <AdminNurseSalary />;
       case 'admin-more': return <AdminMoreMenu />;
       case 'admin-notifications': return <NotificationsScreen />;
       case 'admin-settings': return <SettingsScreen />;
@@ -223,6 +226,7 @@ export default function ClinicApp() {
       case 'nurse-change-password': return <NurseChangePassword />;
       case 'nurse-finance': return <NurseFinance />;
       case 'nurse-more': return <NurseMoreMenu />;
+      case 'nurse-salary': return <NurseSalary />;
       case 'subscription-expired': return <SubscriptionExpired />;
       default: return user?.role === 'admin' ? <AdminDashboard /> : <PatientList role="nurse" />;
     }

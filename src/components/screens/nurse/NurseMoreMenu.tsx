@@ -2,7 +2,7 @@
 
 import React, { useState } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
-import { DollarSign, Lock, LogOut, User as UserIcon, ChevronLeft, AlertTriangle } from 'lucide-react';
+import { DollarSign, Lock, LogOut, User as UserIcon, ChevronLeft, AlertTriangle, Wallet } from 'lucide-react';
 import { useAppStore } from '@/lib/store';
 
 export function NurseMoreMenu() {
@@ -10,6 +10,15 @@ export function NurseMoreMenu() {
   const [showLogoutConfirm, setShowLogoutConfirm] = useState(false);
 
   const menuItems = [
+    {
+      id: 'nurse-salary',
+      label: 'راتبي',
+      subtitle: 'عرض الراتب والسحوبات',
+      icon: Wallet,
+      color: 'text-green-600 dark:text-green-400',
+      bg: 'bg-green-50 dark:bg-green-900/20',
+      action: () => setScreen('nurse-salary'),
+    },
     {
       id: 'nurse-finance',
       label: 'المالية',

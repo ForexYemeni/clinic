@@ -158,6 +158,7 @@ export interface NurseItem {
   password?: string;
   active: boolean;
   role: string;
+  salary?: number;
   [key: string]: unknown;
 }
 

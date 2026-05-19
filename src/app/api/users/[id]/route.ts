@@ -39,6 +39,7 @@ export async function PUT(
       updateData.password = await hashPassword(body.password);
     }
     if (body.active !== undefined) updateData.active = body.active;
+    if (body.salary !== undefined) updateData.salary = Number(body.salary) || 0;
     updateData.updatedAt = new Date().toISOString();
 
     await adminDb.collection('users').doc(id).update(updateData);
