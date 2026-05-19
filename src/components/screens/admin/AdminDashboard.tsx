@@ -1,16 +1,27 @@
 'use client';
 
 import React, { useEffect, useState, useMemo } from 'react';
-import { motion } from 'framer-motion';
-import { Users, AlertTriangle, Activity, DollarSign, TrendingUp, Clock, Stethoscope, ChevronLeft } from 'lucide-react';
+import { motion, AnimatePresence } from 'framer-motion';
+import { Users, AlertTriangle, Activity, DollarSign, TrendingUp, Clock, Stethoscope, ChevronLeft, Wallet, Bell } from 'lucide-react';
 import { useAppStore } from '@/lib/store';
 import { formatCurrency, formatRelativeTime, severityLabels, severityColors, type DashboardData, type EmergencyItem } from '@/lib/constants';
 import { PwaInstallBanner } from '@/components/shared/PwaInstallPrompt';
 
+interface PendingWithdrawal {
+  id: string;
+  nurseName: string;
+  amount: number;
+  withdrawalMethod: string;
+  walletName?: string;
+  walletPhone?: string;
+  createdAt: string;
+}
+
 export function AdminDashboard() {
-  const { setScreen } = useAppStore();
+  const { setScreen, clinicId } = useAppStore();
   const [data, setData] = useState<DashboardData | null>(null);
   const [loading, setLoading] = useState(true);
+  const [pendingWithdrawals, setPendingWithdrawals] = useState<PendingWithdrawal[]>([]);
 
   useEffect(() => {
     const fetchDashboard = async () => {
@@ -26,6 +37,47 @@ export function AdminDashboard() {
     };
     fetchDashboard();
     const interval = setInterval(fetchDashboard, 30000);
+    return () => clearInterval(interval);
+  }, []);
+
+  // Fetch pending withdrawal requests
+  useEffect(() => {
+    const fetchPendingWithdrawals = async () => {
+      try {
+        // Get all nurses in the clinic
+        const nursesRes = await fetch('/api/users?role=nurse');
+        if (!nursesRes.ok) return;
+        const nurses = await nursesRes.json();
+
+        // Check each nurse for pending withdrawals
+        const allPending: PendingWithdrawal[] = [];
+        for (const nurse of nurses) {
+          try {
+            const res = await fetch(`/api/salary?nurseId=${nurse.id}`);
+            if (res.ok) {
+              const salaryData = await res.json();
+              const pending = (salaryData.withdrawals || []).filter(
+                (w: any) => w.status === 'pending'
+              );
+              for (const w of pending) {
+                allPending.push({
+                  id: w.id,
+                  nurseName: w.nurseName || nurse.name,
+                  amount: w.amount,
+                  withdrawalMethod: w.withdrawalMethod || 'cash',
+                  walletName: w.walletName,
+                  walletPhone: w.walletPhone,
+                  createdAt: w.createdAt,
+                });
+              }
+            }
+          } catch {}
+        }
+        setPendingWithdrawals(allPending);
+      } catch {}
+    };
+    fetchPendingWithdrawals();
+    const interval = setInterval(fetchPendingWithdrawals, 30000);
     return () => clearInterval(interval);
   }, []);
 
@@ -50,6 +102,57 @@ export function AdminDashboard() {
     <div className="p-4 space-y-5 pb-24">
       {/* PWA Install Banner - Prominent at top */}
       <PwaInstallBanner />
+
+      {/* Pending Withdrawal Requests Banner */}
+      <AnimatePresence>
+        {pendingWithdrawals.length > 0 && (
+          <motion.button
+            initial={{ opacity: 0, y: -15, scale: 0.95 }}
+            animate={{ opacity: 1, y: 0, scale: 1 }}
+            exit={{ opacity: 0, y: -15, scale: 0.95 }}
+            onClick={() => setScreen('admin-nurse-salary')}
+            className="w-full bg-gradient-to-br from-amber-500 to-orange-500 rounded-2xl p-4 text-white shadow-lg shadow-amber-500/25 active:scale-[0.98] transition-transform relative overflow-hidden"
+          >
+            {/* Decorative circles */}
+            <div className="absolute -top-6 -left-6 w-20 h-20 bg-white/5 rounded-full" />
+            <div className="absolute -bottom-4 -right-4 w-16 h-16 bg-white/5 rounded-full" />
+
+            <div className="relative flex items-center gap-3">
+              <div className="w-12 h-12 bg-white/20 rounded-xl flex items-center justify-center backdrop-blur-sm relative">
+                <Wallet className="w-6 h-6 text-white" />
+                {/* Pulse badge */}
+                <span className="absolute -top-1 -right-1 w-5 h-5 rounded-full bg-white text-amber-600 text-[10px] font-bold flex items-center justify-center shadow-sm">
+                  {pendingWithdrawals.length}
+                </span>
+              </div>
+              <div className="flex-1 text-right">
+                <p className="text-sm font-bold">
+                  {pendingWithdrawals.length} طلب سحب قيد المراجعة
+                </p>
+                <p className="text-[10px] text-white/80">
+                  {pendingWithdrawals.length === 1
+                    ? `${pendingWithdrawals[0].nurseName} يطلب ${formatCurrency(pendingWithdrawals[0].amount)}${pendingWithdrawals[0].withdrawalMethod === 'transfer' ? ' (تحويل)' : ' (نقدي)'}`
+                    : `من ${new Set(pendingWithdrawals.map(w => w.nurseName)).size} ممرض`}
+                </p>
+              </div>
+              <div className="w-8 h-8 bg-white/20 rounded-lg flex items-center justify-center backdrop-blur-sm">
+                <ChevronLeft className="w-4 h-4 text-white" />
+              </div>
+            </div>
+
+            {/* Quick preview of first request if single */}
+            {pendingWithdrawals.length === 1 && pendingWithdrawals[0].withdrawalMethod === 'transfer' && pendingWithdrawals[0].walletPhone && (
+              <div className="relative mt-3 bg-white/10 rounded-lg p-2.5 backdrop-blur-sm">
+                <p className="text-[10px] text-white/70 mb-1">بيانات التحويل:</p>
+                <div className="flex items-center justify-between text-xs">
+                  <span className="text-white/80">جوال: <span className="font-bold text-white" dir="ltr">{pendingWithdrawals[0].walletPhone}</span></span>
+                  <span className="text-white/80">مبلغ: <span className="font-bold text-white">{formatCurrency(pendingWithdrawals[0].amount)}</span></span>
+                </div>
+              </div>
+            )}
+          </motion.button>
+        )}
+      </AnimatePresence>
 
       {/* Quick Stats */}
       <div className="grid grid-cols-2 gap-3">

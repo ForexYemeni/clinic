@@ -5,7 +5,7 @@ import { motion, AnimatePresence } from 'framer-motion';
 import {
   DollarSign, Wallet, TrendingUp, TrendingDown, ArrowRight, RefreshCw, Clock, Banknote,
   Plus, X, Trash2, AlertTriangle, User, CheckCircle2, XCircle, FileText, Send,
-  ArrowDownLeft, Phone, MessageSquare
+  ArrowDownLeft, Phone, MessageSquare, Copy, Check
 } from 'lucide-react';
 import { useAppStore } from '@/lib/store';
 import { type NurseItem, formatCurrency, formatDate } from '@/lib/constants';
@@ -334,8 +334,34 @@ export function AdminNurseSalary() {
                         <span className="text-[10px] text-white/70">{formatDate(req.createdAt)}</span>
                       </div>
                       {req.withdrawalMethod === 'transfer' && req.walletName && (
-                        <div className="text-[10px] text-white/70 mb-2">
-                          محفظة: {req.walletName} | جوال: <span dir="ltr">{req.walletPhone}</span> | اسم: {req.walletOwner}
+                        <div className="bg-white/10 rounded-lg p-2 mb-2 space-y-1">
+                          <p className="text-[10px] text-white/60 font-bold">بيانات التحويل</p>
+                          <div className="flex items-center justify-between text-[10px]">
+                            <span className="text-white/70">المحفظة: <span className="text-white font-medium">{req.walletName}</span></span>
+                          </div>
+                          <div className="flex items-center justify-between text-[10px]">
+                            <span className="text-white/70">الجوال: <span className="text-white font-medium" dir="ltr">{req.walletPhone}</span></span>
+                            <button
+                              onClick={(e) => { e.stopPropagation(); navigator.clipboard.writeText(req.walletPhone || ''); toast.success('تم نسخ رقم الجوال'); }}
+                              className="flex items-center gap-1 px-2 py-0.5 bg-white/20 rounded-md text-white/90 active:scale-95 transition-transform"
+                            >
+                              <Copy className="w-2.5 h-2.5" />
+                              نسخ
+                            </button>
+                          </div>
+                          <div className="flex items-center justify-between text-[10px]">
+                            <span className="text-white/70">الاسم: <span className="text-white font-medium">{req.walletOwner}</span></span>
+                          </div>
+                          <div className="flex items-center justify-between text-[10px]">
+                            <span className="text-white/70">المبلغ: <span className="text-white font-bold">{formatCurrency(req.amount)}</span></span>
+                            <button
+                              onClick={(e) => { e.stopPropagation(); navigator.clipboard.writeText(String(req.amount)); toast.success('تم نسخ المبلغ'); }}
+                              className="flex items-center gap-1 px-2 py-0.5 bg-white/20 rounded-md text-white/90 active:scale-95 transition-transform"
+                            >
+                              <Copy className="w-2.5 h-2.5" />
+                              نسخ
+                            </button>
+                          </div>
                         </div>
                       )}
                       <div className="flex gap-2">
@@ -490,22 +516,44 @@ export function AdminNurseSalary() {
                     )}
                   </div>
 
-                  {/* Transfer details */}
+                  {/* Transfer details - with copyable fields */}
                   {reviewItem.withdrawalMethod === 'transfer' && reviewItem.walletName && (
                     <div className="bg-white/10 rounded-xl p-3 mb-3">
                       <p className="text-[10px] font-bold text-white/70 mb-2">بيانات التحويل</p>
-                      <div className="space-y-1 text-xs">
-                        <div className="flex justify-between">
+                      <div className="space-y-2 text-xs">
+                        <div className="flex justify-between items-center">
                           <span className="text-white/60">المحفظة</span>
                           <span className="text-white font-medium">{reviewItem.walletName}</span>
                         </div>
-                        <div className="flex justify-between">
-                          <span className="text-white/60">الجوال</span>
-                          <span className="text-white font-medium" dir="ltr">{reviewItem.walletPhone}</span>
+                        <div className="flex justify-between items-center">
+                          <span className="text-white/60">رقم الجوال</span>
+                          <div className="flex items-center gap-2">
+                            <span className="text-white font-bold text-sm" dir="ltr">{reviewItem.walletPhone}</span>
+                            <button
+                              onClick={() => { navigator.clipboard.writeText(reviewItem.walletPhone || ''); toast.success('تم نسخ رقم الجوال'); }}
+                              className="flex items-center gap-1 px-2 py-1 bg-white/20 rounded-lg text-white/90 text-[10px] active:scale-95 transition-transform backdrop-blur-sm"
+                            >
+                              <Copy className="w-3 h-3" />
+                              نسخ
+                            </button>
+                          </div>
                         </div>
-                        <div className="flex justify-between">
-                          <span className="text-white/60">الاسم</span>
+                        <div className="flex justify-between items-center">
+                          <span className="text-white/60">اسم صاحب المحفظة</span>
                           <span className="text-white font-medium">{reviewItem.walletOwner}</span>
+                        </div>
+                        <div className="flex justify-between items-center pt-1 border-t border-white/10">
+                          <span className="text-white/60">المبلغ</span>
+                          <div className="flex items-center gap-2">
+                            <span className="text-white font-bold text-sm">{formatCurrency(reviewItem.amount)}</span>
+                            <button
+                              onClick={() => { navigator.clipboard.writeText(String(reviewItem.amount)); toast.success('تم نسخ المبلغ'); }}
+                              className="flex items-center gap-1 px-2 py-1 bg-white/20 rounded-lg text-white/90 text-[10px] active:scale-95 transition-transform backdrop-blur-sm"
+                            >
+                              <Copy className="w-3 h-3" />
+                              نسخ
+                            </button>
+                          </div>
                         </div>
                       </div>
                     </div>
@@ -896,23 +944,51 @@ export function AdminNurseSalary() {
                         </div>
                       </div>
 
-                      {/* Transfer details */}
+                      {/* Transfer details - copyable in history */}
                       {w.withdrawalMethod === 'transfer' && w.walletName && (
                         <div className="mt-2 bg-purple-50 dark:bg-purple-900/10 rounded-lg p-2 text-xs">
                           <p className="text-[10px] font-bold text-purple-600 dark:text-purple-400 mb-1">بيانات التحويل</p>
-                          <div className="space-y-0.5">
+                          <div className="space-y-1">
                             {w.walletName && <p className="text-muted-foreground">المحفظة: <span className="text-foreground font-medium">{w.walletName}</span></p>}
-                            {w.walletPhone && <p className="text-muted-foreground">الجوال: <span className="text-foreground font-medium" dir="ltr">{w.walletPhone}</span></p>}
+                            {w.walletPhone && (
+                              <div className="flex items-center justify-between">
+                                <p className="text-muted-foreground">الجوال: <span className="text-foreground font-medium" dir="ltr">{w.walletPhone}</span></p>
+                                <button
+                                  onClick={() => { navigator.clipboard.writeText(w.walletPhone || ''); toast.success('تم نسخ رقم الجوال'); }}
+                                  className="flex items-center gap-1 px-2 py-0.5 bg-purple-100 dark:bg-purple-900/30 rounded-md text-purple-700 dark:text-purple-300 active:scale-95 transition-transform"
+                                >
+                                  <Copy className="w-2.5 h-2.5" />
+                                  نسخ
+                                </button>
+                              </div>
+                            )}
                             {w.walletOwner && <p className="text-muted-foreground">الاسم: <span className="text-foreground font-medium">{w.walletOwner}</span></p>}
+                            <div className="flex items-center justify-between pt-1 border-t border-purple-100 dark:border-purple-900/20">
+                              <p className="text-muted-foreground">المبلغ: <span className="text-foreground font-bold">{formatCurrency(w.amount)}</span></p>
+                              <button
+                                onClick={() => { navigator.clipboard.writeText(String(w.amount)); toast.success('تم نسخ المبلغ'); }}
+                                className="flex items-center gap-1 px-2 py-0.5 bg-purple-100 dark:bg-purple-900/30 rounded-md text-purple-700 dark:text-purple-300 active:scale-95 transition-transform"
+                              >
+                                <Copy className="w-2.5 h-2.5" />
+                                نسخ
+                              </button>
+                            </div>
                           </div>
                         </div>
                       )}
 
                       {/* Debt details */}
                       {(w.isDebt || w.type === 'debt') && w.patientName && (
-                        <div className="mt-2 bg-amber-50 dark:bg-amber-900/10 rounded-lg p-2 text-xs">
+                        <div className="mt-2 bg-amber-50 dark:bg-amber-900/10 rounded-lg p-2.5 text-xs">
+                          <div className="flex items-center gap-1.5 mb-1">
+                            <FileText className="w-3 h-3 text-amber-600" />
+                            <p className="text-amber-700 dark:text-amber-300 font-bold">مديونية - فاتورة مسددة</p>
+                          </div>
                           <p className="text-muted-foreground">
                             فاتورة مريض: <span className="text-foreground font-bold">{w.patientName}</span>
+                          </p>
+                          <p className="text-[10px] text-amber-600/70 dark:text-amber-400/70 mt-1">
+                            تم تسديد الفاتورة بالكامل وخصم المبلغ من راتب الممرض
                           </p>
                         </div>
                       )}

@@ -211,7 +211,18 @@ export function FinanceManagement() {
       });
 
       if (res.ok) {
-        toast.success('تم تحويل المبلغ على حساب الممرض بنجاح');
+        // Mark the invoice as fully paid since the amount is transferred to nurse
+        try {
+          await fetch(`/api/invoices/${showDebtAssign.id}`, {
+            method: 'PUT',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({ paid: showDebtAssign.total, status: 'paid' }),
+          });
+        } catch (e) {
+          console.error('Failed to update invoice status:', e);
+        }
+
+        toast.success('تم تحويل المبلغ على حساب الممرض وتسديد الفاتورة بالكامل');
         setShowDebtAssign(null);
         setDebtNurseId('');
         setDebtAmount('');
@@ -716,7 +727,7 @@ export function FinanceManagement() {
                 </div>
                 <div>
                   <p className="text-base font-bold">تحويل على حساب الممرض</p>
-                  <p className="text-xs text-muted-foreground">سيتم خصم المبلغ من راتب الممرض كمديونية</p>
+                  <p className="text-xs text-muted-foreground">سيتم تسديد الفاتورة بالكامل وخصم المبلغ من راتب الممرض</p>
                 </div>
               </div>
 
@@ -796,7 +807,7 @@ export function FinanceManagement() {
                 <AlertTriangle className="w-4 h-4 text-amber-500 flex-shrink-0 mt-0.5" />
                 <div className="text-[10px] text-amber-700 dark:text-amber-300">
                   <p className="font-bold mb-0.5">تنبيه</p>
-                  <p>سيتم خصم هذا المبلغ من راتب الممرض وسيظهر له كمديونية في حسابه</p>
+                  <p>سيتم تسديد الفاتورة بالكامل وخصم المبلغ من راتب الممرض كمديونية. لن يظهر للممرض أي مبلغ متبقي على الفاتورة.</p>
                 </div>
               </div>
 

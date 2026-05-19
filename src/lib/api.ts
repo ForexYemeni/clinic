@@ -124,7 +124,12 @@ export async function apiPost<T>(url: string, body: unknown): Promise<T> {
     body: JSON.stringify(body),
   });
   const data = await res.json();
-  if (!res.ok) throw new Error(data.error || 'خطأ في العملية');
+  if (!res.ok) {
+    const error: any = new Error(data.error || 'خطأ في العملية');
+    error.data = data;
+    error.status = res.status;
+    throw error;
+  }
   return data;
 }
 

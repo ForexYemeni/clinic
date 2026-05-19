@@ -576,7 +576,11 @@ export function NurseSalary() {
 
                   {/* Debt details */}
                   {(w.isDebt || w.type === 'debt') && w.patientName && (
-                    <div className="mt-2 bg-amber-50 dark:bg-amber-900/10 rounded-lg p-2 text-xs">
+                    <div className="mt-2 bg-amber-50 dark:bg-amber-900/10 rounded-lg p-2.5 text-xs">
+                      <div className="flex items-center gap-1.5 mb-1">
+                        <FileText className="w-3 h-3 text-amber-600" />
+                        <p className="text-amber-700 dark:text-amber-300 font-bold">مديونية - فاتورة مسددة</p>
+                      </div>
                       <p className="text-muted-foreground">
                         فاتورة مريض: <span className="text-foreground font-bold">{w.patientName}</span>
                       </p>
@@ -585,6 +589,9 @@ export function NurseSalary() {
                           رقم الفاتورة: <span className="text-foreground font-medium" dir="ltr">{w.invoiceId.slice(-8)}</span>
                         </p>
                       )}
+                      <p className="text-[10px] text-amber-600/70 dark:text-amber-400/70 mt-1">
+                        تم تسديد الفاتورة بالكامل وخصم المبلغ من راتبك
+                      </p>
                     </div>
                   )}
 
