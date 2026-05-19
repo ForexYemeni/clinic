@@ -7,7 +7,7 @@ import { useAppStore } from '@/lib/store';
 import { toast } from 'sonner';
 
 export function LoginScreen() {
-  const { setScreen, setUser, setIsFirstSetup } = useAppStore();
+  const { setScreen, setUser, setIsFirstSetup, clinicName } = useAppStore();
   const [phone, setPhone] = useState('');
   const [password, setPassword] = useState('');
   const [showPass, setShowPass] = useState(false);
@@ -47,7 +47,21 @@ export function LoginScreen() {
       }
 
       setUser(data.user);
-      useAppStore.getState().setClinicName(data.clinicName || 'عيادة الإسعافات الأولية');
+      // Fetch and update clinic settings on login
+      try {
+        const cRes = await fetch('/api/clinic');
+        if (cRes.ok) {
+          const cData = await cRes.json();
+          useAppStore.getState().setClinicSettings({
+            name: cData.name || 'عيادتي',
+            description: cData.description || '',
+            phone: cData.phone || '',
+            address: cData.address || '',
+            logo: cData.logo || '',
+            primaryColor: cData.primaryColor || 'emerald',
+          });
+        }
+      } catch {}
 
       if (data.user.role === 'admin') {
         setScreen('admin-dashboard');
@@ -80,7 +94,7 @@ export function LoginScreen() {
           transition={{ delay: 0.2 }}
           className="text-xl font-bold mt-4 text-emerald-800 dark:text-emerald-300"
         >
-          عيادة الإسعافات الأولية
+          {clinicName}
         </motion.h1>
         <motion.p
           initial={{ opacity: 0 }}

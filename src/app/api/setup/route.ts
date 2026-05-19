@@ -1,22 +1,6 @@
 import { adminDb } from '@/lib/firebase-admin';
 import { NextRequest, NextResponse } from 'next/server';
-
-const DEFAULT_SERVICES = [
-  { nameAr: 'قياس الضغط', price: 500, duration: 10, category: 'قياسات', description: 'قياس ضغط الدم', active: true, status: 'active' },
-  { nameAr: 'قياس السكر', price: 500, duration: 10, category: 'قياسات', description: 'قياس مستوى السكر في الدم', active: true, status: 'active' },
-  { nameAr: 'قياس الحرارة', price: 300, duration: 5, category: 'قياسات', description: 'قياس درجة حرارة الجسم', active: true, status: 'active' },
-  { nameAr: 'قياس الأكسجين', price: 500, duration: 10, category: 'قياسات', description: 'قياس مستوى الأكسجين في الدم', active: true, status: 'active' },
-  { nameAr: 'تضميد الجروح', price: 1500, duration: 20, category: 'إسعافات', description: 'تنظيف وتضميد الجروح', active: true, status: 'active' },
-  { nameAr: 'الحروق', price: 2000, duration: 25, category: 'إسعافات', description: 'علاج الحروق البسيطة والمتوسطة', active: true, status: 'active' },
-  { nameAr: 'الكسور البسيطة', price: 3000, duration: 30, category: 'إسعافات', description: 'تثبيت وعلاج الكسور البسيطة', active: true, status: 'active' },
-  { nameAr: 'الأكسجين العلاجي', price: 1500, duration: 30, category: 'علاج', description: 'إعطاء الأكسجين العلاجي', active: true, status: 'active' },
-  { nameAr: 'الحقن', price: 800, duration: 15, category: 'علاج', description: 'إعطاء الحقن العضلية والوريدية', active: true, status: 'active' },
-  { nameAr: 'المحاليل', price: 1500, duration: 45, category: 'علاج', description: 'إعطاء المحاليل الوريدية', active: true, status: 'active' },
-  { nameAr: 'الأدوية', price: 500, duration: 10, category: 'علاج', description: 'صرف وتقديم الأدوية', active: true, status: 'active' },
-  { nameAr: 'الرذاذ الاستنشاقي', price: 800, duration: 15, category: 'علاج', description: 'علاج بالرذاذ والاستنشاق', active: true, status: 'active' },
-  { nameAr: 'تغيير الضمادات', price: 1000, duration: 15, category: 'رعاية', description: 'تغيير وتجديد الضمادات', active: true, status: 'active' },
-  { nameAr: 'الإسعافات الأولية العامة', price: 3000, duration: 30, category: 'إسعافات', description: 'إسعافات أولية شاملة', active: true, status: 'active' },
-];
+import { DEFAULT_SERVICES } from '@/lib/services-data';
 
 // POST: First-time admin setup
 export async function POST(request: NextRequest) {
@@ -71,6 +55,11 @@ export async function POST(request: NextRequest) {
     // Create clinic document
     const clinicRef = await adminDb.collection('clinic').add({
       name: clinicName,
+      description: '',
+      phone: adminPhone,
+      address: '',
+      logo: '',
+      primaryColor: 'emerald',
       adminPhone,
       setupComplete: true,
       createdAt: new Date().toISOString(),

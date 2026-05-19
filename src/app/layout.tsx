@@ -9,8 +9,8 @@ const geistSans = Geist({
 });
 
 export const metadata: Metadata = {
-  title: "عيادة الإسعافات الأولية",
-  description: "تطبيق احترافي لإدارة عيادة الإسعافات الأولية",
+  title: "نظام إدارة العيادة",
+  description: "تطبيق احترافي لإدارة العيادة",
   manifest: "/manifest.json",
   icons: { icon: "/logo.svg" },
 };

@@ -6,7 +6,7 @@ import { Heart } from 'lucide-react';
 import { useAppStore } from '@/lib/store';
 
 export function SplashScreen() {
-  const { setSplashDone, setIsFirstSetup } = useAppStore();
+  const { setSplashDone, setIsFirstSetup, setClinicSettings, clinicName } = useAppStore();
 
   useEffect(() => {
     const checkSetup = async () => {
@@ -18,6 +18,21 @@ export function SplashScreen() {
             setIsFirstSetup(true);
             useAppStore.getState().setScreen('admin-setup');
           }
+        }
+      } catch {}
+      // Load clinic settings
+      try {
+        const cRes = await fetch('/api/clinic');
+        if (cRes.ok) {
+          const cData = await cRes.json();
+          useAppStore.getState().setClinicSettings({
+            name: cData.name || 'عيادتي',
+            description: cData.description || '',
+            phone: cData.phone || '',
+            address: cData.address || '',
+            logo: cData.logo || '',
+            primaryColor: cData.primaryColor || 'emerald',
+          });
         }
       } catch {}
       setTimeout(() => setSplashDone(true), 1800);
@@ -49,7 +64,7 @@ export function SplashScreen() {
         transition={{ delay: 0.5 }}
         className="mt-8 text-center"
       >
-        <h1 className="text-2xl font-bold text-white">عيادة الإسعافات الأولية</h1>
+        <h1 className="text-2xl font-bold text-white">{clinicName}</h1>
         <p className="text-emerald-100 text-sm mt-2">إدارة طبية احترافية</p>
       </motion.div>
 

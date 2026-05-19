@@ -26,6 +26,8 @@ export async function PUT(
     if (body.duration !== undefined) updateData.duration = Number(body.duration);
     if (body.category !== undefined) updateData.category = body.category;
     if (body.description !== undefined) updateData.description = body.description;
+    if (body.icon !== undefined) updateData.icon = body.icon;
+    if (body.color !== undefined) updateData.color = body.color;
 
     // Handle pause/activate
     if (body.status === 'paused') {

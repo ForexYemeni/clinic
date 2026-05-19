@@ -33,7 +33,7 @@ export async function GET() {
 export async function POST(request: NextRequest) {
   try {
     const body = await request.json();
-    const { nameAr, price, duration, category, description } = body;
+    const { nameAr, price, duration, category, description, icon, color } = body;
 
     if (!nameAr || price === undefined) {
       return NextResponse.json(
@@ -48,6 +48,8 @@ export async function POST(request: NextRequest) {
       duration: duration || 15,
       category: category || 'أخرى',
       description: description || '',
+      icon: icon || '💊',
+      color: color || 'emerald',
       active: true,
       status: 'active',
       createdAt: new Date().toISOString(),

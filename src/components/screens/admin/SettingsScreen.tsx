@@ -158,7 +158,7 @@ export function SettingsScreen() {
 
       {/* App Info */}
       <div className="mt-6 text-center">
-        <p className="text-xs text-muted-foreground">عيادة الإسعافات الأولية v2.0</p>
+        <p className="text-xs text-muted-foreground">{clinicName} v3.0</p>
         <p className="text-[10px] text-muted-foreground mt-1">جميع الحقوق محفوظة</p>
       </div>
     </div>

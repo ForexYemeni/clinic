@@ -24,6 +24,8 @@ const NotificationsScreen = dynamic(() => import('@/components/screens/admin/Not
 const SettingsScreen = dynamic(() => import('@/components/screens/admin/SettingsScreen').then(m => ({ default: m.SettingsScreen })), { ssr: false });
 const AdminMoreMenu = dynamic(() => import('@/components/screens/admin/AdminMoreMenu').then(m => ({ default: m.AdminMoreMenu })), { ssr: false });
 const AdminReports = dynamic(() => import('@/components/screens/admin/AdminReports').then(m => ({ default: m.AdminReports })), { ssr: false });
+const ClinicSettings = dynamic(() => import('@/components/screens/admin/ClinicSettings').then(m => ({ default: m.ClinicSettings })), { ssr: false });
+const SystemReset = dynamic(() => import('@/components/screens/admin/SystemReset').then(m => ({ default: m.SystemReset })), { ssr: false });
 
 // Lazy-loaded nurse screens
 const NurseAddVisit = dynamic(() => import('@/components/screens/nurse/NurseAddVisit').then(m => ({ default: m.NurseAddVisit })), { ssr: false });
@@ -84,6 +86,8 @@ export default function ClinicApp() {
       case 'admin-notifications': return <NotificationsScreen />;
       case 'admin-settings': return <SettingsScreen />;
       case 'admin-reports': return <AdminReports />;
+      case 'admin-clinic-settings': return <ClinicSettings />;
+      case 'admin-system-reset': return <SystemReset />;
 
       // Nurse screens (no dashboard, no appointments)
       case 'nurse-patients': return <PatientList role="nurse" />;
