@@ -58,7 +58,7 @@ export function NurseSalary() {
   const [submitting, setSubmitting] = useState(false);
 
   // Filter state
-  const [activeTab, setActiveTab] = useState<'all' | 'pending' | 'debts'>('all');
+  const [activeTab, setActiveTab] = useState<'all' | 'pending' | 'debts' | 'rejected'>('all');
 
   const fetchSalary = useCallback(async () => {
     if (!user?.id) return;
@@ -136,17 +136,20 @@ export function NurseSalary() {
 
   const allWithdrawals = data?.withdrawals || [];
   const pendingRequests = allWithdrawals.filter(w => w.status === 'pending');
+  const rejectedWithdrawals = allWithdrawals.filter(w => w.status === 'rejected');
   const debts = allWithdrawals.filter(w => (w.type === 'debt' || w.isDebt) && (w.status === 'approved' || !w.status));
   const approvedWithdrawals = allWithdrawals.filter(w => w.status !== 'pending' && w.type !== 'debt' && !w.isDebt);
 
   // Filtered display
   let displayItems: WithdrawalItem[] = [];
   if (activeTab === 'all') {
-    displayItems = allWithdrawals.filter(w => w.status !== 'rejected');
+    displayItems = allWithdrawals;
   } else if (activeTab === 'pending') {
     displayItems = pendingRequests;
   } else if (activeTab === 'debts') {
     displayItems = debts;
+  } else if (activeTab === 'rejected') {
+    displayItems = rejectedWithdrawals;
   }
 
   return (
@@ -254,6 +257,29 @@ export function NurseSalary() {
               </p>
               <p className="text-[10px] text-amber-600/70 dark:text-amber-400/70">
                 بانتظار موافقة إدارة العيادة
+              </p>
+            </div>
+          </div>
+        </motion.div>
+      )}
+
+      {/* Rejected Withdrawals Alert */}
+      {rejectedWithdrawals.length > 0 && (
+        <motion.div
+          initial={{ opacity: 0, y: 10 }}
+          animate={{ opacity: 1, y: 0 }}
+          className="mb-4 bg-red-50 dark:bg-red-900/20 rounded-2xl p-3.5 border border-red-200 dark:border-red-800"
+        >
+          <div className="flex items-center gap-3">
+            <div className="w-10 h-10 bg-red-100 dark:bg-red-900/40 rounded-xl flex items-center justify-center">
+              <XCircle className="w-5 h-5 text-red-600 dark:text-red-400" />
+            </div>
+            <div>
+              <p className="text-sm font-bold text-red-700 dark:text-red-300">
+                {rejectedWithdrawals.length} طلب مرفوض
+              </p>
+              <p className="text-[10px] text-red-600/70 dark:text-red-400/70">
+                {rejectedWithdrawals[0]?.rejectionReason || 'تم رفض الطلب من قبل الإدارة'}
               </p>
             </div>
           </div>
@@ -450,9 +476,10 @@ export function NurseSalary() {
       {/* Tab Filter */}
       <div className="flex items-center gap-2 mb-3 overflow-x-auto pb-1" style={{ scrollbarWidth: 'none' }}>
         {[
-          { id: 'all' as const, label: 'الكل', count: allWithdrawals.filter(w => w.status !== 'rejected').length },
+          { id: 'all' as const, label: 'الكل', count: allWithdrawals.length },
           { id: 'pending' as const, label: 'قيد المراجعة', count: pendingRequests.length },
           { id: 'debts' as const, label: 'مديونيات', count: debts.length },
+          { id: 'rejected' as const, label: 'مرفوضة', count: rejectedWithdrawals.length },
         ].map(tab => (
           <button
             key={tab.id}
@@ -612,6 +639,7 @@ export function NurseSalary() {
               <p className="text-muted-foreground text-sm">
                 {activeTab === 'pending' ? 'لا توجد طلبات قيد المراجعة' :
                  activeTab === 'debts' ? 'لا توجد مديونيات' :
+                 activeTab === 'rejected' ? 'لا توجد طلبات مرفوضة' :
                  'لا توجد سحوبات بعد'}
               </p>
               <p className="text-xs text-muted-foreground mt-1">

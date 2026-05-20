@@ -590,7 +590,7 @@ export function NurseAddVisit() {
 
                 {/* Payment section */}
                 {selectedServices.length > 0 && (
-                  <div className="bg-white dark:bg-gray-800 rounded-2xl border-2 border-clinic-200 dark:border-clinic-800 overflow-hidden">
+                  <div id="payment-section" className="bg-white dark:bg-gray-800 rounded-2xl border-2 border-clinic-200 dark:border-clinic-800 overflow-hidden">
                     {/* Total */}
                     <div className="p-3 bg-clinic-50 dark:bg-clinic-900/20 flex items-center justify-between">
                       <span className="text-sm font-bold">الإجمالي ({selectedServices.length} خدمات)</span>
@@ -752,6 +752,24 @@ export function NurseAddVisit() {
             )}
           </AnimatePresence>
         </>
+      )}
+
+      {/* Sticky Bottom Bar - Shows when services are selected */}
+      {selectedServices.length > 0 && visitSubStep === 'services' && (
+        <div className="fixed bottom-0 left-0 right-0 z-50 bg-white/95 dark:bg-gray-900/95 backdrop-blur-lg border-t border-border shadow-[0_-4px_20px_rgba(0,0,0,0.1)] pb-safe">
+          <div className="max-w-lg mx-auto px-4 py-3 flex items-center justify-between">
+            <div>
+              <p className="text-xs text-muted-foreground">{selectedServices.length} خدمة محددة</p>
+              <p className="text-lg font-bold text-clinic-600">{formatCurrency(totalAmount)}</p>
+            </div>
+            <button
+              onClick={() => document.getElementById('payment-section')?.scrollIntoView({ behavior: 'smooth' })}
+              className="h-11 px-6 bg-gradient-to-l from-clinic-600 to-clinic-700 text-white font-bold rounded-xl shadow-lg active:scale-[0.97] transition-transform"
+            >
+              إكمال والتسديد
+            </button>
+          </div>
+        </div>
       )}
     </div>
   );

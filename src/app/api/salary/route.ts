@@ -159,6 +159,29 @@ export async function POST(request: NextRequest) {
     const salary = nurseData.salary || 0;
     const remaining = salary - totalWithdrawn;
 
+    // Nurse-specific validation: check amount against salary and available balance
+    if (requestedBy === 'nurse') {
+      // Cannot request more than total salary
+      if (Number(amount) > salary) {
+        return NextResponse.json({
+          error: 'لا يمكن طلب سلفة أكبر من راتبك الشهري',
+        }, { status: 400 });
+      }
+
+      // Calculate available balance accounting for pending requests
+      const pendingAmount = existingWithdrawals.docs
+        .filter(doc => doc.data().status === 'pending')
+        .reduce((sum, doc) => sum + (doc.data().amount || 0), 0);
+      const nurseRemaining = remaining - pendingAmount;
+
+      if (Number(amount) > nurseRemaining && salary > 0) {
+        return NextResponse.json({
+          error: `المبلغ يتجاوز رصيدك المتاح. الرصيد المتبقي: ${nurseRemaining.toLocaleString('ar-YE')} ر.ي`,
+          remaining: nurseRemaining,
+        }, { status: 400 });
+      }
+    }
+
     // Only check balance for approved (immediate) withdrawals by admin
     // Pending requests by nurses don't immediately deduct
     if (status === 'approved' && Number(amount) > remaining && salary > 0) {

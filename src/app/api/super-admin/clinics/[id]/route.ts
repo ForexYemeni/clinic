@@ -113,15 +113,29 @@ export async function PUT(
 
       case 'activate': {
         const currentSub = clinic.subscription;
-        const days = data.days || 30;
-        const subscription = await setClinicSubscription(id, {
-          type: data.subscriptionType || currentSub?.type || 'monthly',
-          days,
-          status: 'active',
-          extendFromExisting: true,
-        });
-        await createAuditLog({ clinicId: id, userId: auth.userId, action: 'activate_clinic', details: `Activated clinic: ${clinic.name}` });
-        return NextResponse.json({ success: true, subscription });
+        const days = data.days;
+
+        if (days && days > 0) {
+          // Days explicitly specified — set new subscription with those days
+          const subscription = await setClinicSubscription(id, {
+            type: data.subscriptionType || currentSub?.type || 'monthly',
+            days,
+            status: 'active',
+            extendFromExisting: true,
+          });
+          await createAuditLog({ clinicId: id, userId: auth.userId, action: 'activate_clinic', details: `Activated clinic: ${clinic.name} with ${days} days` });
+          return NextResponse.json({ success: true, subscription });
+        } else {
+          // No days specified — just reactivate with existing end date
+          const newStatus = currentSub?.type === 'trial' ? 'trial' : 'active';
+          await adminDb.collection('clinics').doc(id).update({
+            'subscription.status': newStatus,
+            active: true,
+            updatedAt: new Date().toISOString(),
+          });
+          await createAuditLog({ clinicId: id, userId: auth.userId, action: 'activate_clinic', details: `Reactivated clinic: ${clinic.name} (preserved existing end date)` });
+          return NextResponse.json({ success: true, subscription: { ...currentSub, status: newStatus } });
+        }
       }
 
       case 'update_settings': {
