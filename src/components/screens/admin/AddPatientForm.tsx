@@ -7,7 +7,8 @@ import { BLOOD_TYPES, genderLabels } from '@/lib/constants';
 import { toast } from 'sonner';
 
 export function AddPatientForm() {
-  const { setScreen, setSelectedPatientId } = useAppStore();
+  const { setScreen, setSelectedPatientId, user } = useAppStore();
+  const clinicId = user?.clinicId || '';
   const [loading, setLoading] = useState(false);
   const [form, setForm] = useState({
     name: '', age: '', gender: 'male', phone: '', emergencyPhone: '',
@@ -27,6 +28,7 @@ export function AddPatientForm() {
         body: JSON.stringify({
           ...form,
           age: Number(form.age),
+          clinicId,
         }),
       });
       if (res.ok) {

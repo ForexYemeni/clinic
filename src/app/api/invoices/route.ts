@@ -4,7 +4,7 @@ import Patient from '@/models/Patient';
 import { toClient } from '@/lib/mongoose-helpers';
 import { NextRequest, NextResponse } from 'next/server';
 
-// GET: List invoices (?patientId=xxx, ?status=unpaid)
+// GET: List invoices (?patientId=xxx&status=unpaid&clinicId=xxx)
 export async function GET(request: NextRequest) {
   try {
     await dbConnect();
@@ -12,26 +12,23 @@ export async function GET(request: NextRequest) {
     const { searchParams } = new URL(request.url);
     const patientId = searchParams.get('patientId');
     const status = searchParams.get('status');
+    const clinicId = searchParams.get('clinicId');
 
     let query = Invoice.find();
-    if (patientId) {
-      query = query.where('patientId', patientId);
-    } else if (status) {
-      query = query.where('status', status);
-    }
+    if (clinicId) query = query.where('clinicId', clinicId);
+    if (patientId) query = query.where('patientId', patientId);
+    else if (status) query = query.where('status', status);
     const docs = await query.sort({ createdAt: -1 }).lean();
 
     const invoices = [];
     for (const doc of docs) {
       const data = toClient(doc) as any;
-      // Recalculate remaining and status if missing
       data.remaining = data.remaining ?? (data.total - (data.paid || 0));
       if (!data.status) {
         if ((data.paid || 0) >= data.total) data.status = 'paid';
         else if ((data.paid || 0) > 0) data.status = 'partial';
         else data.status = 'unpaid';
       }
-      // Enrich with patient name
       if (data.patientId) {
         try {
           const patientDoc = await Patient.findById(data.patientId).lean();
@@ -47,10 +44,7 @@ export async function GET(request: NextRequest) {
     return NextResponse.json(invoices);
   } catch (error) {
     console.error('Invoices list error:', error);
-    return NextResponse.json(
-      { error: 'خطأ في جلب الفواتير' },
-      { status: 500 }
-    );
+    return NextResponse.json({ error: 'خطأ في جلب الفواتير' }, { status: 500 });
   }
 }
 
@@ -60,13 +54,10 @@ export async function POST(request: NextRequest) {
     await dbConnect();
 
     const body = await request.json();
-    const { patientId, visitId, items } = body;
+    const { patientId, visitId, items, clinicId } = body;
 
     if (!patientId) {
-      return NextResponse.json(
-        { error: 'يرجى تحديد المريض' },
-        { status: 400 }
-      );
+      return NextResponse.json({ error: 'يرجى تحديد المريض' }, { status: 400 });
     }
 
     const invoiceItems = items || [];
@@ -86,20 +77,15 @@ export async function POST(request: NextRequest) {
       paid,
       remaining,
       status,
+      clinicId: clinicId || '',
       createdAt: new Date(),
     };
 
     const doc = await Invoice.create(invoiceData);
 
-    return NextResponse.json(
-      toClient(doc.toObject()),
-      { status: 201 }
-    );
+    return NextResponse.json(toClient(doc.toObject()), { status: 201 });
   } catch (error) {
     console.error('Create invoice error:', error);
-    return NextResponse.json(
-      { error: 'خطأ في إنشاء الفاتورة' },
-      { status: 500 }
-    );
+    return NextResponse.json({ error: 'خطأ في إنشاء الفاتورة' }, { status: 500 });
   }
 }

@@ -7,14 +7,15 @@ import { useAppStore } from '@/lib/store';
 import { formatRelativeTime, severityLabels, severityColors, severityBorderColors, statusColors, statusLabels, type EmergencyItem } from '@/lib/constants';
 
 export function EmergencyManagement() {
-  const { setScreen } = useAppStore();
+  const { setScreen, user } = useAppStore();
+  const clinicId = user?.clinicId || '';
   const [emergencies, setEmergencies] = useState<EmergencyItem[]>([]);
   const [loading, setLoading] = useState(true);
   const [statusFilter, setStatusFilter] = useState('active');
 
   const fetchEmergencies = useCallback(async () => {
     try {
-      const res = await fetch(`/api/emergencies?status=${statusFilter}`);
+      const res = await fetch(`/api/emergencies?status=${statusFilter}&clinicId=${clinicId}`);
       if (res.ok) {
         const data = await res.json();
         setEmergencies(data);
@@ -31,7 +32,7 @@ export function EmergencyManagement() {
       const res = await fetch(`/api/emergencies/${id}`, {
         method: 'PUT',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ status: newStatus }),
+        body: JSON.stringify({ status: newStatus, clinicId }),
       });
       if (res.ok) fetchEmergencies();
     } catch {}

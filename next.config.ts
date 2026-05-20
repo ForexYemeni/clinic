@@ -6,7 +6,7 @@ const nextConfig: NextConfig = {
     ignoreBuildErrors: true,
   },
   reactStrictMode: false,
-  serverExternalPackages: ['firebase-admin', '@google-cloud/firestore'],
+  serverExternalPackages: ['mongoose'],
 };
 
 export default nextConfig;

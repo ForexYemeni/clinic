@@ -1,8 +1,8 @@
 'use client';
 
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import { motion } from 'framer-motion';
-import { Heart, Phone, Lock, Eye, EyeOff, AlertCircle, WifiOff } from 'lucide-react';
+import { Heart, Phone, Lock, Eye, EyeOff, AlertCircle, WifiOff, Shield, Building2 } from 'lucide-react';
 import { useAppStore } from '@/lib/store';
 import { toast } from 'sonner';
 
@@ -13,6 +13,23 @@ export function LoginScreen() {
   const [showPass, setShowPass] = useState(false);
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState('');
+
+  // Check if setup is needed on mount
+  useEffect(() => {
+    const checkSetup = async () => {
+      try {
+        const res = await fetch('/api/auth');
+        if (res.ok) {
+          const data = await res.json();
+          if (data.setupNeeded) {
+            setIsFirstSetup(true);
+            setScreen('admin-setup');
+          }
+        }
+      } catch {}
+    };
+    checkSetup();
+  }, [setIsFirstSetup, setScreen]);
 
   const handleLogin = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -37,14 +54,8 @@ export function LoginScreen() {
       const data = await res.json();
 
       if (!res.ok) {
-        // Check if it's a connection/database error
         if (res.status === 500 && data.detail) {
           setError(`خطأ في الخادم: ${data.detail}`);
-          return;
-        }
-        if (data.setupNeeded) {
-          setIsFirstSetup(true);
-          setScreen('admin-setup');
           return;
         }
         setError(data.error || 'خطأ في تسجيل الدخول');
@@ -52,13 +63,19 @@ export function LoginScreen() {
       }
 
       setUser(data.user);
-      useAppStore.getState().setClinicName(data.clinic?.name || 'عيادة الإسعافات الأولية');
 
-      if (data.user.role === 'admin') {
+      // Set clinic name based on role
+      if (data.user.role === 'super_admin') {
+        useAppStore.getState().setClinicName('الإدارة الرئيسية');
+        setScreen('super-dashboard');
+      } else if (data.user.role === 'admin') {
+        useAppStore.getState().setClinicName(data.clinic?.name || 'عيادة');
         setScreen('admin-dashboard');
       } else {
+        useAppStore.getState().setClinicName(data.clinic?.name || 'عيادة');
         setScreen('nurse-patients');
       }
+
       toast.success(`مرحباً ${data.user.name}`);
     } catch {
       setError('خطأ في الاتصال بالخادم - تأكد من اتصال الإنترنت');
@@ -68,14 +85,14 @@ export function LoginScreen() {
   };
 
   return (
-    <div className="min-h-screen flex flex-col bg-gradient-to-br from-emerald-50 via-white to-teal-50 dark:from-gray-950 dark:via-gray-900 dark:to-emerald-950">
+    <div className="min-h-screen flex flex-col bg-gradient-to-br from-purple-50 via-white to-emerald-50 dark:from-gray-950 dark:via-gray-900 dark:to-purple-950">
       {/* Header */}
       <div className="flex-1 flex flex-col items-center justify-center pt-12 pb-6">
         <motion.div
           initial={{ scale: 0.8, opacity: 0 }}
           animate={{ scale: 1, opacity: 1 }}
           transition={{ type: 'spring', stiffness: 200, damping: 20 }}
-          className="w-20 h-20 bg-gradient-to-br from-emerald-500 to-teal-600 rounded-3xl flex items-center justify-center shadow-xl shadow-emerald-200 dark:shadow-emerald-900/40"
+          className="w-20 h-20 bg-gradient-to-br from-purple-500 to-emerald-600 rounded-3xl flex items-center justify-center shadow-xl shadow-purple-200 dark:shadow-purple-900/40"
         >
           <Heart className="w-12 h-12 text-white" fill="currentColor" />
         </motion.div>
@@ -83,9 +100,9 @@ export function LoginScreen() {
           initial={{ opacity: 0, y: 10 }}
           animate={{ opacity: 1, y: 0 }}
           transition={{ delay: 0.2 }}
-          className="text-xl font-bold mt-4 text-emerald-800 dark:text-emerald-300"
+          className="text-xl font-bold mt-4 bg-gradient-to-l from-purple-700 to-emerald-700 dark:from-purple-400 dark:to-emerald-400 bg-clip-text text-transparent"
         >
-          عيادة الإسعافات الأولية
+          نظام العيادات
         </motion.h1>
         <motion.p
           initial={{ opacity: 0 }}
@@ -124,7 +141,7 @@ export function LoginScreen() {
                   setError('');
                 }}
                 placeholder="7XXXXXXXX"
-                className="w-full h-12 pr-10 pl-14 bg-white dark:bg-gray-800 border border-border rounded-xl text-base font-mono focus:outline-none focus:ring-2 focus:ring-emerald-500 focus:border-transparent transition-all"
+                className="w-full h-12 pr-10 pl-14 bg-white dark:bg-gray-800 border border-border rounded-xl text-base font-mono focus:outline-none focus:ring-2 focus:ring-purple-500 focus:border-transparent transition-all"
                 dir="ltr"
                 inputMode="numeric"
               />
@@ -143,7 +160,7 @@ export function LoginScreen() {
                 value={password}
                 onChange={(e) => { setPassword(e.target.value); setError(''); }}
                 placeholder="أدخل كلمة المرور"
-                className="w-full h-12 pr-10 pl-10 bg-white dark:bg-gray-800 border border-border rounded-xl text-base focus:outline-none focus:ring-2 focus:ring-emerald-500 focus:border-transparent transition-all"
+                className="w-full h-12 pr-10 pl-10 bg-white dark:bg-gray-800 border border-border rounded-xl text-base focus:outline-none focus:ring-2 focus:ring-purple-500 focus:border-transparent transition-all"
               />
               <button
                 type="button"
@@ -175,7 +192,7 @@ export function LoginScreen() {
           <button
             type="submit"
             disabled={loading}
-            className="w-full h-12 bg-gradient-to-l from-emerald-600 to-teal-600 text-white font-bold rounded-xl shadow-lg shadow-emerald-200 dark:shadow-emerald-900/40 disabled:opacity-60 active:scale-[0.98] transition-all"
+            className="w-full h-12 bg-gradient-to-l from-purple-600 to-emerald-600 text-white font-bold rounded-xl shadow-lg shadow-purple-200 dark:shadow-purple-900/40 disabled:opacity-60 active:scale-[0.98] transition-all"
           >
             {loading ? (
               <div className="w-6 h-6 border-2 border-white/30 border-t-white rounded-full animate-spin mx-auto" />
@@ -190,9 +207,9 @@ export function LoginScreen() {
             setIsFirstSetup(true);
             setScreen('admin-setup');
           }}
-          className="w-full mt-4 text-center text-xs text-emerald-600 hover:text-emerald-700 dark:text-emerald-400 font-medium"
+          className="w-full mt-4 text-center text-xs text-purple-600 hover:text-purple-700 dark:text-purple-400 font-medium"
         >
-          إعداد العيادة لأول مرة
+          إعداد النظام لأول مرة
         </button>
       </motion.div>
     </div>

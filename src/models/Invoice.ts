@@ -13,7 +13,8 @@ export interface IInvoice extends Document {
   total: number;
   paid: number;
   remaining: number;
-  status: string; // 'unpaid', 'partial', 'paid'
+  status: string;
+  clinicId: string;
   createdAt: Date;
 }
 
@@ -34,6 +35,7 @@ const InvoiceSchema = new Schema<IInvoice>({
   paid: { type: Number, default: 0 },
   remaining: { type: Number, default: 0 },
   status: { type: String, default: 'unpaid' },
+  clinicId: { type: String, default: '' },
   createdAt: { type: Date, default: Date.now },
 }, {
   toJSON: { virtuals: true },

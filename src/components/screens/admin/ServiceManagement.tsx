@@ -8,7 +8,8 @@ import { formatCurrency, type ServiceItem, DEFAULT_SERVICES } from '@/lib/consta
 import { toast } from 'sonner';
 
 export function ServiceManagement() {
-  const { setScreen } = useAppStore();
+  const { setScreen, user } = useAppStore();
+  const clinicId = user?.clinicId || '';
   const [services, setServices] = useState<ServiceItem[]>([]);
   const [loading, setLoading] = useState(true);
   const [search, setSearch] = useState('');
@@ -19,7 +20,7 @@ export function ServiceManagement() {
 
   const fetchServices = useCallback(async () => {
     try {
-      const res = await fetch('/api/services');
+      const res = await fetch(`/api/services?clinicId=${clinicId}`);
       if (res.ok) {
         const data = await res.json();
         setServices(data);
@@ -52,6 +53,7 @@ export function ServiceManagement() {
           duration: Number(newService.duration) || 15,
           category: newService.category,
           description: newService.description || newService.nameAr.trim(),
+          clinicId,
         }),
       });
       if (res.ok) {

@@ -7,7 +7,8 @@ import { useAppStore } from '@/lib/store';
 import { formatCurrency, formatDate, statusColors, statusLabels, type InvoiceItem } from '@/lib/constants';
 
 export function FinanceManagement() {
-  const { setScreen } = useAppStore();
+  const { setScreen, user } = useAppStore();
+  const clinicId = user?.clinicId || '';
   const [invoices, setInvoices] = useState<InvoiceItem[]>([]);
   const [loading, setLoading] = useState(true);
   const [filter, setFilter] = useState<'all' | 'unpaid' | 'partial' | 'paid'>('all');
@@ -17,8 +18,8 @@ export function FinanceManagement() {
     const fetchData = async () => {
       try {
         const [invRes, repRes] = await Promise.all([
-          fetch('/api/invoices'),
-          fetch('/api/reports?type=daily'),
+          fetch(`/api/invoices?clinicId=${clinicId}`),
+          fetch(`/api/reports?type=daily&clinicId=${clinicId}`),
         ]);
         if (invRes.ok) {
           const invData = await invRes.json();

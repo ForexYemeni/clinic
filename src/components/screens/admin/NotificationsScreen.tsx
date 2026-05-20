@@ -33,6 +33,7 @@ const filterTabs = [
 
 export function NotificationsScreen() {
   const { user, setScreen } = useAppStore();
+  const clinicId = user?.clinicId || '';
   const [notifications, setNotifications] = useState<NotificationItem[]>([]);
   const [loading, setLoading] = useState(true);
   const [activeFilter, setActiveFilter] = useState('all');
@@ -41,7 +42,7 @@ export function NotificationsScreen() {
   const fetchNotifications = useCallback(async () => {
     if (!user) return;
     try {
-      const res = await fetch(`/api/notifications?userId=${user.id}`);
+      const res = await fetch(`/api/notifications?userId=${user.id}&clinicId=${clinicId}`);
       if (res.ok) setNotifications(await res.json());
     } catch {} finally {
       setLoading(false);
@@ -59,7 +60,7 @@ export function NotificationsScreen() {
       await fetch('/api/notifications', {
         method: 'PUT',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ id }),
+        body: JSON.stringify({ id, clinicId }),
       });
       setNotifications(prev => prev.map(n => n.id === id ? { ...n, read: true } : n));
     } catch {}
@@ -72,7 +73,7 @@ export function NotificationsScreen() {
       await fetch('/api/notifications', {
         method: 'PUT',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ markAll: true, userId: user.id }),
+        body: JSON.stringify({ markAll: true, userId: user.id, clinicId }),
       });
       setNotifications(prev => prev.map(n => ({ ...n, read: true })));
     } catch {} finally {

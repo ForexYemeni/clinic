@@ -7,7 +7,8 @@ export interface IService extends Document {
   category: string;
   description: string;
   active: boolean;
-  status: string; // 'active', 'paused', 'deleted'
+  status: string;
+  clinicId: string;
   createdAt: Date;
 }
 
@@ -19,6 +20,7 @@ const ServiceSchema = new Schema<IService>({
   description: { type: String, default: '' },
   active: { type: Boolean, default: true },
   status: { type: String, default: 'active' },
+  clinicId: { type: String, default: '' },
   createdAt: { type: Date, default: Date.now },
 }, {
   toJSON: { virtuals: true },

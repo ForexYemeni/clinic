@@ -4,33 +4,27 @@ import { toClient } from '@/lib/mongoose-helpers';
 import { notifyClinicUsers } from '@/lib/notifications';
 import { NextRequest, NextResponse } from 'next/server';
 
-// GET: List all patients (with search by name)
+// GET: List all patients (with search by name, filtered by clinicId)
 export async function GET(request: NextRequest) {
   try {
     await dbConnect();
 
     const { searchParams } = new URL(request.url);
     const search = searchParams.get('search') || '';
+    const clinicId = searchParams.get('clinicId') || '';
 
-    let query = Patient.find().sort({ createdAt: -1 });
-    if (search) {
-      query = query.where('name').regex(new RegExp(search, 'i'));
-    }
+    let query = Patient.find();
+    if (clinicId) query = query.where('clinicId', clinicId);
+    if (search) query = query.where('name').regex(new RegExp(search, 'i'));
+    query = query.sort({ createdAt: -1 });
 
     const patients = await query.lean();
-
-    const result = patients.map((doc) => {
-      const client = toClient(doc);
-      return client;
-    });
+    const result = patients.map((doc) => toClient(doc));
 
     return NextResponse.json(result);
   } catch (error) {
     console.error('Patients list error:', error);
-    return NextResponse.json(
-      { error: 'خطأ في جلب المرضى' },
-      { status: 500 }
-    );
+    return NextResponse.json({ error: 'خطأ في جلب المرضى' }, { status: 500 });
   }
 }
 
@@ -40,13 +34,10 @@ export async function POST(request: NextRequest) {
     await dbConnect();
 
     const body = await request.json();
-    const { name, age, gender, phone, emergencyPhone, address, bloodType, chronicDiseases, allergies, medicalHistory, notes } = body;
+    const { name, age, gender, phone, emergencyPhone, address, bloodType, chronicDiseases, allergies, medicalHistory, notes, clinicId } = body;
 
     if (!name) {
-      return NextResponse.json(
-        { error: 'يرجى إدخال اسم المريض' },
-        { status: 400 }
-      );
+      return NextResponse.json({ error: 'يرجى إدخال اسم المريض' }, { status: 400 });
     }
 
     const patientData = {
@@ -61,6 +52,7 @@ export async function POST(request: NextRequest) {
       allergies: allergies || '',
       medicalHistory: medicalHistory || '',
       notes: notes || '',
+      clinicId: clinicId || '',
       createdAt: new Date(),
     };
 
@@ -68,12 +60,12 @@ export async function POST(request: NextRequest) {
     const result = toClient(doc.toObject());
 
     // Send notification to clinic users about new patient
-    const clinicId = body.clinicId || '';
+    const cid = clinicId || '';
     const createdBy = body.createdBy || '';
-    if (clinicId) {
+    if (cid) {
       try {
         await notifyClinicUsers({
-          clinicId,
+          clinicId: cid,
           excludeUserId: createdBy,
           type: 'patient',
           title: 'مريض جديد',
@@ -86,15 +78,9 @@ export async function POST(request: NextRequest) {
       }
     }
 
-    return NextResponse.json(
-      result,
-      { status: 201 }
-    );
+    return NextResponse.json(result, { status: 201 });
   } catch (error) {
     console.error('Create patient error:', error);
-    return NextResponse.json(
-      { error: 'خطأ في إضافة المريض' },
-      { status: 500 }
-    );
+    return NextResponse.json({ error: 'خطأ في إضافة المريض' }, { status: 500 });
   }
 }

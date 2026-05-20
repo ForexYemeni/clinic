@@ -9,6 +9,7 @@ import { SuccessCard } from '@/components/shared/SuccessCard';
 
 export function NurseAddVisit() {
   const { setScreen, user, selectedPatientId: preselectedPatientId } = useAppStore();
+  const clinicId = user?.clinicId || '';
   const [step, setStep] = useState<'select-patient' | 'add-visit'>(
     preselectedPatientId ? 'add-visit' : 'select-patient'
   );
@@ -48,7 +49,7 @@ export function NurseAddVisit() {
   useEffect(() => {
     const fetchData = async () => {
       try {
-        const pRes = await fetch('/api/patients');
+        const pRes = await fetch(`/api/patients?clinicId=${clinicId}`);
         if (pRes.ok) {
           const pData = await pRes.json();
           setPatients(pData);
@@ -69,7 +70,7 @@ export function NurseAddVisit() {
     const fetchServices = async () => {
       try {
         setServicesError('');
-        const sRes = await fetch('/api/services');
+        const sRes = await fetch(`/api/services?clinicId=${clinicId}`);
         if (sRes.ok) {
           const sData = await sRes.json();
           const activeServices = sData.filter((s: any) => s.status === 'active' || s.active === true);
@@ -126,6 +127,7 @@ export function NurseAddVisit() {
           patientId: activePatientId || preselectedPatientId,
           nurseId: user?.id,
           nurseName: user?.name,
+          clinicId,
           reason: visitForm.reason || 'زيارة عامة',
           diagnosis: visitForm.diagnosis,
           notes: visitForm.notes,

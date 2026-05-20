@@ -2,7 +2,7 @@ import dbConnect from '@/lib/mongodb';
 import User from '@/models/User';
 import { NextRequest, NextResponse } from 'next/server';
 
-// PUT: Update nurse (change password, toggle active)
+// PUT: Update user (change password, toggle active)
 export async function PUT(
   request: NextRequest,
   { params }: { params: Promise<{ id: string }> }
@@ -13,18 +13,13 @@ export async function PUT(
     const { id } = await params;
     const body = await request.json();
 
-    // Check if user exists
     const userDoc = await User.findById(id).lean();
     if (!userDoc) {
-      return NextResponse.json(
-        { error: 'المستخدم غير موجود' },
-        { status: 404 }
-      );
+      return NextResponse.json({ error: 'المستخدم غير موجود' }, { status: 404 });
     }
 
-    // Allow admin to change their own password, but block other admin modifications
-    if (userDoc.role === 'admin') {
-      // Only allow password changes for admin users
+    // For admin and super_admin, only allow password changes
+    if (userDoc.role === 'admin' || userDoc.role === 'super_admin') {
       const allowedFields = ['password'];
       const requestedFields = Object.keys(body);
       const disallowedFields = requestedFields.filter(f => !allowedFields.includes(f));
@@ -46,15 +41,12 @@ export async function PUT(
 
     return NextResponse.json({ id, ...updateData });
   } catch (error) {
-    console.error('Update nurse error:', error);
-    return NextResponse.json(
-      { error: 'خطأ في تحديث بيانات الممرض' },
-      { status: 500 }
-    );
+    console.error('Update user error:', error);
+    return NextResponse.json({ error: 'خطأ في تحديث بيانات المستخدم' }, { status: 500 });
   }
 }
 
-// DELETE: Delete nurse
+// DELETE: Delete user (only nurses)
 export async function DELETE(
   request: NextRequest,
   { params }: { params: Promise<{ id: string }> }
@@ -64,31 +56,20 @@ export async function DELETE(
 
     const { id } = await params;
 
-    // Check if user exists
     const userDoc = await User.findById(id).lean();
     if (!userDoc) {
-      return NextResponse.json(
-        { error: 'المستخدم غير موجود' },
-        { status: 404 }
-      );
+      return NextResponse.json({ error: 'المستخدم غير موجود' }, { status: 404 });
     }
 
-    // Prevent deleting admin
-    if (userDoc.role === 'admin') {
-      return NextResponse.json(
-        { error: 'لا يمكن حذف المدير' },
-        { status: 403 }
-      );
+    if (userDoc.role === 'admin' || userDoc.role === 'super_admin') {
+      return NextResponse.json({ error: 'لا يمكن حذف المدير' }, { status: 403 });
     }
 
     await User.findByIdAndDelete(id);
 
     return NextResponse.json({ success: true, id });
   } catch (error) {
-    console.error('Delete nurse error:', error);
-    return NextResponse.json(
-      { error: 'خطأ في حذف الممرض' },
-      { status: 500 }
-    );
+    console.error('Delete user error:', error);
+    return NextResponse.json({ error: 'خطأ في حذف المستخدم' }, { status: 500 });
   }
 }

@@ -27,6 +27,7 @@ const priorityColors: Record<string, string> = {
 
 export function NotificationBell() {
   const { user, setScreen } = useAppStore();
+  const clinicId = user?.clinicId || '';
   const [unreadCount, setUnreadCount] = useState(0);
   const [notifications, setNotifications] = useState<NotificationItem[]>([]);
   const [showPanel, setShowPanel] = useState(false);
@@ -36,7 +37,7 @@ export function NotificationBell() {
   const fetchUnreadCount = useCallback(async () => {
     if (!user) return;
     try {
-      const res = await fetch(`/api/notifications?userId=${user.id}&count=true`);
+      const res = await fetch(`/api/notifications?userId=${user.id}&count=true&clinicId=${clinicId}`);
       if (res.ok) {
         const data = await res.json();
         setUnreadCount(data.count || 0);
@@ -48,7 +49,7 @@ export function NotificationBell() {
     if (!user) return;
     setLoading(true);
     try {
-      const res = await fetch(`/api/notifications?userId=${user.id}`);
+      const res = await fetch(`/api/notifications?userId=${user.id}&clinicId=${clinicId}`);
       if (res.ok) {
         const data = await res.json();
         setNotifications(data);
@@ -90,7 +91,7 @@ export function NotificationBell() {
       await fetch('/api/notifications', {
         method: 'PUT',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ id }),
+        body: JSON.stringify({ id, clinicId }),
       });
       setNotifications(prev => prev.map(n => n.id === id ? { ...n, read: true } : n));
       setUnreadCount(prev => Math.max(0, prev - 1));
@@ -103,7 +104,7 @@ export function NotificationBell() {
       await fetch('/api/notifications', {
         method: 'PUT',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ markAll: true, userId: user.id }),
+        body: JSON.stringify({ markAll: true, userId: user.id, clinicId }),
       });
       setNotifications(prev => prev.map(n => ({ ...n, read: true })));
       setUnreadCount(0);

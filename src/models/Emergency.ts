@@ -5,12 +5,13 @@ export interface IEmergency extends Document {
   patientName: string;
   nurseId: string;
   nurseName: string;
-  severity: string; // 'low', 'moderate', 'high', 'critical'
-  status: string; // 'active', 'treated', 'transferred', 'archived'
+  severity: string;
+  status: string;
   notes: string;
   actions: string;
   procedures: string;
   arrivalTime: Date;
+  clinicId: string;
   createdAt: Date;
 }
 
@@ -25,6 +26,7 @@ const EmergencySchema = new Schema<IEmergency>({
   actions: { type: String, default: '' },
   procedures: { type: String, default: '' },
   arrivalTime: { type: Date, default: Date.now },
+  clinicId: { type: String, default: '' },
   createdAt: { type: Date, default: Date.now },
 }, {
   toJSON: { virtuals: true },

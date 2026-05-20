@@ -7,7 +7,8 @@ import { severityLabels } from '@/lib/constants';
 import { toast } from 'sonner';
 
 export function AddEmergencyForm() {
-  const { setScreen } = useAppStore();
+  const { setScreen, user } = useAppStore();
+  const clinicId = user?.clinicId || '';
   const [loading, setLoading] = useState(false);
   const [patients, setPatients] = useState<any[]>([]);
   const [form, setForm] = useState({
@@ -15,7 +16,7 @@ export function AddEmergencyForm() {
   });
 
   useEffect(() => {
-    fetch('/api/patients').then(r => r.json()).then(setPatients).catch(() => {});
+    fetch(`/api/patients?clinicId=${clinicId}`).then(r => r.json()).then(setPatients).catch(() => {});
   }, []);
 
   const handleSubmit = async (e: React.FormEvent) => {
@@ -29,7 +30,7 @@ export function AddEmergencyForm() {
       const res = await fetch('/api/emergencies', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify(form),
+        body: JSON.stringify({ ...form, clinicId }),
       });
       if (res.ok) {
         toast.success('تمت إضافة حالة الطوارئ');

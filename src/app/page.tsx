@@ -10,6 +10,10 @@ import { SplashScreen } from '@/components/screens/SplashScreen';
 import { LoginScreen } from '@/components/screens/LoginScreen';
 import { FirstSetupScreen } from '@/components/screens/FirstSetupScreen';
 
+// Lazy-loaded super admin screens
+const SuperAdminDashboard = dynamic(() => import('@/components/screens/superadmin/SuperAdminDashboard').then(m => ({ default: m.SuperAdminDashboard })), { ssr: false });
+const ClinicManagement = dynamic(() => import('@/components/screens/superadmin/ClinicManagement').then(m => ({ default: m.ClinicManagement })), { ssr: false });
+
 // Lazy-loaded admin screens
 const AdminDashboard = dynamic(() => import('@/components/screens/admin/AdminDashboard').then(m => ({ default: m.AdminDashboard })), { ssr: false });
 const PatientList = dynamic(() => import('@/components/screens/admin/PatientList').then(m => ({ default: m.PatientList })), { ssr: false });
@@ -70,6 +74,11 @@ export default function ClinicApp() {
   // Render current screen
   const renderScreen = () => {
     switch (currentScreen) {
+      // Super Admin screens
+      case 'super-dashboard': return <SuperAdminDashboard />;
+      case 'super-clinics': return <ClinicManagement />;
+      case 'super-add-clinic': return <ClinicManagement />;
+
       // Admin screens
       case 'admin-dashboard': return <AdminDashboard />;
       case 'admin-patients': return <PatientList role="admin" />;
@@ -85,7 +94,7 @@ export default function ClinicApp() {
       case 'admin-settings': return <SettingsScreen />;
       case 'admin-reports': return <AdminReports />;
 
-      // Nurse screens (no dashboard, no appointments)
+      // Nurse screens
       case 'nurse-patients': return <PatientList role="nurse" />;
       case 'nurse-patient-detail': return <PatientDetail role="nurse" />;
       case 'nurse-add-visit': return <NurseAddVisit />;
@@ -96,7 +105,10 @@ export default function ClinicApp() {
       case 'nurse-finance': return <NurseFinance />;
       case 'nurse-more': return <NurseMoreMenu />;
 
-      default: return user?.role === 'admin' ? <AdminDashboard /> : <PatientList role="nurse" />;
+      default:
+        if (user.role === 'super_admin') return <SuperAdminDashboard />;
+        if (user.role === 'admin') return <AdminDashboard />;
+        return <PatientList role="nurse" />;
     }
   };
 

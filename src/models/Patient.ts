@@ -12,6 +12,7 @@ export interface IPatient extends Document {
   allergies: string;
   medicalHistory: string;
   notes: string;
+  clinicId: string;
   createdAt: Date;
 }
 
@@ -27,6 +28,7 @@ const PatientSchema = new Schema<IPatient>({
   allergies: { type: String, default: '' },
   medicalHistory: { type: String, default: '' },
   notes: { type: String, default: '' },
+  clinicId: { type: String, default: '' },
   createdAt: { type: Date, default: Date.now },
 }, {
   toJSON: { virtuals: true },

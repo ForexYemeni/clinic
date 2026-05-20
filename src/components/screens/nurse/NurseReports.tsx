@@ -7,6 +7,7 @@ import { formatCurrency } from '@/lib/constants';
 
 export function NurseReports() {
   const { user } = useAppStore();
+  const clinicId = user?.clinicId || '';
   const [reportType, setReportType] = useState<'daily' | 'monthly'>('daily');
   const [data, setData] = useState<any>(null);
   const [loading, setLoading] = useState(true);
@@ -15,7 +16,7 @@ export function NurseReports() {
     const fetchReport = async () => {
       setLoading(true);
       try {
-        const res = await fetch(`/api/reports?type=${reportType}${user?.id ? `&nurseId=${user.id}` : ''}`);
+        const res = await fetch(`/api/reports?type=${reportType}${user?.id ? `&nurseId=${user.id}` : ''}&clinicId=${clinicId}`);
         if (res.ok) setData(await res.json());
       } catch {} finally { setLoading(false); }
     };

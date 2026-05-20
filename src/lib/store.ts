@@ -2,10 +2,14 @@ import { create } from 'zustand';
 
 export type ScreenType = 
   | 'splash' | 'login' | 'admin-setup'
+  // Super Admin screens
+  | 'super-dashboard' | 'super-clinics' | 'super-add-clinic'
+  // Admin screens
   | 'admin-dashboard' | 'admin-patients' | 'admin-services' | 'admin-emergencies' | 'admin-more'
   | 'admin-nurses' | 'admin-finance' | 'admin-reports' | 'admin-notifications' | 'admin-settings'
   | 'admin-patient-detail' | 'admin-add-patient' | 'admin-add-nurse' | 'admin-add-emergency'
   | 'admin-add-payment' | 'admin-add-service'
+  // Nurse screens
   | 'nurse-patients' | 'nurse-emergencies' | 'nurse-reports' | 'nurse-more' | 'nurse-finance'
   | 'nurse-patient-detail' | 'nurse-add-emergency' | 'nurse-add-visit' | 'nurse-change-password';
 
@@ -13,8 +17,9 @@ export interface User {
   id: string;
   name: string;
   phone: string;
-  role: 'admin' | 'nurse';
+  role: 'super_admin' | 'admin' | 'nurse';
   active: boolean;
+  clinicId: string;
 }
 
 interface AppState {
@@ -47,7 +52,7 @@ export const useAppStore = create<AppState>((set) => ({
   theme: 'light',
   isSplashDone: false,
   isFirstSetup: false,
-  clinicName: 'عيادة الإسعافات الأولية',
+  clinicName: 'الإدارة الرئيسية',
   selectedPatientId: null,
   selectedEmergencyId: null,
   searchQuery: '',

@@ -6,24 +6,23 @@ import { toClient } from '@/lib/mongoose-helpers';
 import { notifyClinicUsers } from '@/lib/notifications';
 import { NextRequest, NextResponse } from 'next/server';
 
-// GET: List emergencies (?status=active)
+// GET: List emergencies (?status=active&clinicId=xxx)
 export async function GET(request: NextRequest) {
   try {
     await dbConnect();
 
     const { searchParams } = new URL(request.url);
     const status = searchParams.get('status');
+    const clinicId = searchParams.get('clinicId');
 
     let query = Emergency.find();
-    if (status) {
-      query = query.where('status', status);
-    }
+    if (clinicId) query = query.where('clinicId', clinicId);
+    if (status) query = query.where('status', status);
     const docs = await query.sort({ createdAt: -1 }).lean();
 
     const emergencies = [];
     for (const doc of docs) {
       const data = toClient(doc) as any;
-      // Enrich with patient data
       if (data.patientId) {
         try {
           const patientDoc = await Patient.findById(data.patientId).lean();
@@ -32,7 +31,6 @@ export async function GET(request: NextRequest) {
           }
         } catch {}
       }
-      // Enrich with nurse data
       if (data.nurseId) {
         try {
           const nurseDoc = await User.findById(data.nurseId).lean();
@@ -47,10 +45,7 @@ export async function GET(request: NextRequest) {
     return NextResponse.json(emergencies);
   } catch (error) {
     console.error('Emergencies list error:', error);
-    return NextResponse.json(
-      { error: 'خطأ في جلب الحالات الطارئة' },
-      { status: 500 }
-    );
+    return NextResponse.json({ error: 'خطأ في جلب الحالات الطارئة' }, { status: 500 });
   }
 }
 
@@ -60,31 +55,22 @@ export async function POST(request: NextRequest) {
     await dbConnect();
 
     const body = await request.json();
-    const { patientId, nurseId, severity, notes, actions, procedures } = body;
+    const { patientId, nurseId, severity, notes, actions, procedures, clinicId } = body;
 
     if (!patientId) {
-      return NextResponse.json(
-        { error: 'يرجى تحديد المريض' },
-        { status: 400 }
-      );
+      return NextResponse.json({ error: 'يرجى تحديد المريض' }, { status: 400 });
     }
 
-    // Enrich with patient name
     let patientName = '';
     if (patientId) {
       const patientDoc = await Patient.findById(patientId).lean();
-      if (patientDoc) {
-        patientName = patientDoc.name || '';
-      }
+      if (patientDoc) patientName = patientDoc.name || '';
     }
 
-    // Enrich with nurse name
     let nurseName = '';
     if (nurseId) {
       const nurseDoc = await User.findById(nurseId).lean();
-      if (nurseDoc) {
-        nurseName = nurseDoc.name || '';
-      }
+      if (nurseDoc) nurseName = nurseDoc.name || '';
     }
 
     const emergencyData = {
@@ -98,21 +84,21 @@ export async function POST(request: NextRequest) {
       actions: actions || '',
       procedures: procedures || '',
       arrivalTime: new Date(),
+      clinicId: clinicId || '',
       createdAt: new Date(),
     };
 
     const doc = await Emergency.create(emergencyData);
 
-    // Send urgent notification about new emergency
-    const clinicId = body.clinicId || '';
-    if (clinicId) {
+    const cid = clinicId || '';
+    if (cid) {
       try {
         const severityLabel = severity === 'critical' ? 'حرجة' : severity === 'severe' ? 'شديدة' : 'متوسطة';
         await notifyClinicUsers({
-          clinicId,
+          clinicId: cid,
           excludeUserId: nurseId,
           type: 'emergency',
-          title: '🚨 حالة طوارئ جديدة',
+          title: 'حالة طوارئ جديدة',
           message: `حالة طوارئ ${severityLabel} - المريض: ${patientName}`,
           priority: severity === 'critical' ? 'urgent' : 'high',
           relatedId: doc._id.toString(),
@@ -122,15 +108,9 @@ export async function POST(request: NextRequest) {
       }
     }
 
-    return NextResponse.json(
-      toClient(doc.toObject()),
-      { status: 201 }
-    );
+    return NextResponse.json(toClient(doc.toObject()), { status: 201 });
   } catch (error) {
     console.error('Create emergency error:', error);
-    return NextResponse.json(
-      { error: 'خطأ في إضافة الحالة الطارئة' },
-      { status: 500 }
-    );
+    return NextResponse.json({ error: 'خطأ في إضافة الحالة الطارئة' }, { status: 500 });
   }
 }

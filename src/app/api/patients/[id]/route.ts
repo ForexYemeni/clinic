@@ -18,31 +18,22 @@ export async function GET(
     const patientDoc = await Patient.findById(id).lean();
 
     if (!patientDoc) {
-      return NextResponse.json(
-        { error: 'المريض غير موجود' },
-        { status: 404 }
-      );
+      return NextResponse.json({ error: 'المريض غير موجود' }, { status: 404 });
     }
 
     const patientData = toClient(patientDoc);
 
-    // Get related visits
     let visits: any[] = [];
     try {
-      visits = await Visit.find({ patientId: id })
-        .sort({ visitDate: -1 })
-        .lean();
+      visits = await Visit.find({ patientId: id }).sort({ visitDate: -1 }).lean();
       visits = visits.map((v) => toClient(v));
     } catch (visitErr) {
       console.warn('Visits query failed:', visitErr);
     }
 
-    // Get related invoices
     let invoices: any[] = [];
     try {
-      invoices = await Invoice.find({ patientId: id })
-        .sort({ createdAt: -1 })
-        .lean();
+      invoices = await Invoice.find({ patientId: id }).sort({ createdAt: -1 }).lean();
       invoices = invoices.map((inv) => {
         const data = toClient(inv);
         data.remaining = data.remaining ?? (data.total - (data.paid || 0));
@@ -52,7 +43,6 @@ export async function GET(
       console.warn('Invoices query failed:', invErr);
     }
 
-    // Get unique service IDs from visits
     const serviceIds = new Set<string>();
     visits.forEach((visit: any) => {
       if (visit.serviceIds && Array.isArray(visit.serviceIds)) {
@@ -60,14 +50,11 @@ export async function GET(
       }
     });
 
-    // Fetch service details for those IDs
     const services: any[] = [];
     for (const serviceId of serviceIds) {
       try {
         const serviceDoc = await Service.findById(serviceId).lean();
-        if (serviceDoc) {
-          services.push(toClient(serviceDoc));
-        }
+        if (serviceDoc) services.push(toClient(serviceDoc));
       } catch {}
     }
 
@@ -79,10 +66,7 @@ export async function GET(
     });
   } catch (error) {
     console.error('Get patient error:', error);
-    return NextResponse.json(
-      { error: 'خطأ في جلب بيانات المريض' },
-      { status: 500 }
-    );
+    return NextResponse.json({ error: 'خطأ في جلب بيانات المريض' }, { status: 500 });
   }
 }
 
@@ -97,13 +81,9 @@ export async function PUT(
     const { id } = await params;
     const body = await request.json();
 
-    // Check if patient exists
     const patientDoc = await Patient.findById(id).lean();
     if (!patientDoc) {
-      return NextResponse.json(
-        { error: 'المريض غير موجود' },
-        { status: 404 }
-      );
+      return NextResponse.json({ error: 'المريض غير موجود' }, { status: 404 });
     }
 
     const updateData: Record<string, unknown> = {};
@@ -124,10 +104,7 @@ export async function PUT(
     return NextResponse.json({ id, ...updateData });
   } catch (error) {
     console.error('Update patient error:', error);
-    return NextResponse.json(
-      { error: 'خطأ في تحديث بيانات المريض' },
-      { status: 500 }
-    );
+    return NextResponse.json({ error: 'خطأ في تحديث بيانات المريض' }, { status: 500 });
   }
 }
 
@@ -141,16 +118,11 @@ export async function DELETE(
 
     const { id } = await params;
 
-    // Check if patient exists
     const patientDoc = await Patient.findById(id).lean();
     if (!patientDoc) {
-      return NextResponse.json(
-        { error: 'المريض غير موجود' },
-        { status: 404 }
-      );
+      return NextResponse.json({ error: 'المريض غير موجود' }, { status: 404 });
     }
 
-    // Delete related visits, invoices, and the patient
     await Promise.all([
       Visit.deleteMany({ patientId: id }),
       Invoice.deleteMany({ patientId: id }),
@@ -160,9 +132,6 @@ export async function DELETE(
     return NextResponse.json({ success: true, id });
   } catch (error) {
     console.error('Delete patient error:', error);
-    return NextResponse.json(
-      { error: 'خطأ في حذف المريض' },
-      { status: 500 }
-    );
+    return NextResponse.json({ error: 'خطأ في حذف المريض' }, { status: 500 });
   }
 }

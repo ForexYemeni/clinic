@@ -7,16 +7,15 @@ import Service from '@/models/Service';
 import { NextRequest, NextResponse } from 'next/server';
 
 // GET: Get reports data
-// ?type=daily - today's revenue, patients, services
-// ?type=monthly - month's revenue, patients, services
-// ?type=services - service usage stats
 export async function GET(request: NextRequest) {
   try {
     await dbConnect();
 
     const { searchParams } = new URL(request.url);
     const type = searchParams.get('type') || 'daily';
+    const clinicId = searchParams.get('clinicId') || '';
 
+    const clinicFilter = clinicId ? { clinicId } : {};
     const now = new Date();
     let startDate = new Date();
 
@@ -28,8 +27,7 @@ export async function GET(request: NextRequest) {
     }
 
     if (type === 'services') {
-      // Service usage stats
-      const visitsSnapshot = await Visit.find().lean();
+      const visitsSnapshot = await Visit.find(clinicFilter).lean();
       const serviceCountMap: Record<string, { count: number; name: string; revenue: number }> = {};
 
       for (const visitDoc of visitsSnapshot) {
@@ -44,7 +42,6 @@ export async function GET(request: NextRequest) {
             };
           }
           serviceCountMap[serviceId].count += 1;
-          // Get price from service
           const serviceDoc = await Service.findById(serviceId).lean();
           if (serviceDoc) {
             serviceCountMap[serviceId].revenue += serviceDoc.price || 0;
@@ -70,39 +67,26 @@ export async function GET(request: NextRequest) {
       });
     }
 
-    // Daily or Monthly report
     const [patientsSnap, visitsSnap, invoicesSnap] = await Promise.all([
-      Patient.find({ createdAt: { $gte: startDate } }).lean(),
-      Visit.find({ visitDate: { $gte: startDate } }).lean(),
-      Invoice.find({ createdAt: { $gte: startDate } }).lean(),
+      Patient.find({ ...clinicFilter, createdAt: { $gte: startDate } }).lean(),
+      Visit.find({ ...clinicFilter, visitDate: { $gte: startDate } }).lean(),
+      Invoice.find({ ...clinicFilter, createdAt: { $gte: startDate } }).lean(),
     ]);
 
     const newPatients = patientsSnap.length;
     const totalVisits = visitsSnap.length;
     const servicesProvided = visitsSnap.reduce(
-      (sum, doc) => sum + ((doc.serviceIds || []) as string[]).length,
-      0
+      (sum, doc) => sum + ((doc.serviceIds || []) as string[]).length, 0
     );
-    const revenue = invoicesSnap.reduce(
-      (sum, doc) => sum + (doc.paid || 0),
-      0
-    );
-    const totalInvoiced = invoicesSnap.reduce(
-      (sum, doc) => sum + (doc.total || 0),
-      0
-    );
+    const revenue = invoicesSnap.reduce((sum, doc) => sum + (doc.paid || 0), 0);
+    const totalInvoiced = invoicesSnap.reduce((sum, doc) => sum + (doc.total || 0), 0);
     const unpaidAmount = invoicesSnap.reduce(
-      (sum, doc) => sum + ((doc.remaining) ?? (doc.total - (doc.paid || 0))),
-      0
+      (sum, doc) => sum + ((doc.remaining) ?? (doc.total - (doc.paid || 0))), 0
     );
     const paidInvoices = invoicesSnap.filter((d) => d.status === 'paid').length;
     const unpaidInvoices = invoicesSnap.filter((d) => d.status === 'unpaid' || d.status === 'partial').length;
 
-    // Emergencies in period
-    const emergenciesSnap = await Emergency
-      .find({ createdAt: { $gte: startDate } })
-      .lean();
-    const emergencies = emergenciesSnap.length;
+    const emergenciesSnap = await Emergency.find({ ...clinicFilter, createdAt: { $gte: startDate } }).lean();
 
     return NextResponse.json({
       type,
@@ -117,14 +101,11 @@ export async function GET(request: NextRequest) {
         unpaidAmount,
         paidInvoices,
         unpaidInvoices,
-        emergencies,
+        emergencies: emergenciesSnap.length,
       },
     });
   } catch (error) {
     console.error('Reports error:', error);
-    return NextResponse.json(
-      { error: 'خطأ في جلب التقارير' },
-      { status: 500 }
-    );
+    return NextResponse.json({ error: 'خطأ في جلب التقارير' }, { status: 500 });
   }
 }

@@ -6,7 +6,8 @@ import { useAppStore } from '@/lib/store';
 import { formatCurrency } from '@/lib/constants';
 
 export function AdminReports() {
-  const { setScreen } = useAppStore();
+  const { setScreen, user } = useAppStore();
+  const clinicId = user?.clinicId || '';
   const [reportType, setReportType] = useState<'daily' | 'monthly' | 'services'>('daily');
   const [reportData, setReportData] = useState<any>(null);
   const [loading, setLoading] = useState(true);
@@ -15,7 +16,7 @@ export function AdminReports() {
     const fetchReport = async () => {
       setLoading(true);
       try {
-        const res = await fetch(`/api/reports?type=${reportType}`);
+        const res = await fetch(`/api/reports?type=${reportType}&clinicId=${clinicId}`);
         if (res.ok) setReportData(await res.json());
       } catch {} finally { setLoading(false); }
     };

@@ -25,7 +25,6 @@ export async function POST(request: NextRequest) {
       );
     }
 
-    // Validate phone is exactly 9 digits
     const phoneRegex = /^\d{9}$/;
     if (!phoneRegex.test(phone)) {
       return NextResponse.json(
@@ -34,7 +33,6 @@ export async function POST(request: NextRequest) {
       );
     }
 
-    // Find user by phone
     const userDoc = await User.findOne({ phone }).lean();
 
     if (!userDoc) {
@@ -44,7 +42,6 @@ export async function POST(request: NextRequest) {
       );
     }
 
-    // Only block if active is explicitly set to false
     if (userDoc.active === false) {
       return NextResponse.json(
         { error: 'الحساب معطل' },
@@ -52,7 +49,6 @@ export async function POST(request: NextRequest) {
       );
     }
 
-    // Verify password (plain text comparison)
     if (userDoc.password !== password) {
       return NextResponse.json(
         { error: 'رقم الهاتف أو كلمة المرور غير صحيحة' },
@@ -60,13 +56,27 @@ export async function POST(request: NextRequest) {
       );
     }
 
-    // Generate a simple token (user ID + timestamp based)
     const userId = userDoc._id.toString();
     const token = Buffer.from(`${userId}:${Date.now()}`).toString('base64');
 
-    // Get clinic info
-    const clinicDoc = await Clinic.findOne().lean();
-    const clinicData = clinicDoc ? toClient(clinicDoc) : null;
+    // Get clinic info based on role
+    let clinicData = null;
+    if (userDoc.role === 'super_admin') {
+      // Super admin has access to all clinics
+      clinicData = null;
+    } else if (userDoc.clinicId) {
+      const clinicDoc = await Clinic.findById(userDoc.clinicId).lean();
+      if (clinicDoc) {
+        clinicData = { id: clinicDoc._id.toString(), name: clinicDoc.name, active: clinicDoc.active !== false };
+        // Check if clinic is active
+        if (clinicDoc.active === false) {
+          return NextResponse.json(
+            { error: 'العيادة معطلة - تواصل مع الإدارة الرئيسية' },
+            { status: 403 }
+          );
+        }
+      }
+    }
 
     return NextResponse.json({
       user: {
@@ -75,15 +85,15 @@ export async function POST(request: NextRequest) {
         phone: userDoc.phone || '',
         role: userDoc.role || 'nurse',
         active: userDoc.active !== false,
+        clinicId: userDoc.clinicId || '',
       },
       token,
-      clinic: clinicData ? { id: clinicData.id, name: clinicData.name } : null,
+      clinic: clinicData,
     });
   } catch (error) {
     console.error('Auth error:', error);
     const errorMessage = error instanceof Error ? error.message : 'خطأ في تسجيل الدخول';
-    // Check if it's a MongoDB connection error
-    if (errorMessage.includes('MONGODB_URI') || errorMessage.includes('ECONNREFUSED') || 
+    if (errorMessage.includes('MONGODB_URI') || errorMessage.includes('ECONNREFUSED') ||
         errorMessage.includes('MongoServerError') || errorMessage.includes('timeout')) {
       return NextResponse.json(
         { error: 'خطأ في الاتصال بقاعدة البيانات - يرجى المحاولة لاحقاً', detail: errorMessage },
@@ -102,18 +112,22 @@ export async function GET() {
   try {
     await dbConnect();
 
-    const clinicDoc = await Clinic.findOne({ setupComplete: true }).lean();
+    // Check if any super_admin exists
+    const superAdmin = await User.findOne({ role: 'super_admin' }).lean();
 
-    const setupNeeded = !clinicDoc;
+    if (!superAdmin) {
+      return NextResponse.json({
+        setupNeeded: true,
+        clinic: null,
+      });
+    }
 
     return NextResponse.json({
-      setupNeeded,
-      clinic: setupNeeded ? null : toClient(clinicDoc!),
+      setupNeeded: false,
+      clinic: null,
     });
   } catch (error) {
     console.error('Setup check error:', error);
-    // If DB fails, don't redirect to setup - return setupNeeded: false
-    // so user sees login screen, not setup screen
     return NextResponse.json({
       setupNeeded: false,
       clinic: null,

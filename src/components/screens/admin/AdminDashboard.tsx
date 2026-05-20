@@ -8,14 +8,15 @@ import { formatCurrency, formatRelativeTime, severityLabels, severityColors, typ
 import { NotificationBell } from '@/components/shared/NotificationBell';
 
 export function AdminDashboard() {
-  const { setScreen } = useAppStore();
+  const { setScreen, user } = useAppStore();
+  const clinicId = user?.clinicId || '';
   const [data, setData] = useState<DashboardData | null>(null);
   const [loading, setLoading] = useState(true);
 
   useEffect(() => {
     const fetchDashboard = async () => {
       try {
-        const res = await fetch('/api/dashboard?role=admin');
+        const res = await fetch(`/api/dashboard?role=admin${clinicId ? `&clinicId=${clinicId}` : ''}`);
         if (res.ok) {
           const d = await res.json();
           setData(d);

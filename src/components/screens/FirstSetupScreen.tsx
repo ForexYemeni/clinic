@@ -2,7 +2,7 @@
 
 import React, { useState } from 'react';
 import { motion } from 'framer-motion';
-import { Heart, Phone, User, Building2, Lock, Eye, EyeOff, AlertCircle, ArrowLeft } from 'lucide-react';
+import { Heart, Phone, User, Lock, Eye, EyeOff, AlertCircle, ArrowLeft, Shield } from 'lucide-react';
 import { useAppStore } from '@/lib/store';
 import { toast } from 'sonner';
 
@@ -10,7 +10,6 @@ export function FirstSetupScreen() {
   const { setScreen, setUser, setClinicName } = useAppStore();
   const [adminName, setAdminName] = useState('');
   const [adminPhone, setAdminPhone] = useState('');
-  const [clinicNameInput, setClinicNameInput] = useState('');
   const [password, setPassword] = useState('');
   const [confirmPassword, setConfirmPassword] = useState('');
   const [showPass, setShowPass] = useState(false);
@@ -20,7 +19,7 @@ export function FirstSetupScreen() {
 
   const handleNext = () => {
     if (step === 1) {
-      if (!adminName.trim()) { setError('أدخل اسم المدير'); return; }
+      if (!adminName.trim()) { setError('أدخل اسم مدير النظام'); return; }
       if (adminPhone.length !== 9) { setError('رقم الهاتف يجب أن يكون 9 أرقام'); return; }
       setError('');
       setStep(2);
@@ -31,10 +30,6 @@ export function FirstSetupScreen() {
     e.preventDefault();
     setError('');
 
-    if (!clinicNameInput.trim()) {
-      setError('أدخل اسم العيادة');
-      return;
-    }
     if (password.length < 4) {
       setError('كلمة المرور يجب أن تكون 4 أحرف على الأقل');
       return;
@@ -52,7 +47,6 @@ export function FirstSetupScreen() {
         body: JSON.stringify({
           adminName: adminName.trim(),
           adminPhone,
-          clinicName: clinicNameInput.trim(),
           password,
         }),
       });
@@ -63,10 +57,10 @@ export function FirstSetupScreen() {
         return;
       }
 
-      setClinicName(clinicNameInput.trim());
+      setClinicName('الإدارة الرئيسية');
       setUser(data.user);
-      setScreen('admin-dashboard');
-      toast.success('تم إعداد العيادة بنجاح!');
+      setScreen('super-dashboard');
+      toast.success('تم إعداد النظام بنجاح! يمكنك الآن إضافة العيادات');
     } catch {
       setError('خطأ في الاتصال بالخادم');
     } finally {
@@ -75,19 +69,19 @@ export function FirstSetupScreen() {
   };
 
   return (
-    <div className="min-h-screen flex flex-col bg-gradient-to-br from-emerald-50 via-white to-teal-50 dark:from-gray-950 dark:via-gray-900 dark:to-emerald-950">
+    <div className="min-h-screen flex flex-col bg-gradient-to-br from-purple-50 via-white to-emerald-50 dark:from-gray-950 dark:via-gray-900 dark:to-purple-950">
       {/* Header */}
       <div className="flex flex-col items-center pt-10 pb-6">
-        <div className="w-16 h-16 bg-gradient-to-br from-emerald-500 to-teal-600 rounded-2xl flex items-center justify-center shadow-xl">
-          <Heart className="w-9 h-9 text-white" fill="currentColor" />
+        <div className="w-16 h-16 bg-gradient-to-br from-purple-500 to-emerald-600 rounded-2xl flex items-center justify-center shadow-xl">
+          <Shield className="w-9 h-9 text-white" />
         </div>
-        <h1 className="text-lg font-bold mt-3 text-emerald-800 dark:text-emerald-300">إعداد العيادة لأول مرة</h1>
-        <p className="text-sm text-muted-foreground mt-1">يجب إعداد العيادة قبل البدء</p>
+        <h1 className="text-lg font-bold mt-3 text-purple-800 dark:text-purple-300">إعداد النظام لأول مرة</h1>
+        <p className="text-sm text-muted-foreground mt-1">إنشاء حساب المدير الرئيسي</p>
         
         {/* Step indicator */}
         <div className="flex items-center gap-2 mt-4">
-          <div className={`w-8 h-1.5 rounded-full transition-all ${step >= 1 ? 'bg-emerald-500' : 'bg-gray-200 dark:bg-gray-700'}`} />
-          <div className={`w-8 h-1.5 rounded-full transition-all ${step >= 2 ? 'bg-emerald-500' : 'bg-gray-200 dark:bg-gray-700'}`} />
+          <div className={`w-8 h-1.5 rounded-full transition-all ${step >= 1 ? 'bg-purple-500' : 'bg-gray-200 dark:bg-gray-700'}`} />
+          <div className={`w-8 h-1.5 rounded-full transition-all ${step >= 2 ? 'bg-purple-500' : 'bg-gray-200 dark:bg-gray-700'}`} />
         </div>
       </div>
 
@@ -101,9 +95,8 @@ export function FirstSetupScreen() {
             exit={{ opacity: 0, x: -30 }}
             className="space-y-4"
           >
-            {/* Admin Name */}
             <div className="space-y-2">
-              <label className="text-sm font-medium">اسم المدير</label>
+              <label className="text-sm font-medium">اسم مدير النظام</label>
               <div className="relative">
                 <div className="absolute right-3 top-1/2 -translate-y-1/2 text-muted-foreground">
                   <User className="w-5 h-5" />
@@ -113,12 +106,11 @@ export function FirstSetupScreen() {
                   value={adminName}
                   onChange={(e) => { setAdminName(e.target.value); setError(''); }}
                   placeholder="أدخل اسمك الكامل"
-                  className="w-full h-12 pr-10 pl-4 bg-white dark:bg-gray-800 border border-border rounded-xl text-base focus:outline-none focus:ring-2 focus:ring-emerald-500 transition-all"
+                  className="w-full h-12 pr-10 pl-4 bg-white dark:bg-gray-800 border border-border rounded-xl text-base focus:outline-none focus:ring-2 focus:ring-purple-500 transition-all"
                 />
               </div>
             </div>
 
-            {/* Admin Phone */}
             <div className="space-y-2">
               <label className="text-sm font-medium">رقم الهاتف</label>
               <div className="relative">
@@ -137,7 +129,7 @@ export function FirstSetupScreen() {
                     setError('');
                   }}
                   placeholder="7XXXXXXXX"
-                  className="w-full h-12 pr-10 pl-14 bg-white dark:bg-gray-800 border border-border rounded-xl text-base font-mono focus:outline-none focus:ring-2 focus:ring-emerald-500 transition-all"
+                  className="w-full h-12 pr-10 pl-14 bg-white dark:bg-gray-800 border border-border rounded-xl text-base font-mono focus:outline-none focus:ring-2 focus:ring-purple-500 transition-all"
                   dir="ltr"
                   inputMode="numeric"
                 />
@@ -157,7 +149,7 @@ export function FirstSetupScreen() {
 
             <button
               onClick={handleNext}
-              className="w-full h-12 bg-gradient-to-l from-emerald-600 to-teal-600 text-white font-bold rounded-xl shadow-lg shadow-emerald-200 dark:shadow-emerald-900/40 active:scale-[0.98] transition-all"
+              className="w-full h-12 bg-gradient-to-l from-purple-600 to-emerald-600 text-white font-bold rounded-xl shadow-lg shadow-purple-200 dark:shadow-purple-900/40 active:scale-[0.98] transition-all"
             >
               التالي
             </button>
@@ -170,24 +162,6 @@ export function FirstSetupScreen() {
             exit={{ opacity: 0, x: -30 }}
           >
             <form onSubmit={handleSetup} className="space-y-4">
-              {/* Clinic Name */}
-              <div className="space-y-2">
-                <label className="text-sm font-medium">اسم العيادة</label>
-                <div className="relative">
-                  <div className="absolute right-3 top-1/2 -translate-y-1/2 text-muted-foreground">
-                    <Building2 className="w-5 h-5" />
-                  </div>
-                  <input
-                    type="text"
-                    value={clinicNameInput}
-                    onChange={(e) => { setClinicNameInput(e.target.value); setError(''); }}
-                    placeholder="مثال: عيادة الأمل للإسعافات"
-                    className="w-full h-12 pr-10 pl-4 bg-white dark:bg-gray-800 border border-border rounded-xl text-base focus:outline-none focus:ring-2 focus:ring-emerald-500 transition-all"
-                  />
-                </div>
-              </div>
-
-              {/* Password */}
               <div className="space-y-2">
                 <label className="text-sm font-medium">كلمة المرور</label>
                 <div className="relative">
@@ -199,7 +173,7 @@ export function FirstSetupScreen() {
                     value={password}
                     onChange={(e) => { setPassword(e.target.value); setError(''); }}
                     placeholder="أدخل كلمة المرور"
-                    className="w-full h-12 pr-10 pl-10 bg-white dark:bg-gray-800 border border-border rounded-xl text-base focus:outline-none focus:ring-2 focus:ring-emerald-500 transition-all"
+                    className="w-full h-12 pr-10 pl-10 bg-white dark:bg-gray-800 border border-border rounded-xl text-base focus:outline-none focus:ring-2 focus:ring-purple-500 transition-all"
                   />
                   <button
                     type="button"
@@ -211,7 +185,6 @@ export function FirstSetupScreen() {
                 </div>
               </div>
 
-              {/* Confirm Password */}
               <div className="space-y-2">
                 <label className="text-sm font-medium">تأكيد كلمة المرور</label>
                 <div className="relative">
@@ -223,7 +196,7 @@ export function FirstSetupScreen() {
                     value={confirmPassword}
                     onChange={(e) => { setConfirmPassword(e.target.value); setError(''); }}
                     placeholder="أعد إدخال كلمة المرور"
-                    className="w-full h-12 pr-10 pl-4 bg-white dark:bg-gray-800 border border-border rounded-xl text-base focus:outline-none focus:ring-2 focus:ring-emerald-500 transition-all"
+                    className="w-full h-12 pr-10 pl-4 bg-white dark:bg-gray-800 border border-border rounded-xl text-base focus:outline-none focus:ring-2 focus:ring-purple-500 transition-all"
                   />
                 </div>
               </div>
@@ -242,12 +215,12 @@ export function FirstSetupScreen() {
               <button
                 type="submit"
                 disabled={loading}
-                className="w-full h-12 bg-gradient-to-l from-emerald-600 to-teal-600 text-white font-bold rounded-xl shadow-lg shadow-emerald-200 dark:shadow-emerald-900/40 disabled:opacity-60 active:scale-[0.98] transition-all"
+                className="w-full h-12 bg-gradient-to-l from-purple-600 to-emerald-600 text-white font-bold rounded-xl shadow-lg shadow-purple-200 dark:shadow-purple-900/40 disabled:opacity-60 active:scale-[0.98] transition-all"
               >
                 {loading ? (
                   <div className="w-6 h-6 border-2 border-white/30 border-t-white rounded-full animate-spin mx-auto" />
                 ) : (
-                  'إنشاء العيادة'
+                  'إنشاء حساب المدير الرئيسي'
                 )}
               </button>
 

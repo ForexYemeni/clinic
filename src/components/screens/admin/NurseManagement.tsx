@@ -7,7 +7,8 @@ import { type NurseItem } from '@/lib/constants';
 import { toast } from 'sonner';
 
 export function NurseManagement() {
-  const { setScreen } = useAppStore();
+  const { setScreen, user } = useAppStore();
+  const clinicId = user?.clinicId || '';
   const [nurses, setNurses] = useState<NurseItem[]>([]);
   const [loading, setLoading] = useState(true);
   const [showAddForm, setShowAddForm] = useState(false);
@@ -15,7 +16,7 @@ export function NurseManagement() {
 
   const fetchNurses = useCallback(async () => {
     try {
-      const res = await fetch('/api/users?role=nurse');
+      const res = await fetch(`/api/users?role=nurse${clinicId ? `&clinicId=${clinicId}` : ''}`);
       if (res.ok) {
         const data = await res.json();
         setNurses(data);
@@ -36,7 +37,7 @@ export function NurseManagement() {
       const res = await fetch('/api/users', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ ...newNurse, role: 'nurse' }),
+        body: JSON.stringify({ ...newNurse, role: 'nurse', clinicId }),
       });
       if (res.ok) {
         toast.success('تمت إضافة الممرض');

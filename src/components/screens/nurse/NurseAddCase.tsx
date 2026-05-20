@@ -9,6 +9,7 @@ import { SuccessCard } from '@/components/shared/SuccessCard';
 
 export function NurseAddCase() {
   const { setScreen, user } = useAppStore();
+  const clinicId = user?.clinicId || '';
   const [loading, setLoading] = useState(false);
   const [patients, setPatients] = useState<any[]>([]);
   const [form, setForm] = useState({
@@ -20,7 +21,7 @@ export function NurseAddCase() {
   const [successPatientName, setSuccessPatientName] = useState('');
 
   useEffect(() => {
-    fetch('/api/patients').then(r => r.json()).then(setPatients).catch(() => {});
+    fetch(`/api/patients?clinicId=${clinicId}`).then(r => r.json()).then(setPatients).catch(() => {});
   }, []);
 
   const handleSubmit = async (e: React.FormEvent) => {
@@ -32,7 +33,7 @@ export function NurseAddCase() {
       const res = await fetch('/api/emergencies', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ ...form, nurseId: user?.id }),
+        body: JSON.stringify({ ...form, nurseId: user?.id, clinicId }),
       });
       if (res.ok) {
         const patientName = patients.find(p => p.id === form.patientId)?.name || 'مريض';

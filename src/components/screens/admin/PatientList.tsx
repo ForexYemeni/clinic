@@ -17,9 +17,12 @@ export function PatientList({ role = 'admin' }: Props) {
   const [loading, setLoading] = useState(true);
   const [search, setSearch] = useState('');
 
+  const { user } = useAppStore();
+  const clinicId = user?.clinicId || '';
+
   const fetchPatients = useCallback(async () => {
     try {
-      const res = await fetch('/api/patients');
+      const res = await fetch(`/api/patients${clinicId ? `?clinicId=${clinicId}` : ''}`);
       if (res.ok) {
         const data = await res.json();
         setPatients(data);
@@ -27,7 +30,7 @@ export function PatientList({ role = 'admin' }: Props) {
     } catch {} finally {
       setLoading(false);
     }
-  }, []);
+  }, [clinicId]);
 
   useEffect(() => { fetchPatients(); }, [fetchPatients]);
 

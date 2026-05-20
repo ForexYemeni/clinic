@@ -7,7 +7,8 @@ import { useAppStore } from '@/lib/store';
 import { formatRelativeTime, severityLabels, severityColors, severityBorderColors, statusColors, statusLabels, type EmergencyItem } from '@/lib/constants';
 
 export function NurseEmergencies() {
-  const { setScreen } = useAppStore();
+  const { setScreen, user } = useAppStore();
+  const clinicId = user?.clinicId || '';
   const [emergencies, setEmergencies] = useState<EmergencyItem[]>([]);
   const [loading, setLoading] = useState(true);
   const [statusFilter, setStatusFilter] = useState('active');
@@ -15,7 +16,7 @@ export function NurseEmergencies() {
   const fetchEmergencies = useCallback(async () => {
     setLoading(true);
     try {
-      const res = await fetch(`/api/emergencies?status=${statusFilter}`);
+      const res = await fetch(`/api/emergencies?status=${statusFilter}&clinicId=${clinicId}`);
       if (res.ok) setEmergencies(await res.json());
     } catch {} finally { setLoading(false); }
   }, [statusFilter]);

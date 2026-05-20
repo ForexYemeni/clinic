@@ -20,6 +20,7 @@ export interface IVisit extends Document {
   serviceIds: string[];
   complaints: string[];
   totalPrice: number;
+  clinicId: string;
   createdAt: Date;
 }
 
@@ -52,6 +53,7 @@ const VisitSchema = new Schema<IVisit>({
   serviceIds: { type: [String], default: [] },
   complaints: { type: [String], default: [] },
   totalPrice: { type: Number, default: 0 },
+  clinicId: { type: String, default: '' },
   createdAt: { type: Date, default: Date.now },
 }, {
   toJSON: { virtuals: true },

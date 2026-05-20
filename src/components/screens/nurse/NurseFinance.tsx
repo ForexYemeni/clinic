@@ -11,6 +11,7 @@ import { toast } from 'sonner';
 
 export function NurseFinance() {
   const { user } = useAppStore();
+  const clinicId = user?.clinicId || '';
   const [invoices, setInvoices] = useState<InvoiceItem[]>([]);
   const [loading, setLoading] = useState(true);
   const [filter, setFilter] = useState<'all' | 'unpaid' | 'partial' | 'paid'>('all');
@@ -34,7 +35,7 @@ export function NurseFinance() {
 
   const fetchInvoices = useCallback(async () => {
     try {
-      const invRes = await fetch('/api/invoices');
+      const invRes = await fetch(`/api/invoices?clinicId=${clinicId}`);
       if (invRes.ok) {
         const invData = await invRes.json();
         setInvoices(invData);
