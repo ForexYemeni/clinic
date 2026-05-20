@@ -222,3 +222,27 @@ Stage Summary:
 - Build succeeded and pushed to git (commit 8550630)
 - All 4 files modified: SplashScreen.tsx, LoginScreen.tsx, page.tsx, sw.js
 - Key architectural improvement: App is now resilient to network failures and API hangs
+
+---
+Task ID: 2
+Agent: Main Agent
+Task: Fix login error - the REAL root cause (Firebase quota exceeded)
+
+Work Log:
+- Started dev server and tested login API directly
+- Discovered the actual root cause: Firebase Firestore returns "8 RESOURCE_EXHAUSTED: Quota exceeded"
+- This means the Firebase project's free tier quota has been exceeded
+- ALL API calls were failing because of this, not just login
+- Created comprehensive firebase-error-handler.ts utility
+- Updated auth/route.ts with Firebase-specific error handling
+- Updated clinic/route.ts to return default settings on Firebase failure
+- Updated LoginScreen.tsx to detect 503/firebaseDown responses
+- Build succeeded and pushed to git (commit c51a552)
+
+Stage Summary:
+- The login error was caused by Firebase Firestore quota exhaustion
+- Added graceful degradation: app shows clear Arabic error messages instead of generic failures
+- Clinic settings API returns defaults when Firebase is down (app still renders)
+- Login allows access even if subscription check fails during Firebase outage
+- All audit log writes are now non-blocking
+- KEY: The Firebase quota needs to be resolved in Firebase Console (upgrade plan or wait for quota reset)
