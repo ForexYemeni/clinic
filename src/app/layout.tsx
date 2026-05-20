@@ -9,7 +9,7 @@ const geistSans = Geist({
 });
 
 export const metadata: Metadata = {
-  title: "نظام إدارة العيادة",
+  title: "العيادة",
   description: "تطبيق احترافي لإدارة العيادة - مرضى، زيارات، خدمات، فواتير",
   manifest: "/manifest.json",
   icons: {
@@ -26,7 +26,7 @@ export const metadata: Metadata = {
     statusBarStyle: "default",
     title: "العيادة",
   },
-  applicationName: "نظام إدارة العيادة",
+  applicationName: "العيادة",
   formatDetection: {
     telephone: true,
   },

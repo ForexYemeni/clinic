@@ -18,6 +18,8 @@ export async function GET(request: NextRequest) {
         totalRevenue: 0, todayRevenue: 0, todayPatients: 0, todayVisits: 0,
         pendingInvoices: 0, unpaidAmount: 0,
         servicesByCategory: [], topServices: [], recentEmergencies: [],
+        subscription: null,
+        subscriptionCheck: { valid: false, status: 'expired', endDate: '', daysRemaining: 0 },
       });
     }
 
@@ -108,6 +110,33 @@ export async function GET(request: NextRequest) {
     }
     const topServices = Object.entries(serviceCountMap).map(([id, count]) => ({ name: serviceNameMap[id] || '', count })).sort((a, b) => b.count - a.count).slice(0, 5);
 
+    // Subscription info
+    const clinicDoc = await adminDb.collection('clinics').doc(effectiveClinicId).get();
+    let subscription: null | { status: string; type: string; endDate: string; trialDays?: number } = null;
+    let subscriptionCheck: { valid: boolean; status: string; endDate: string; daysRemaining: number } = { valid: false, status: 'expired', endDate: '', daysRemaining: 0 };
+
+    if (clinicDoc.exists) {
+      const clinicData = clinicDoc.data();
+      const sub = clinicData?.subscription;
+      if (sub) {
+        subscription = {
+          status: sub.status || 'inactive',
+          type: sub.type || 'free',
+          endDate: sub.endDate || '',
+          ...(sub.trialDays !== undefined ? { trialDays: sub.trialDays } : {}),
+        };
+        const endMs = sub.endDate ? new Date(sub.endDate).getTime() : 0;
+        const nowMs = Date.now();
+        const daysRemaining = endMs > nowMs ? Math.ceil((endMs - nowMs) / (1000 * 60 * 60 * 24)) : 0;
+        subscriptionCheck = {
+          valid: sub.status === 'active' && daysRemaining > 0,
+          status: sub.status || 'expired',
+          endDate: sub.endDate || '',
+          daysRemaining,
+        };
+      }
+    }
+
     // Recent emergencies
     const recentEmergencies = [];
     const activeEmergencyDocs = emergenciesSnap.docs.filter((d) => d.data().status === 'active').slice(0, 5);
@@ -130,6 +159,7 @@ export async function GET(request: NextRequest) {
       activeEmergencies, activeServices, activeNurses,
       totalRevenue, todayRevenue, todayPatients, todayVisits: todayVisitsSnap.size,
       pendingInvoices, unpaidAmount, servicesByCategory, topServices, recentEmergencies,
+      subscription, subscriptionCheck,
     });
   } catch (error) {
     console.error('Dashboard error:', error);

@@ -1,12 +1,162 @@
 'use client';
 
-import React, { useEffect, useState } from 'react';
+import React, { useEffect, useState, useCallback } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
-import { Shield, Building2, Users, Clock, CreditCard, AlertTriangle, Database, ChevronLeft, Plus, Search, Moon, Sun, Key, ScrollText, FileText, BarChart3, Trash2, RotateCcw, Eye, EyeOff, Loader2, CheckCircle, Lock, Phone, MessageCircle } from 'lucide-react';
+import { Shield, Building2, Users, Clock, CreditCard, AlertTriangle, Database, ChevronLeft, Plus, Search, Moon, Sun, Key, ScrollText, FileText, BarChart3, Trash2, RotateCcw, Eye, EyeOff, Loader2, CheckCircle, Lock, Phone, MessageCircle, X } from 'lucide-react';
 import { useAppStore } from '@/lib/store';
 import { apiGet, apiPost, apiPut, apiDelete } from '@/lib/api';
 import { toast } from 'sonner';
 import { formatCurrency, formatDate } from '@/lib/constants';
+
+// ═══ Data Reset Requests Section ═══
+interface DataResetRequest {
+  id: string;
+  clinicId: string;
+  clinicName: string;
+  adminId: string;
+  adminName: string;
+  adminPhone: string;
+  status: string;
+  createdAt: string;
+}
+
+function DataResetRequestsSection() {
+  const { user } = useAppStore();
+  const [requests, setRequests] = useState<DataResetRequest[]>([]);
+  const [loading, setLoading] = useState(true);
+  const [processingId, setProcessingId] = useState<string | null>(null);
+  const [showApproveCard, setShowApproveCard] = useState<DataResetRequest | null>(null);
+  const [superAdminPassword, setSuperAdminPassword] = useState('');
+  const [showPassword, setShowPassword] = useState(false);
+
+  const fetchRequests = useCallback(async () => {
+    try {
+      const data = await apiGet<DataResetRequest[]>('/api/data-reset-requests');
+      setRequests(data);
+    } catch {} finally {
+      setLoading(false);
+    }
+  }, []);
+
+  useEffect(() => { fetchRequests(); const interval = setInterval(fetchRequests, 30000); return () => clearInterval(interval); }, [fetchRequests]);
+
+  const handleAction = async (id: string, action: 'approve' | 'reject') => {
+    setProcessingId(id);
+    try {
+      await apiPut('/api/data-reset-requests', {
+        id,
+        action,
+        superAdminPassword: action === 'approve' ? superAdminPassword : undefined,
+      });
+      toast.success(action === 'approve' ? 'تمت الموافقة وتنفيذ الحذف' : 'تم رفض الطلب');
+      setShowApproveCard(null);
+      setSuperAdminPassword('');
+      fetchRequests();
+    } catch (err: any) {
+      toast.error(err.message || 'خطأ');
+    } finally {
+      setProcessingId(null);
+    }
+  };
+
+  if (loading || requests.length === 0) return null;
+
+  return (
+    <div className="space-y-2">
+      <h3 className="text-sm font-bold text-muted-foreground flex items-center gap-2">
+        <Trash2 className="w-4 h-4 text-red-500" />
+        طلبات حذف البيانات
+        <span className="w-5 h-5 rounded-full bg-red-500 text-white text-[10px] flex items-center justify-center font-bold">{requests.length}</span>
+      </h3>
+
+      {/* Approve confirmation card */}
+      <AnimatePresence>
+        {showApproveCard && (
+          <motion.div
+            initial={{ opacity: 0, scale: 0.95 }}
+            animate={{ opacity: 1, scale: 1 }}
+            exit={{ opacity: 0, scale: 0.95 }}
+            className="bg-gradient-to-br from-red-500 to-red-600 rounded-2xl p-4 text-white shadow-lg relative overflow-hidden"
+          >
+            <div className="absolute -top-6 -left-6 w-20 h-20 bg-white/5 rounded-full" />
+            <button onClick={() => { setShowApproveCard(null); setSuperAdminPassword(''); }} className="absolute top-3 left-3 w-7 h-7 rounded-full bg-white/20 flex items-center justify-center z-10">
+              <X className="w-3.5 h-3.5 text-white" />
+            </button>
+            <div className="relative">
+              <div className="flex items-center gap-3 mb-3">
+                <div className="w-10 h-10 bg-white/20 rounded-xl flex items-center justify-center">
+                  <AlertTriangle className="w-5 h-5" />
+                </div>
+                <div>
+                  <p className="text-sm font-bold">تأكيد حذف بيانات {showApproveCard.clinicName}</p>
+                  <p className="text-[10px] text-white/70">هذا الإجراء لا يمكن التراجع عنه</p>
+                </div>
+              </div>
+              <div className="bg-white/10 rounded-xl p-2.5 mb-3 space-y-1 text-xs backdrop-blur-sm">
+                <div className="flex justify-between"><span className="text-white/70">المدير</span><span className="font-bold">{showApproveCard.adminName}</span></div>
+                <div className="flex justify-between"><span className="text-white/70">الهاتف</span><span className="font-medium" dir="ltr">{showApproveCard.adminPhone}</span></div>
+                <div className="flex justify-between"><span className="text-white/70">التاريخ</span><span className="font-medium">{formatDate(showApproveCard.createdAt)}</span></div>
+              </div>
+              <div className="mb-3">
+                <label className="text-[10px] text-white/70 mb-1 block">كلمة مرور الإدارة الرئيسية</label>
+                <div className="relative">
+                  <input
+                    type={showPassword ? 'text' : 'password'}
+                    value={superAdminPassword}
+                    onChange={e => setSuperAdminPassword(e.target.value)}
+                    placeholder="أدخل كلمة المرور"
+                    className="w-full h-10 px-4 pl-10 bg-white/10 border border-white/20 rounded-xl text-sm text-white placeholder-white/40 focus:outline-none focus:ring-2 focus:ring-white/30"
+                  />
+                  <button type="button" onClick={() => setShowPassword(!showPassword)} className="absolute left-3 top-1/2 -translate-y-1/2 text-white/60">
+                    {showPassword ? <EyeOff className="w-4 h-4" /> : <Eye className="w-4 h-4" />}
+                  </button>
+                </div>
+              </div>
+              <div className="flex gap-2">
+                <button onClick={() => handleAction(showApproveCard.id, 'approve')} disabled={processingId === showApproveCard.id || !superAdminPassword} className="flex-1 h-10 bg-white text-red-600 rounded-xl text-sm font-bold active:scale-[0.97] transition-transform shadow-sm disabled:opacity-50 flex items-center justify-center gap-1.5">
+                  {processingId === showApproveCard.id ? <Loader2 className="w-4 h-4 animate-spin" /> : <Trash2 className="w-4 h-4" />}
+                  موافقة وتنفيذ الحذف
+                </button>
+                <button onClick={() => { setShowApproveCard(null); setSuperAdminPassword(''); }} className="flex-1 h-10 bg-white/20 text-white rounded-xl text-sm font-medium backdrop-blur-sm active:scale-[0.97] transition-transform">
+                  إلغاء
+                </button>
+              </div>
+            </div>
+          </motion.div>
+        )}
+      </AnimatePresence>
+
+      {requests.map(req => (
+        <motion.div
+          key={req.id}
+          initial={{ opacity: 0, y: 10 }}
+          animate={{ opacity: 1, y: 0 }}
+          className="bg-white dark:bg-gray-800 rounded-2xl border-2 border-red-200 dark:border-red-800 p-3.5"
+        >
+          <div className="flex items-center gap-3 mb-3">
+            <div className="w-10 h-10 bg-red-100 dark:bg-red-900/30 rounded-xl flex items-center justify-center">
+              <AlertTriangle className="w-5 h-5 text-red-500" />
+            </div>
+            <div className="flex-1">
+              <p className="text-sm font-bold">{req.clinicName}</p>
+              <p className="text-xs text-muted-foreground">طلب من: {req.adminName} • {formatDate(req.createdAt)}</p>
+            </div>
+            <span className="text-[9px] px-2 py-1 rounded-full bg-red-100 text-red-700 dark:bg-red-900/30 dark:text-red-400 font-bold">حذف بيانات</span>
+          </div>
+          <div className="flex gap-2">
+            <button onClick={() => setShowApproveCard(req)} disabled={processingId === req.id} className="flex-1 h-9 bg-red-600 text-white rounded-xl text-xs font-bold active:scale-[0.97] transition-transform disabled:opacity-50 flex items-center justify-center gap-1">
+              {processingId === req.id ? <Loader2 className="w-3.5 h-3.5 animate-spin" /> : <Trash2 className="w-3.5 h-3.5" />}
+              موافقة
+            </button>
+            <button onClick={() => handleAction(req.id, 'reject')} disabled={processingId === req.id} className="flex-1 h-9 bg-gray-100 dark:bg-gray-700 text-muted-foreground rounded-xl text-xs font-bold active:scale-[0.97] transition-transform disabled:opacity-50">
+              رفض
+            </button>
+          </div>
+        </motion.div>
+      ))}
+    </div>
+  );
+}
 
 interface ClinicData {
   id: string;
@@ -364,6 +514,9 @@ export function SuperAdminDashboard({ initialTab = 'dashboard' }: Props) {
             </div>
           </div>
         </div>
+
+        {/* Data Reset Requests */}
+        <DataResetRequestsSection />
 
         {/* Recent Clinics */}
         <div className="space-y-2">

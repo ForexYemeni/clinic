@@ -2,9 +2,9 @@
 
 import React, { useEffect, useState, useMemo } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
-import { Users, AlertTriangle, Activity, DollarSign, TrendingUp, Clock, Stethoscope, ChevronLeft, Wallet, Bell } from 'lucide-react';
+import { Users, AlertTriangle, Activity, DollarSign, TrendingUp, Clock, Stethoscope, ChevronLeft, Wallet, Bell, Calendar, CreditCard } from 'lucide-react';
 import { useAppStore } from '@/lib/store';
-import { formatCurrency, formatRelativeTime, severityLabels, severityColors, type DashboardData, type EmergencyItem } from '@/lib/constants';
+import { formatCurrency, formatRelativeTime, severityLabels, severityColors, type DashboardData, type EmergencyItem, formatDate } from '@/lib/constants';
 import { PwaInstallBanner } from '@/components/shared/PwaInstallPrompt';
 
 interface PendingWithdrawal {
@@ -102,6 +102,74 @@ export function AdminDashboard() {
     <div className="p-4 space-y-5 pb-24">
       {/* PWA Install Banner - Prominent at top */}
       <PwaInstallBanner />
+
+      {/* Subscription Status Widget */}
+      {data?.subscription && data?.subscriptionCheck && data.subscription.type !== 'lifetime' && (
+        <motion.div
+          initial={{ opacity: 0, y: -15 }}
+          animate={{ opacity: 1, y: 0 }}
+          className={`rounded-2xl p-4 text-white shadow-lg relative overflow-hidden ${
+            data.subscriptionCheck.daysRemaining <= 3
+              ? 'bg-gradient-to-br from-red-500 to-red-600 shadow-red-500/25'
+              : data.subscriptionCheck.daysRemaining <= 7
+              ? 'bg-gradient-to-br from-amber-500 to-orange-500 shadow-amber-500/25'
+              : data.subscriptionCheck.daysRemaining <= 30
+              ? 'bg-gradient-to-br from-blue-500 to-indigo-500 shadow-blue-500/25'
+              : 'bg-gradient-to-br from-green-500 to-emerald-600 shadow-green-500/25'
+          }`}
+        >
+          <div className="absolute -top-6 -left-6 w-20 h-20 bg-white/5 rounded-full" />
+          <div className="absolute -bottom-4 -right-4 w-16 h-16 bg-white/5 rounded-full" />
+          <div className="relative">
+            <div className="flex items-center justify-between mb-2">
+              <div className="flex items-center gap-2">
+                <CreditCard className="w-5 h-5 opacity-80" />
+                <span className="text-sm font-bold opacity-90">
+                  {data.subscription.type === 'trial' ? 'فترة تجريبية' : data.subscription.type === 'monthly' ? 'اشتراك شهري' : data.subscription.type === 'yearly' ? 'اشتراك سنوي' : 'اشتراك'}
+                </span>
+              </div>
+              {!data.subscriptionCheck.valid && (
+                <span className="text-[10px] px-2 py-1 rounded-full bg-white/20 font-bold">منتهي</span>
+              )}
+            </div>
+            <div className="flex items-end justify-between">
+              <div>
+                <p className="text-3xl font-bold">
+                  {data.subscriptionCheck.daysRemaining > 0 ? data.subscriptionCheck.daysRemaining : 0}
+                </p>
+                <p className="text-xs opacity-80">يوم متبقي</p>
+              </div>
+              {data.subscription.endDate && (
+                <div className="bg-white/10 rounded-xl p-2.5 backdrop-blur-sm text-left">
+                  <div className="flex items-center gap-1.5">
+                    <Calendar className="w-3.5 h-3.5 text-white/70" />
+                    <div>
+                      <p className="text-[9px] text-white/60">تاريخ الانتهاء</p>
+                      <p className="text-xs font-bold text-white/90">{formatDate(data.subscription.endDate)}</p>
+                    </div>
+                  </div>
+                </div>
+              )}
+            </div>
+            {data.subscriptionCheck.daysRemaining <= 7 && data.subscriptionCheck.daysRemaining > 0 && (
+              <div className="mt-3 bg-white/10 rounded-xl p-2.5 backdrop-blur-sm">
+                <div className="flex items-center gap-2">
+                  <Bell className="w-4 h-4 text-yellow-200" />
+                  <p className="text-[10px] text-white/80">ينتهي الاشتراك قريباً! تواصل مع الإدارة الرئيسية للتمديد</p>
+                </div>
+              </div>
+            )}
+            {data.subscriptionCheck.daysRemaining <= 0 && (
+              <div className="mt-3 bg-white/10 rounded-xl p-2.5 backdrop-blur-sm">
+                <div className="flex items-center gap-2">
+                  <AlertTriangle className="w-4 h-4 text-red-200" />
+                  <p className="text-[10px] text-white/80">انتهى الاشتراك! تواصل مع الإدارة الرئيسية للتجديد</p>
+                </div>
+              </div>
+            )}
+          </div>
+        </motion.div>
+      )}
 
       {/* Pending Withdrawal Requests Banner */}
       <AnimatePresence>

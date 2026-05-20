@@ -60,17 +60,16 @@ export function SystemReset() {
   };
 
   const handleReset = async () => {
-    if (!canProceed || !user) return;
+    if (!user) return;
 
     setStep(3);
     setIsProcessing(true);
 
     try {
-      const res = await fetch('/api/clinic', {
-        method: 'DELETE',
+      const res = await fetch('/api/data-reset-requests', {
+        method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({
-          confirmCode: confirmInput,
           adminPassword: password,
           adminId: user.id,
         }),
@@ -79,14 +78,14 @@ export function SystemReset() {
       if (res.ok) {
         setIsProcessing(false);
         setIsSuccess(true);
-        toast.success('تم إعادة تعيين النظام بنجاح');
+        toast.success('تم إرسال طلب حذف البيانات بنجاح');
       } else {
         const data = await res.json().catch(() => ({}));
-        throw new Error(data.error || 'فشلت عملية إعادة التعيين');
+        throw new Error(data.error || 'فشل إرسال الطلب');
       }
     } catch (err: unknown) {
       setIsProcessing(false);
-      const message = err instanceof Error ? err.message : 'حدث خطأ أثناء إعادة التعيين';
+      const message = err instanceof Error ? err.message : 'حدث خطأ أثناء إرسال الطلب';
       toast.error(message);
       setStep(2);
     }
@@ -377,14 +376,14 @@ export function SystemReset() {
                   </motion.div>
                 </motion.div>
 
-                <motion.h2
+                <motion.p
                   initial={{ opacity: 0, y: 10 }}
                   animate={{ opacity: 1, y: 0 }}
                   transition={{ delay: 0.5 }}
                   className="text-xl font-bold text-white mb-2"
                 >
-                  تم بنجاح!
-                </motion.h2>
+                  تم إرسال الطلب!
+                </motion.p>
 
                 <motion.p
                   initial={{ opacity: 0, y: 10 }}
@@ -392,7 +391,7 @@ export function SystemReset() {
                   transition={{ delay: 0.6 }}
                   className="text-sm text-gray-400 text-center leading-relaxed mb-2"
                 >
-                  تم إعادة تعيين جميع البيانات التشغيلية
+                  تم إرسال طلب حذف البيانات إلى الإدارة الرئيسية
                 </motion.p>
 
                 <motion.p
@@ -401,7 +400,7 @@ export function SystemReset() {
                   transition={{ delay: 0.7 }}
                   className="text-xs text-gray-600 text-center leading-relaxed mb-8"
                 >
-                  تم الاحتفاظ بحساب المدير وإعدادات العيادة وقوالب الخدمات
+                  سيتم مراجعة الطلب والموافقة عليه أو رفضه من قبل الإدارة الرئيسية. لن يتم حذف أي بيانات حتى تتم الموافقة.
                 </motion.p>
 
                 <motion.div

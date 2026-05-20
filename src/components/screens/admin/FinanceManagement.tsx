@@ -635,12 +635,12 @@ export function FinanceManagement() {
                 </div>
                 {inv.remaining > 0 && (
                   <div className="flex items-center gap-1.5">
-                    {(inv.status === 'unpaid' || inv.status === 'partial') && nurses.length > 0 && (
+                    {(inv.status === 'unpaid' || inv.status === 'partial') && inv.nurseId && nurses.length > 0 && (
                       <button
                         onClick={() => {
                           setShowDebtAssign(inv);
                           setDebtAmount(String(inv.remaining));
-                          setDebtNurseId(nurses[0]?.id || '');
+                          setDebtNurseId(inv.nurseId || '');
                         }}
                         className="px-2.5 py-1.5 bg-amber-600 text-white text-[10px] font-bold rounded-lg active:scale-[0.97] transition-transform shadow-sm flex items-center gap-1"
                         title="تحويل على حساب الممرض"
@@ -756,24 +756,15 @@ export function FinanceManagement() {
                 </div>
               </div>
 
-              {/* Nurse selector */}
+              {/* Nurse info - auto-assigned */}
               <div className="mb-3">
-                <label className="text-xs font-medium mb-1.5 block">اختر الممرض</label>
-                <div className="flex gap-2 overflow-x-auto pb-1" style={{ scrollbarWidth: 'none' }}>
-                  {nurses.filter(n => n.active).map(nurse => (
-                    <button
-                      key={nurse.id}
-                      onClick={() => setDebtNurseId(nurse.id)}
-                      className={`flex items-center gap-2 px-3 py-2 rounded-xl text-xs font-medium whitespace-nowrap transition-all flex-shrink-0 ${
-                        debtNurseId === nurse.id
-                          ? 'bg-amber-600 text-white shadow-sm'
-                          : 'bg-gray-100 dark:bg-gray-800 text-muted-foreground border border-border'
-                      }`}
-                    >
-                      <User className="w-3.5 h-3.5" />
-                      {nurse.name}
-                    </button>
-                  ))}
+                <label className="text-xs font-medium mb-1.5 block">الممرض المسؤول</label>
+                <div className="flex items-center gap-2 p-2.5 bg-amber-50 dark:bg-amber-900/20 rounded-xl border border-amber-200 dark:border-amber-800">
+                  <User className="w-4 h-4 text-amber-600" />
+                  <span className="text-sm font-bold text-amber-700 dark:text-amber-300">
+                    {showDebtAssign.nurseName || nurses.find(n => n.id === showDebtAssign.nurseId)?.name || 'ممرض'}
+                  </span>
+                  <span className="text-[9px] px-1.5 py-0.5 rounded-full bg-amber-200 dark:bg-amber-800 text-amber-700 dark:text-amber-300">تم تحديد الممرض تلقائياً</span>
                 </div>
               </div>
 

@@ -18,6 +18,18 @@ export interface DashboardData {
   recentPayments: PaymentItem[];
   topServices: { name: string; count: number }[];
   dailyRevenue: { date: string; revenue: number }[];
+  subscription?: {
+    status: string;
+    type: string;
+    endDate: string;
+    trialDays?: number;
+  } | null;
+  subscriptionCheck?: {
+    valid: boolean;
+    status: string;
+    endDate: string;
+    daysRemaining: number;
+  };
 }
 
 export interface EmergencyItem {
