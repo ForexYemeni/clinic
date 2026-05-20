@@ -1,4 +1,5 @@
-import { adminDb } from '@/lib/firebase-admin';
+import dbConnect from '@/lib/mongodb';
+import Service from '@/models/Service';
 import { NextRequest, NextResponse } from 'next/server';
 
 // PUT: Update service (change price, name, pause, activate)
@@ -7,12 +8,14 @@ export async function PUT(
   { params }: { params: Promise<{ id: string }> }
 ) {
   try {
+    await dbConnect();
+
     const { id } = await params;
     const body = await request.json();
 
     // Check if service exists
-    const serviceDoc = await adminDb.collection('services').doc(id).get();
-    if (!serviceDoc.exists) {
+    const serviceDoc = await Service.findById(id).lean();
+    if (!serviceDoc) {
       return NextResponse.json(
         { error: 'الخدمة غير موجودة' },
         { status: 404 }
@@ -43,7 +46,7 @@ export async function PUT(
       }
     }
 
-    await adminDb.collection('services').doc(id).update(updateData);
+    await Service.findByIdAndUpdate(id, updateData);
 
     return NextResponse.json({
       id,
@@ -64,11 +67,13 @@ export async function DELETE(
   { params }: { params: Promise<{ id: string }> }
 ) {
   try {
+    await dbConnect();
+
     const { id } = await params;
 
     // Check if service exists
-    const serviceDoc = await adminDb.collection('services').doc(id).get();
-    if (!serviceDoc.exists) {
+    const serviceDoc = await Service.findById(id).lean();
+    if (!serviceDoc) {
       return NextResponse.json(
         { error: 'الخدمة غير موجودة' },
         { status: 404 }
@@ -76,7 +81,7 @@ export async function DELETE(
     }
 
     // Soft delete - set status to 'deleted'
-    await adminDb.collection('services').doc(id).update({
+    await Service.findByIdAndUpdate(id, {
       status: 'deleted',
       active: false,
     });

@@ -3,7 +3,10 @@
 // Create notifications for various events
 // ═══════════════════════════════════════════════════════════
 
-import { adminDb } from '@/lib/firebase-admin';
+import dbConnect from '@/lib/mongodb';
+import Notification from '@/models/Notification';
+import User from '@/models/User';
+import Clinic from '@/models/Clinic';
 
 export type NotificationType = 'patient' | 'visit' | 'emergency' | 'subscription' | 'payment' | 'system' | 'nurse' | 'data_reset';
 export type NotificationPriority = 'low' | 'normal' | 'high' | 'urgent';
@@ -22,6 +25,8 @@ interface CreateNotificationParams {
 // Create a single notification
 export async function createNotification(params: CreateNotificationParams): Promise<string> {
   try {
+    await dbConnect();
+
     const notifData = {
       userId: params.userId,
       clinicId: params.clinicId || '',
@@ -32,11 +37,11 @@ export async function createNotification(params: CreateNotificationParams): Prom
       priority: params.priority || 'normal',
       actionUrl: params.actionUrl || '',
       relatedId: params.relatedId || '',
-      createdAt: new Date().toISOString(),
+      createdAt: new Date(),
     };
 
-    const docRef = await adminDb.collection('notifications').add(notifData);
-    return docRef.id;
+    const doc = await Notification.create(notifData);
+    return doc._id.toString();
   } catch (error) {
     console.error('Create notification error:', error);
     return '';
@@ -54,32 +59,34 @@ export async function notifyClinicUsers(params: {
   relatedId?: string;
 }): Promise<void> {
   try {
-    const usersSnapshot = await adminDb
-      .collection('users')
-      .where('clinicId', '==', params.clinicId)
-      .where('active', '==', true)
-      .get();
+    await dbConnect();
 
-    const batch = adminDb.batch();
-    const notifData = {
+    const users = await User.find({
       clinicId: params.clinicId,
-      type: params.type,
-      title: params.title,
-      message: params.message,
-      read: false,
-      priority: params.priority || 'normal',
-      actionUrl: '',
-      relatedId: params.relatedId || '',
-      createdAt: new Date().toISOString(),
-    };
+      active: true,
+    }).lean();
 
-    usersSnapshot.docs.forEach((doc) => {
-      if (params.excludeUserId && doc.id === params.excludeUserId) return;
-      const notifRef = adminDb.collection('notifications').doc();
-      batch.set(notifRef, { ...notifData, userId: doc.id });
-    });
+    const notifDocs = users
+      .filter((doc) => {
+        if (params.excludeUserId && doc._id.toString() === params.excludeUserId) return false;
+        return true;
+      })
+      .map((doc) => ({
+        userId: doc._id.toString(),
+        clinicId: params.clinicId,
+        type: params.type,
+        title: params.title,
+        message: params.message,
+        read: false,
+        priority: params.priority || 'normal',
+        actionUrl: '',
+        relatedId: params.relatedId || '',
+        createdAt: new Date(),
+      }));
 
-    await batch.commit();
+    if (notifDocs.length > 0) {
+      await Notification.insertMany(notifDocs);
+    }
   } catch (error) {
     console.error('Notify clinic users error:', error);
   }
@@ -94,14 +101,15 @@ export async function notifySuperAdmins(params: {
   relatedId?: string;
 }): Promise<void> {
   try {
-    const adminsSnapshot = await adminDb
-      .collection('users')
-      .where('role', '==', 'super_admin')
-      .where('active', '==', true)
-      .get();
+    await dbConnect();
 
-    const batch = adminDb.batch();
-    const notifData = {
+    const admins = await User.find({
+      role: 'super_admin',
+      active: true,
+    }).lean();
+
+    const notifDocs = admins.map((doc) => ({
+      userId: doc._id.toString(),
       clinicId: 'platform',
       type: params.type,
       title: params.title,
@@ -110,15 +118,12 @@ export async function notifySuperAdmins(params: {
       priority: params.priority || 'normal',
       actionUrl: '',
       relatedId: params.relatedId || '',
-      createdAt: new Date().toISOString(),
-    };
+      createdAt: new Date(),
+    }));
 
-    adminsSnapshot.docs.forEach((doc) => {
-      const notifRef = adminDb.collection('notifications').doc();
-      batch.set(notifRef, { ...notifData, userId: doc.id });
-    });
-
-    await batch.commit();
+    if (notifDocs.length > 0) {
+      await Notification.insertMany(notifDocs);
+    }
   } catch (error) {
     console.error('Notify super admins error:', error);
   }
@@ -127,71 +132,61 @@ export async function notifySuperAdmins(params: {
 // Check subscription expiry and create warnings
 export async function checkSubscriptionExpiry(): Promise<void> {
   try {
+    await dbConnect();
+
     const now = new Date();
     const threeDaysFromNow = new Date(now.getTime() + 3 * 24 * 60 * 60 * 1000);
     const oneDayFromNow = new Date(now.getTime() + 1 * 24 * 60 * 60 * 1000);
 
-    // Find clinics expiring within 3 days
-    const clinicsSnapshot = await adminDb
-      .collection('clinics')
-      .where('subscription.endDate', '>=', now.toISOString())
-      .get();
+    // Find all clinics (since subscription may be embedded)
+    const clinics = await Clinic.find().lean();
 
-    for (const clinicDoc of clinicsSnapshot.docs) {
-      const clinic = clinicDoc.data();
+    for (const clinicDoc of clinics) {
+      const clinic = clinicDoc as any;
       const endDate = clinic.subscription?.endDate;
 
       if (!endDate) continue;
 
       const endDateObj = new Date(endDate);
-      const clinicId = clinicDoc.id;
+      const clinicId = clinicDoc._id.toString();
       const clinicName = clinic.name || 'عيادة';
 
       // 3 days warning
       if (endDateObj <= threeDaysFromNow && endDateObj > oneDayFromNow) {
         // Check if we already sent a 3-day warning today
-        const existingWarning = await adminDb
-          .collection('notifications')
-          .where('relatedId', '==', clinicId)
-          .where('type', '==', 'subscription')
-          .where('message', '==', `اشتراك ${clinicName} ينتهي خلال 3 أيام`)
-          .limit(1)
-          .get();
+        const existingWarning = await Notification.findOne({
+          relatedId: clinicId,
+          type: 'subscription',
+          message: `اشتراك ${clinicName} ينتهي خلال 3 أيام`,
+        }).lean();
 
-        if (existingWarning.empty) {
+        if (!existingWarning) {
           // Notify clinic admins
-          const adminsSnapshot = await adminDb
-            .collection('users')
-            .where('clinicId', '==', clinicId)
-            .where('role', '==', 'admin')
-            .get();
+          const admins = await User.find({
+            clinicId,
+            role: 'admin',
+          }).lean();
 
-          const batch = adminDb.batch();
-          for (const adminDoc of adminsSnapshot.docs) {
-            const notifRef = adminDb.collection('notifications').doc();
-            batch.set(notifRef, {
-              userId: adminDoc.id,
-              clinicId,
-              type: 'subscription',
-              title: 'تنبيه انتهاء الاشتراك',
-              message: `اشتراك ${clinicName} ينتهي خلال 3 أيام`,
-              read: false,
-              priority: 'high',
-              relatedId: clinicId,
-              createdAt: new Date().toISOString(),
-            });
-          }
+          const notifDocs = admins.map((adminDoc) => ({
+            userId: adminDoc._id.toString(),
+            clinicId,
+            type: 'subscription',
+            title: 'تنبيه انتهاء الاشتراك',
+            message: `اشتراك ${clinicName} ينتهي خلال 3 أيام`,
+            read: false,
+            priority: 'high',
+            relatedId: clinicId,
+            createdAt: new Date(),
+          }));
 
           // Also notify super admins
-          const superAdminsSnapshot = await adminDb
-            .collection('users')
-            .where('role', '==', 'super_admin')
-            .get();
+          const superAdmins = await User.find({
+            role: 'super_admin',
+          }).lean();
 
-          for (const saDoc of superAdminsSnapshot.docs) {
-            const notifRef = adminDb.collection('notifications').doc();
-            batch.set(notifRef, {
-              userId: saDoc.id,
+          for (const saDoc of superAdmins) {
+            notifDocs.push({
+              userId: saDoc._id.toString(),
               clinicId: 'platform',
               type: 'subscription',
               title: 'اشتراك ينتهي قريباً',
@@ -199,56 +194,49 @@ export async function checkSubscriptionExpiry(): Promise<void> {
               read: false,
               priority: 'high',
               relatedId: clinicId,
-              createdAt: new Date().toISOString(),
+              createdAt: new Date(),
             });
           }
 
-          await batch.commit();
+          if (notifDocs.length > 0) {
+            await Notification.insertMany(notifDocs);
+          }
         }
       }
 
       // 1 day warning (urgent)
       if (endDateObj <= oneDayFromNow && endDateObj > now) {
-        const existingWarning = await adminDb
-          .collection('notifications')
-          .where('relatedId', '==', clinicId)
-          .where('type', '==', 'subscription')
-          .where('message', '==', `اشتراك ${clinicName} ينتهي غداً!`)
-          .limit(1)
-          .get();
+        const existingWarning = await Notification.findOne({
+          relatedId: clinicId,
+          type: 'subscription',
+          message: `اشتراك ${clinicName} ينتهي غداً!`,
+        }).lean();
 
-        if (existingWarning.empty) {
-          const adminsSnapshot = await adminDb
-            .collection('users')
-            .where('clinicId', '==', clinicId)
-            .where('role', '==', 'admin')
-            .get();
+        if (!existingWarning) {
+          const admins = await User.find({
+            clinicId,
+            role: 'admin',
+          }).lean();
 
-          const batch = adminDb.batch();
-          for (const adminDoc of adminsSnapshot.docs) {
-            const notifRef = adminDb.collection('notifications').doc();
-            batch.set(notifRef, {
-              userId: adminDoc.id,
-              clinicId,
-              type: 'subscription',
-              title: '⚠️ اشتراك ينتهي غداً!',
-              message: `اشتراك ${clinicName} ينتهي غداً! تواصل مع الإدارة للتجديد`,
-              read: false,
-              priority: 'urgent',
-              relatedId: clinicId,
-              createdAt: new Date().toISOString(),
-            });
-          }
+          const notifDocs = admins.map((adminDoc) => ({
+            userId: adminDoc._id.toString(),
+            clinicId,
+            type: 'subscription',
+            title: '⚠️ اشتراك ينتهي غداً!',
+            message: `اشتراك ${clinicName} ينتهي غداً! تواصل مع الإدارة للتجديد`,
+            read: false,
+            priority: 'urgent',
+            relatedId: clinicId,
+            createdAt: new Date(),
+          }));
 
-          const superAdminsSnapshot = await adminDb
-            .collection('users')
-            .where('role', '==', 'super_admin')
-            .get();
+          const superAdmins = await User.find({
+            role: 'super_admin',
+          }).lean();
 
-          for (const saDoc of superAdminsSnapshot.docs) {
-            const notifRef = adminDb.collection('notifications').doc();
-            batch.set(notifRef, {
-              userId: saDoc.id,
+          for (const saDoc of superAdmins) {
+            notifDocs.push({
+              userId: saDoc._id.toString(),
               clinicId: 'platform',
               type: 'subscription',
               title: '⚠️ اشتراك ينتهي غداً!',
@@ -256,11 +244,13 @@ export async function checkSubscriptionExpiry(): Promise<void> {
               read: false,
               priority: 'urgent',
               relatedId: clinicId,
-              createdAt: new Date().toISOString(),
+              createdAt: new Date(),
             });
           }
 
-          await batch.commit();
+          if (notifDocs.length > 0) {
+            await Notification.insertMany(notifDocs);
+          }
         }
       }
     }

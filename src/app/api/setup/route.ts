@@ -1,4 +1,8 @@
-import { adminDb } from '@/lib/firebase-admin';
+import dbConnect from '@/lib/mongodb';
+import User from '@/models/User';
+import Clinic from '@/models/Clinic';
+import Service from '@/models/Service';
+import { toClient } from '@/lib/mongoose-helpers';
 import { NextRequest, NextResponse } from 'next/server';
 
 const DEFAULT_SERVICES = [
@@ -21,6 +25,8 @@ const DEFAULT_SERVICES = [
 // POST: First-time admin setup
 export async function POST(request: NextRequest) {
   try {
+    await dbConnect();
+
     const body = await request.json();
     const { adminName, adminPhone, clinicName, password } = body;
 
@@ -47,64 +53,60 @@ export async function POST(request: NextRequest) {
       );
     }
 
-    // Delete all seed/default data first
-    const collectionsToDelete = [
-      'users',
-      'patients',
-      'services',
-      'visits',
-      'invoices',
-      'emergencies',
-      'notifications',
-      'clinic',
-    ];
+    // Delete all data first
+    await Promise.all([
+      User.deleteMany({}),
+      Clinic.deleteMany({}),
+      Service.deleteMany({}),
+    ]);
+    // Import and delete other collections
+    const Patient = (await import('@/models/Patient')).default;
+    const Visit = (await import('@/models/Visit')).default;
+    const Invoice = (await import('@/models/Invoice')).default;
+    const Emergency = (await import('@/models/Emergency')).default;
+    const Notification = (await import('@/models/Notification')).default;
 
-    for (const col of collectionsToDelete) {
-      const snapshot = await adminDb.collection(col).get();
-      if (!snapshot.empty) {
-        const batch = adminDb.batch();
-        snapshot.docs.forEach((doc) => batch.delete(doc.ref));
-        await batch.commit();
-      }
-    }
+    await Promise.all([
+      Patient.deleteMany({}),
+      Visit.deleteMany({}),
+      Invoice.deleteMany({}),
+      Emergency.deleteMany({}),
+      Notification.deleteMany({}),
+    ]);
 
     // Create clinic document
-    const clinicRef = await adminDb.collection('clinic').add({
+    const clinic = await Clinic.create({
       name: clinicName,
       adminPhone,
       setupComplete: true,
-      createdAt: new Date().toISOString(),
+      createdAt: new Date(),
     });
 
     // Create admin user
-    const adminRef = await adminDb.collection('users').add({
+    const adminUser = await User.create({
       name: adminName,
       phone: adminPhone,
       password,
       role: 'admin',
       active: true,
-      clinicId: clinicRef.id,
-      createdAt: new Date().toISOString(),
+      clinicId: clinic._id.toString(),
+      createdAt: new Date(),
     });
 
     // Create default 14 services
-    const batch = adminDb.batch();
-    DEFAULT_SERVICES.forEach((service) => {
-      const ref = adminDb.collection('services').doc();
-      batch.set(ref, {
-        ...service,
-        createdAt: new Date().toISOString(),
-      });
-    });
-    await batch.commit();
+    const servicesToInsert = DEFAULT_SERVICES.map((service) => ({
+      ...service,
+      createdAt: new Date(),
+    }));
+    await Service.insertMany(servicesToInsert);
 
     // Generate token
-    const token = Buffer.from(`${adminRef.id}:${Date.now()}`).toString('base64');
+    const token = Buffer.from(`${adminUser._id.toString()}:${Date.now()}`).toString('base64');
 
     return NextResponse.json({
       success: true,
       user: {
-        id: adminRef.id,
+        id: adminUser._id.toString(),
         name: adminName,
         phone: adminPhone,
         role: 'admin',
@@ -112,7 +114,7 @@ export async function POST(request: NextRequest) {
       },
       token,
       clinic: {
-        id: clinicRef.id,
+        id: clinic._id.toString(),
         name: clinicName,
       },
     });

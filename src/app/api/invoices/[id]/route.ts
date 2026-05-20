@@ -1,4 +1,5 @@
-import { adminDb } from '@/lib/firebase-admin';
+import dbConnect from '@/lib/mongodb';
+import Invoice from '@/models/Invoice';
 import { NextRequest, NextResponse } from 'next/server';
 
 // PUT: Update invoice (add payment, change status)
@@ -7,19 +8,21 @@ export async function PUT(
   { params }: { params: Promise<{ id: string }> }
 ) {
   try {
+    await dbConnect();
+
     const { id } = await params;
     const body = await request.json();
 
     // Check if invoice exists
-    const invoiceDoc = await adminDb.collection('invoices').doc(id).get();
-    if (!invoiceDoc.exists) {
+    const invoiceDoc = await Invoice.findById(id).lean();
+    if (!invoiceDoc) {
       return NextResponse.json(
         { error: 'الفاتورة غير موجودة' },
         { status: 404 }
       );
     }
 
-    const currentData = invoiceDoc.data();
+    const currentData = invoiceDoc;
     const updateData: Record<string, unknown> = {};
 
     // If adding a payment
@@ -43,8 +46,8 @@ export async function PUT(
       );
       updateData.total = total;
       const paid = updateData.paid !== undefined ? updateData.paid : (currentData.paid || 0);
-      updateData.remaining = total - paid;
-      updateData.status = paid >= total ? 'paid' : paid > 0 ? 'partial' : 'unpaid';
+      updateData.remaining = total - (paid as number);
+      updateData.status = (paid as number) >= total ? 'paid' : (paid as number) > 0 ? 'partial' : 'unpaid';
     }
 
     // Allow direct status override
@@ -56,7 +59,7 @@ export async function PUT(
       }
     }
 
-    await adminDb.collection('invoices').doc(id).update(updateData);
+    await Invoice.findByIdAndUpdate(id, updateData);
 
     return NextResponse.json({ id, ...updateData });
   } catch (error) {

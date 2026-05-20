@@ -2,7 +2,8 @@
 // 🔔 Single Notification API
 // ═══════════════════════════════════════════════════════════
 
-import { adminDb } from '@/lib/firebase-admin';
+import dbConnect from '@/lib/mongodb';
+import Notification from '@/models/Notification';
 import { NextRequest, NextResponse } from 'next/server';
 
 // PUT: Update single notification (mark as read/unread)
@@ -11,18 +12,20 @@ export async function PUT(
   { params }: { params: Promise<{ id: string }> }
 ) {
   try {
+    await dbConnect();
+
     const { id } = await params;
     const body = await request.json();
 
-    const notifDoc = await adminDb.collection('notifications').doc(id).get();
-    if (!notifDoc.exists) {
+    const notifDoc = await Notification.findById(id).lean();
+    if (!notifDoc) {
       return NextResponse.json({ error: 'الإشعار غير موجود' }, { status: 404 });
     }
 
     const updateData: Record<string, unknown> = {};
     if (body.read !== undefined) updateData.read = body.read;
 
-    await adminDb.collection('notifications').doc(id).update(updateData);
+    await Notification.findByIdAndUpdate(id, updateData);
 
     return NextResponse.json({ id, ...updateData });
   } catch (error) {
@@ -37,14 +40,16 @@ export async function DELETE(
   { params }: { params: Promise<{ id: string }> }
 ) {
   try {
+    await dbConnect();
+
     const { id } = await params;
 
-    const notifDoc = await adminDb.collection('notifications').doc(id).get();
-    if (!notifDoc.exists) {
+    const notifDoc = await Notification.findById(id).lean();
+    if (!notifDoc) {
       return NextResponse.json({ error: 'الإشعار غير موجود' }, { status: 404 });
     }
 
-    await adminDb.collection('notifications').doc(id).delete();
+    await Notification.findByIdAndDelete(id);
     return NextResponse.json({ success: true, id });
   } catch (error) {
     console.error('Delete notification error:', error);

@@ -3,44 +3,42 @@
 // List, create, mark-read, mark-all-read, unread count
 // ═══════════════════════════════════════════════════════════
 
-import { adminDb } from '@/lib/firebase-admin';
+import dbConnect from '@/lib/mongodb';
+import Notification from '@/models/Notification';
+import { toClient } from '@/lib/mongoose-helpers';
 import { NextRequest, NextResponse } from 'next/server';
 
 // GET: List notifications with filters and unread count
 export async function GET(request: NextRequest) {
   try {
+    await dbConnect();
+
     const { searchParams } = new URL(request.url);
     const userId = searchParams.get('userId');
     const clinicId = searchParams.get('clinicId');
     const unreadOnly = searchParams.get('unreadOnly') === 'true';
     const countOnly = searchParams.get('count') === 'true';
 
-    let query = adminDb.collection('notifications');
+    const filter: Record<string, unknown> = {};
+    if (userId) filter.userId = userId;
+    if (clinicId) filter.clinicId = clinicId;
+    if (unreadOnly) filter.read = false;
 
-    if (userId) {
-      query = query.where('userId', '==', userId);
-    }
-    if (clinicId) {
-      query = query.where('clinicId', '==', clinicId);
-    }
-    if (unreadOnly) {
-      query = query.where('read', '==', false);
-    }
+    const notifications = await Notification
+      .find(filter)
+      .sort({ createdAt: -1 })
+      .limit(100)
+      .lean();
 
-    const snapshot = await query.orderBy('createdAt', 'desc').limit(100).get();
-
-    const notifications = snapshot.docs.map((doc) => ({
-      id: doc.id,
-      ...doc.data(),
-    }));
+    const result = notifications.map((doc) => toClient(doc));
 
     // If only count requested
     if (countOnly) {
-      const unreadCount = notifications.filter((n: any) => !n.read).length;
-      return NextResponse.json({ count: unreadCount, total: notifications.length });
+      const unreadCount = result.filter((n: any) => !n.read).length;
+      return NextResponse.json({ count: unreadCount, total: result.length });
     }
 
-    return NextResponse.json(notifications);
+    return NextResponse.json(result);
   } catch (error) {
     console.error('Notifications list error:', error);
     return NextResponse.json({ error: 'خطأ في جلب الإشعارات' }, { status: 500 });
@@ -50,6 +48,8 @@ export async function GET(request: NextRequest) {
 // POST: Create a new notification
 export async function POST(request: NextRequest) {
   try {
+    await dbConnect();
+
     const body = await request.json();
     const { userId, clinicId, type, title, message, priority, actionUrl, relatedId } = body;
 
@@ -67,12 +67,12 @@ export async function POST(request: NextRequest) {
       priority: priority || 'normal',
       actionUrl: actionUrl || '',
       relatedId: relatedId || '',
-      createdAt: new Date().toISOString(),
+      createdAt: new Date(),
     };
 
-    const docRef = await adminDb.collection('notifications').add(notifData);
+    const doc = await Notification.create(notifData);
 
-    return NextResponse.json({ id: docRef.id, ...notifData }, { status: 201 });
+    return NextResponse.json(toClient(doc.toObject()), { status: 201 });
   } catch (error) {
     console.error('Create notification error:', error);
     return NextResponse.json({ error: 'خطأ في إنشاء الإشعار' }, { status: 500 });
@@ -82,29 +82,24 @@ export async function POST(request: NextRequest) {
 // PUT: Mark notifications as read (single or all)
 export async function PUT(request: NextRequest) {
   try {
+    await dbConnect();
+
     const body = await request.json();
     const { id, markAll, userId } = body;
 
     if (markAll && userId) {
       // Mark all as read for a user
-      const snapshot = await adminDb
-        .collection('notifications')
-        .where('userId', '==', userId)
-        .where('read', '==', false)
-        .get();
+      const result = await Notification.updateMany(
+        { userId, read: false },
+        { read: true }
+      );
 
-      const batch = adminDb.batch();
-      snapshot.docs.forEach((doc) => {
-        batch.update(doc.ref, { read: true });
-      });
-      await batch.commit();
-
-      return NextResponse.json({ success: true, markedCount: snapshot.size });
+      return NextResponse.json({ success: true, markedCount: result.modifiedCount });
     }
 
     if (id) {
       // Mark single notification as read
-      await adminDb.collection('notifications').doc(id).update({ read: true });
+      await Notification.findByIdAndUpdate(id, { read: true });
       return NextResponse.json({ success: true, id });
     }
 
@@ -118,6 +113,8 @@ export async function PUT(request: NextRequest) {
 // DELETE: Delete a notification
 export async function DELETE(request: NextRequest) {
   try {
+    await dbConnect();
+
     const { searchParams } = new URL(request.url);
     const id = searchParams.get('id');
 
@@ -125,7 +122,7 @@ export async function DELETE(request: NextRequest) {
       return NextResponse.json({ error: 'يرجى تحديد الإشعار' }, { status: 400 });
     }
 
-    await adminDb.collection('notifications').doc(id).delete();
+    await Notification.findByIdAndDelete(id);
     return NextResponse.json({ success: true, id });
   } catch (error) {
     console.error('Delete notification error:', error);

@@ -1,27 +1,25 @@
-import { adminDb } from '@/lib/firebase-admin';
+import dbConnect from '@/lib/mongodb';
+import Visit from '@/models/Visit';
+import Service from '@/models/Service';
+import Invoice from '@/models/Invoice';
+import { toClient } from '@/lib/mongoose-helpers';
 import { NextRequest, NextResponse } from 'next/server';
 
 // GET: List visits (?patientId=xxx)
 export async function GET(request: NextRequest) {
   try {
+    await dbConnect();
+
     const { searchParams } = new URL(request.url);
     const patientId = searchParams.get('patientId');
 
-    let snapshot;
+    let query = Visit.find();
     if (patientId) {
-      snapshot = await adminDb
-        .collection('visits')
-        .where('patientId', '==', patientId)
-        .orderBy('visitDate', 'desc')
-        .get();
-    } else {
-      snapshot = await adminDb
-        .collection('visits')
-        .orderBy('visitDate', 'desc')
-        .get();
+      query = query.where('patientId', patientId);
     }
+    const snapshot = await query.sort({ visitDate: -1 }).lean();
 
-    const visits = snapshot.docs.map((doc) => ({ id: doc.id, ...doc.data() }));
+    const visits = snapshot.map((doc) => toClient(doc));
 
     return NextResponse.json(visits);
   } catch (error) {
@@ -36,6 +34,8 @@ export async function GET(request: NextRequest) {
 // POST: Add new visit with services (auto-generate invoice)
 export async function POST(request: NextRequest) {
   try {
+    await dbConnect();
+
     const body = await request.json();
     const {
       patientId,
@@ -69,21 +69,22 @@ export async function POST(request: NextRequest) {
 
     if (serviceIds && Array.isArray(serviceIds) && serviceIds.length > 0) {
       for (const serviceId of serviceIds) {
-        const serviceDoc = await adminDb.collection('services').doc(serviceId).get();
-        if (serviceDoc.exists) {
-          const serviceData = serviceDoc.data();
-          if (serviceData.status !== 'deleted') {
-            const price = serviceData.price || 0;
-            items.push({
-              serviceId,
-              serviceName: serviceData.nameAr || '',
-              price,
-              quantity: 1,
-              nurseName: nurseName || '',
-            });
-            totalPrice += price;
+        try {
+          const serviceDoc = await Service.findById(serviceId).lean();
+          if (serviceDoc) {
+            if (serviceDoc.status !== 'deleted') {
+              const price = serviceDoc.price || 0;
+              items.push({
+                serviceId,
+                serviceName: serviceDoc.nameAr || '',
+                price,
+                quantity: 1,
+                nurseName: nurseName || '',
+              });
+              totalPrice += price;
+            }
           }
-        }
+        } catch {}
       }
     }
 
@@ -95,7 +96,7 @@ export async function POST(request: NextRequest) {
       reason: reason || '',
       diagnosis: diagnosis || '',
       status: 'completed',
-      visitDate: new Date().toISOString(),
+      visitDate: new Date(),
       notes: notes || '',
       vitalSigns: vitalSigns || {
         bloodPressure: '',
@@ -107,32 +108,33 @@ export async function POST(request: NextRequest) {
       medications: medications || [],
       serviceIds: serviceIds || [],
       totalPrice,
-      createdAt: new Date().toISOString(),
+      createdAt: new Date(),
     };
 
-    const visitRef = await adminDb.collection('visits').add(visitData);
+    const visitDoc = await Visit.create(visitData);
+    const visitResult = toClient(visitDoc.toObject());
 
     // Auto-generate invoice for this visit
     let invoiceData = null;
     if (items.length > 0) {
       const invoice = {
         patientId,
-        visitId: visitRef.id,
+        visitId: visitDoc._id.toString(),
         items,
         total: totalPrice,
         paid: 0,
         remaining: totalPrice,
         status: 'unpaid',
-        createdAt: new Date().toISOString(),
+        createdAt: new Date(),
       };
 
-      const invoiceRef = await adminDb.collection('invoices').add(invoice);
-      invoiceData = { id: invoiceRef.id, ...invoice };
+      const invoiceDoc = await Invoice.create(invoice);
+      invoiceData = toClient(invoiceDoc.toObject());
     }
 
     return NextResponse.json(
       {
-        visit: { id: visitRef.id, ...visitData },
+        visit: visitResult,
         invoice: invoiceData,
       },
       { status: 201 }

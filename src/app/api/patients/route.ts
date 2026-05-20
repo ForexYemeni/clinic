@@ -1,29 +1,30 @@
-import { adminDb } from '@/lib/firebase-admin';
-import { NextRequest, NextResponse } from 'next/server';
+import dbConnect from '@/lib/mongodb';
+import Patient from '@/models/Patient';
+import { toClient } from '@/lib/mongoose-helpers';
 import { notifyClinicUsers } from '@/lib/notifications';
+import { NextRequest, NextResponse } from 'next/server';
 
 // GET: List all patients (with search by name)
 export async function GET(request: NextRequest) {
   try {
+    await dbConnect();
+
     const { searchParams } = new URL(request.url);
     const search = searchParams.get('search') || '';
 
-    const snapshot = await adminDb
-      .collection('patients')
-      .orderBy('createdAt', 'desc')
-      .get();
-
-    let patients = snapshot.docs.map((doc) => ({ id: doc.id, ...doc.data() }));
-
-    // Filter by name if search query provided
+    let query = Patient.find().sort({ createdAt: -1 });
     if (search) {
-      const searchLower = search.toLowerCase();
-      patients = patients.filter((patient: any) =>
-        (patient.name || '').toLowerCase().includes(searchLower)
-      );
+      query = query.where('name').regex(new RegExp(search, 'i'));
     }
 
-    return NextResponse.json(patients);
+    const patients = await query.lean();
+
+    const result = patients.map((doc) => {
+      const client = toClient(doc);
+      return client;
+    });
+
+    return NextResponse.json(result);
   } catch (error) {
     console.error('Patients list error:', error);
     return NextResponse.json(
@@ -36,6 +37,8 @@ export async function GET(request: NextRequest) {
 // POST: Add new patient
 export async function POST(request: NextRequest) {
   try {
+    await dbConnect();
+
     const body = await request.json();
     const { name, age, gender, phone, emergencyPhone, address, bloodType, chronicDiseases, allergies, medicalHistory, notes } = body;
 
@@ -58,10 +61,11 @@ export async function POST(request: NextRequest) {
       allergies: allergies || '',
       medicalHistory: medicalHistory || '',
       notes: notes || '',
-      createdAt: new Date().toISOString(),
+      createdAt: new Date(),
     };
 
-    const docRef = await adminDb.collection('patients').add(patientData);
+    const doc = await Patient.create(patientData);
+    const result = toClient(doc.toObject());
 
     // Send notification to clinic users about new patient
     const clinicId = body.clinicId || '';
@@ -75,7 +79,7 @@ export async function POST(request: NextRequest) {
           title: 'مريض جديد',
           message: `تم تسجيل المريض ${name} بنجاح`,
           priority: 'normal',
-          relatedId: docRef.id,
+          relatedId: doc._id.toString(),
         });
       } catch (notifError) {
         console.error('Failed to send patient notification:', notifError);
@@ -83,7 +87,7 @@ export async function POST(request: NextRequest) {
     }
 
     return NextResponse.json(
-      { id: docRef.id, ...patientData },
+      result,
       { status: 201 }
     );
   } catch (error) {

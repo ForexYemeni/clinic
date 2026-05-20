@@ -1,27 +1,26 @@
-import { adminDb } from '@/lib/firebase-admin';
+import dbConnect from '@/lib/mongodb';
+import User from '@/models/User';
+import Clinic from '@/models/Clinic';
+import { toClient } from '@/lib/mongoose-helpers';
 import { NextRequest, NextResponse } from 'next/server';
 
 // GET: List nurses
 export async function GET() {
   try {
-    const snapshot = await adminDb
-      .collection('users')
-      .where('role', '==', 'nurse')
-      .get();
+    await dbConnect();
 
-    const nurses = snapshot.docs.map((doc) => {
-      const data = doc.data();
-      return {
-        id: doc.id,
-        name: data.name || '',
-        phone: data.phone || '',
-        role: data.role,
-        active: data.active !== false,
-        createdAt: data.createdAt || '',
-      };
-    });
+    const nurses = await User.find({ role: 'nurse' }).lean();
 
-    return NextResponse.json(nurses);
+    const result = nurses.map((doc) => ({
+      id: doc._id.toString(),
+      name: doc.name || '',
+      phone: doc.phone || '',
+      role: doc.role,
+      active: doc.active !== false,
+      createdAt: doc.createdAt ? doc.createdAt.toISOString() : '',
+    }));
+
+    return NextResponse.json(result);
   } catch (error) {
     console.error('Nurses list error:', error);
     return NextResponse.json(
@@ -34,6 +33,8 @@ export async function GET() {
 // POST: Add nurse
 export async function POST(request: NextRequest) {
   try {
+    await dbConnect();
+
     const body = await request.json();
     const { name, phone, password } = body;
 
@@ -54,13 +55,8 @@ export async function POST(request: NextRequest) {
     }
 
     // Check if phone already exists
-    const existingUser = await adminDb
-      .collection('users')
-      .where('phone', '==', phone)
-      .limit(1)
-      .get();
-
-    if (!existingUser.empty) {
+    const existingUser = await User.findOne({ phone }).lean();
+    if (existingUser) {
       return NextResponse.json(
         { error: 'رقم الهاتف مستخدم بالفعل' },
         { status: 409 }
@@ -68,24 +64,24 @@ export async function POST(request: NextRequest) {
     }
 
     // Get clinic ID for nurse association
-    const clinicSnapshot = await adminDb.collection('clinic').limit(1).get();
-    const clinicId = clinicSnapshot.empty ? '' : clinicSnapshot.docs[0].id;
+    const clinicDoc = await Clinic.findOne().lean();
+    const clinicId = clinicDoc ? clinicDoc._id.toString() : '';
 
     const nurseData = {
       name,
       phone,
       password: password || '1234',
-      role: 'nurse',
+      role: 'nurse' as const,
       active: true,
       clinicId,
-      createdAt: new Date().toISOString(),
+      createdAt: new Date(),
     };
 
-    const docRef = await adminDb.collection('users').add(nurseData);
+    const doc = await User.create(nurseData);
 
     return NextResponse.json(
       {
-        id: docRef.id,
+        id: doc._id.toString(),
         name,
         phone,
         role: 'nurse',

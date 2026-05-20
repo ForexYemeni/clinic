@@ -1,63 +1,29 @@
-import { adminDb } from '@/lib/firebase-admin';
+import dbConnect from '@/lib/mongodb';
+import Invoice from '@/models/Invoice';
+import Patient from '@/models/Patient';
+import { toClient } from '@/lib/mongoose-helpers';
 import { NextRequest, NextResponse } from 'next/server';
 
 // GET: List invoices (?patientId=xxx, ?status=unpaid)
 export async function GET(request: NextRequest) {
   try {
+    await dbConnect();
+
     const { searchParams } = new URL(request.url);
     const patientId = searchParams.get('patientId');
     const status = searchParams.get('status');
 
-    let docs: FirebaseFirestore.QueryDocumentSnapshot[] = [];
-    try {
-      let snapshot;
-      if (patientId) {
-        snapshot = await adminDb
-          .collection('invoices')
-          .where('patientId', '==', patientId)
-          .orderBy('createdAt', 'desc')
-          .get();
-      } else if (status) {
-        snapshot = await adminDb
-          .collection('invoices')
-          .where('status', '==', status)
-          .orderBy('createdAt', 'desc')
-          .get();
-      } else {
-        snapshot = await adminDb
-          .collection('invoices')
-          .orderBy('createdAt', 'desc')
-          .get();
-      }
-      docs = snapshot.docs;
-    } catch (idxErr) {
-      console.warn('Invoices ordered query failed, fallback:', idxErr);
-      let snapshot;
-      if (patientId) {
-        snapshot = await adminDb
-          .collection('invoices')
-          .where('patientId', '==', patientId)
-          .get();
-      } else if (status) {
-        snapshot = await adminDb
-          .collection('invoices')
-          .where('status', '==', status)
-          .get();
-      } else {
-        snapshot = await adminDb
-          .collection('invoices')
-          .get();
-      }
-      docs = snapshot.docs.sort((a, b) => {
-        const da = a.data()?.createdAt || '';
-        const db = b.data()?.createdAt || '';
-        return db.localeCompare(da);
-      });
+    let query = Invoice.find();
+    if (patientId) {
+      query = query.where('patientId', patientId);
+    } else if (status) {
+      query = query.where('status', status);
     }
+    const docs = await query.sort({ createdAt: -1 }).lean();
 
     const invoices = [];
     for (const doc of docs) {
-      const data = { id: doc.id, ...doc.data() } as any;
+      const data = toClient(doc) as any;
       // Recalculate remaining and status if missing
       data.remaining = data.remaining ?? (data.total - (data.paid || 0));
       if (!data.status) {
@@ -68,11 +34,10 @@ export async function GET(request: NextRequest) {
       // Enrich with patient name
       if (data.patientId) {
         try {
-          const patientDoc = await adminDb.collection('patients').doc(data.patientId).get();
-          if (patientDoc.exists) {
-            const pData = patientDoc.data();
-            data.patientName = pData?.name || '';
-            data.patient = { id: patientDoc.id, name: pData?.name || '', phone: pData?.phone || '' };
+          const patientDoc = await Patient.findById(data.patientId).lean();
+          if (patientDoc) {
+            data.patientName = patientDoc.name || '';
+            data.patient = { id: patientDoc._id.toString(), name: patientDoc.name || '', phone: patientDoc.phone || '' };
           }
         } catch {}
       }
@@ -92,6 +57,8 @@ export async function GET(request: NextRequest) {
 // POST: Create invoice manually
 export async function POST(request: NextRequest) {
   try {
+    await dbConnect();
+
     const body = await request.json();
     const { patientId, visitId, items } = body;
 
@@ -113,19 +80,19 @@ export async function POST(request: NextRequest) {
 
     const invoiceData = {
       patientId,
-      visitId: visitId || null,
+      visitId: visitId || '',
       items: invoiceItems,
       total,
       paid,
       remaining,
       status,
-      createdAt: new Date().toISOString(),
+      createdAt: new Date(),
     };
 
-    const docRef = await adminDb.collection('invoices').add(invoiceData);
+    const doc = await Invoice.create(invoiceData);
 
     return NextResponse.json(
-      { id: docRef.id, ...invoiceData },
+      toClient(doc.toObject()),
       { status: 201 }
     );
   } catch (error) {

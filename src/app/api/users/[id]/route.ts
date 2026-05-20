@@ -1,4 +1,5 @@
-import { adminDb } from '@/lib/firebase-admin';
+import dbConnect from '@/lib/mongodb';
+import User from '@/models/User';
 import { NextRequest, NextResponse } from 'next/server';
 
 // PUT: Update nurse (change password, toggle active)
@@ -7,22 +8,22 @@ export async function PUT(
   { params }: { params: Promise<{ id: string }> }
 ) {
   try {
+    await dbConnect();
+
     const { id } = await params;
     const body = await request.json();
 
     // Check if user exists
-    const userDoc = await adminDb.collection('users').doc(id).get();
-    if (!userDoc.exists) {
+    const userDoc = await User.findById(id).lean();
+    if (!userDoc) {
       return NextResponse.json(
         { error: 'المستخدم غير موجود' },
         { status: 404 }
       );
     }
 
-    const userData = userDoc.data();
-
     // Allow admin to change their own password, but block other admin modifications
-    if (userData.role === 'admin') {
+    if (userDoc.role === 'admin') {
       // Only allow password changes for admin users
       const allowedFields = ['password'];
       const requestedFields = Object.keys(body);
@@ -41,7 +42,7 @@ export async function PUT(
     if (body.password !== undefined) updateData.password = body.password;
     if (body.active !== undefined) updateData.active = body.active;
 
-    await adminDb.collection('users').doc(id).update(updateData);
+    await User.findByIdAndUpdate(id, updateData);
 
     return NextResponse.json({ id, ...updateData });
   } catch (error) {
@@ -59,28 +60,28 @@ export async function DELETE(
   { params }: { params: Promise<{ id: string }> }
 ) {
   try {
+    await dbConnect();
+
     const { id } = await params;
 
     // Check if user exists
-    const userDoc = await adminDb.collection('users').doc(id).get();
-    if (!userDoc.exists) {
+    const userDoc = await User.findById(id).lean();
+    if (!userDoc) {
       return NextResponse.json(
         { error: 'المستخدم غير موجود' },
         { status: 404 }
       );
     }
 
-    const userData = userDoc.data();
-
     // Prevent deleting admin
-    if (userData.role === 'admin') {
+    if (userDoc.role === 'admin') {
       return NextResponse.json(
         { error: 'لا يمكن حذف المدير' },
         { status: 403 }
       );
     }
 
-    await adminDb.collection('users').doc(id).delete();
+    await User.findByIdAndDelete(id);
 
     return NextResponse.json({ success: true, id });
   } catch (error) {

@@ -1,4 +1,9 @@
-import { adminDb } from '@/lib/firebase-admin';
+import dbConnect from '@/lib/mongodb';
+import Patient from '@/models/Patient';
+import Visit from '@/models/Visit';
+import Invoice from '@/models/Invoice';
+import Emergency from '@/models/Emergency';
+import Service from '@/models/Service';
 import { NextRequest, NextResponse } from 'next/server';
 
 // GET: Get reports data
@@ -7,6 +12,8 @@ import { NextRequest, NextResponse } from 'next/server';
 // ?type=services - service usage stats
 export async function GET(request: NextRequest) {
   try {
+    await dbConnect();
+
     const { searchParams } = new URL(request.url);
     const type = searchParams.get('type') || 'daily';
 
@@ -20,31 +27,27 @@ export async function GET(request: NextRequest) {
       startDate.setHours(0, 0, 0, 0);
     }
 
-    const startStr = startDate.toISOString();
-
     if (type === 'services') {
       // Service usage stats
-      const visitsSnapshot = await adminDb.collection('visits').get();
+      const visitsSnapshot = await Visit.find().lean();
       const serviceCountMap: Record<string, { count: number; name: string; revenue: number }> = {};
 
-      for (const visitDoc of visitsSnapshot.docs) {
-        const visitData = visitDoc.data();
-        const serviceIds: string[] = visitData.serviceIds || [];
+      for (const visitDoc of visitsSnapshot) {
+        const serviceIds: string[] = visitDoc.serviceIds || [];
         for (const serviceId of serviceIds) {
           if (!serviceCountMap[serviceId]) {
-            const serviceDoc = await adminDb.collection('services').doc(serviceId).get();
-            const serviceData = serviceDoc.exists ? serviceDoc.data() : null;
+            const serviceDoc = await Service.findById(serviceId).lean();
             serviceCountMap[serviceId] = {
               count: 0,
-              name: serviceData?.nameAr || 'غير معروف',
+              name: serviceDoc?.nameAr || 'غير معروف',
               revenue: 0,
             };
           }
           serviceCountMap[serviceId].count += 1;
           // Get price from service
-          const serviceDoc = await adminDb.collection('services').doc(serviceId).get();
-          if (serviceDoc.exists) {
-            serviceCountMap[serviceId].revenue += serviceDoc.data()?.price || 0;
+          const serviceDoc = await Service.findById(serviceId).lean();
+          if (serviceDoc) {
+            serviceCountMap[serviceId].revenue += serviceDoc.price || 0;
           }
         }
       }
@@ -69,42 +72,41 @@ export async function GET(request: NextRequest) {
 
     // Daily or Monthly report
     const [patientsSnap, visitsSnap, invoicesSnap] = await Promise.all([
-      adminDb.collection('patients').where('createdAt', '>=', startStr).get(),
-      adminDb.collection('visits').where('visitDate', '>=', startStr).get(),
-      adminDb.collection('invoices').where('createdAt', '>=', startStr).get(),
+      Patient.find({ createdAt: { $gte: startDate } }).lean(),
+      Visit.find({ visitDate: { $gte: startDate } }).lean(),
+      Invoice.find({ createdAt: { $gte: startDate } }).lean(),
     ]);
 
-    const newPatients = patientsSnap.size;
-    const totalVisits = visitsSnap.size;
-    const servicesProvided = visitsSnap.docs.reduce(
-      (sum, doc) => sum + ((doc.data().serviceIds || []) as string[]).length,
+    const newPatients = patientsSnap.length;
+    const totalVisits = visitsSnap.length;
+    const servicesProvided = visitsSnap.reduce(
+      (sum, doc) => sum + ((doc.serviceIds || []) as string[]).length,
       0
     );
-    const revenue = invoicesSnap.docs.reduce(
-      (sum, doc) => sum + (doc.data().paid || 0),
+    const revenue = invoicesSnap.reduce(
+      (sum, doc) => sum + (doc.paid || 0),
       0
     );
-    const totalInvoiced = invoicesSnap.docs.reduce(
-      (sum, doc) => sum + (doc.data().total || 0),
+    const totalInvoiced = invoicesSnap.reduce(
+      (sum, doc) => sum + (doc.total || 0),
       0
     );
-    const unpaidAmount = invoicesSnap.docs.reduce(
-      (sum, doc) => sum + ((doc.data().remaining) ?? (doc.data().total - (doc.data().paid || 0))),
+    const unpaidAmount = invoicesSnap.reduce(
+      (sum, doc) => sum + ((doc.remaining) ?? (doc.total - (doc.paid || 0))),
       0
     );
-    const paidInvoices = invoicesSnap.docs.filter((d) => d.data().status === 'paid').length;
-    const unpaidInvoices = invoicesSnap.docs.filter((d) => d.data().status === 'unpaid' || d.data().status === 'partial').length;
+    const paidInvoices = invoicesSnap.filter((d) => d.status === 'paid').length;
+    const unpaidInvoices = invoicesSnap.filter((d) => d.status === 'unpaid' || d.status === 'partial').length;
 
     // Emergencies in period
-    const emergenciesSnap = await adminDb
-      .collection('emergencies')
-      .where('createdAt', '>=', startStr)
-      .get();
-    const emergencies = emergenciesSnap.size;
+    const emergenciesSnap = await Emergency
+      .find({ createdAt: { $gte: startDate } })
+      .lean();
+    const emergencies = emergenciesSnap.length;
 
     return NextResponse.json({
       type,
-      startDate: startStr,
+      startDate: startDate.toISOString(),
       endDate: now.toISOString(),
       stats: {
         newPatients,

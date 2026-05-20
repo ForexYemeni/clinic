@@ -1,67 +1,43 @@
-import { adminDb } from '@/lib/firebase-admin';
-import { NextRequest, NextResponse } from 'next/server';
+import dbConnect from '@/lib/mongodb';
+import Emergency from '@/models/Emergency';
+import Patient from '@/models/Patient';
+import User from '@/models/User';
+import { toClient } from '@/lib/mongoose-helpers';
 import { notifyClinicUsers } from '@/lib/notifications';
+import { NextRequest, NextResponse } from 'next/server';
 
 // GET: List emergencies (?status=active)
 export async function GET(request: NextRequest) {
   try {
+    await dbConnect();
+
     const { searchParams } = new URL(request.url);
     const status = searchParams.get('status');
 
-    let docs: FirebaseFirestore.QueryDocumentSnapshot[] = [];
-    try {
-      let snapshot;
-      if (status) {
-        snapshot = await adminDb
-          .collection('emergencies')
-          .where('status', '==', status)
-          .orderBy('createdAt', 'desc')
-          .get();
-      } else {
-        snapshot = await adminDb
-          .collection('emergencies')
-          .orderBy('createdAt', 'desc')
-          .get();
-      }
-      docs = snapshot.docs;
-    } catch (idxErr) {
-      console.warn('Emergencies ordered query failed, fallback:', idxErr);
-      let snapshot;
-      if (status) {
-        snapshot = await adminDb
-          .collection('emergencies')
-          .where('status', '==', status)
-          .get();
-      } else {
-        snapshot = await adminDb
-          .collection('emergencies')
-          .get();
-      }
-      docs = snapshot.docs.sort((a, b) => {
-        const da = a.data()?.createdAt || '';
-        const db = b.data()?.createdAt || '';
-        return db.localeCompare(da);
-      });
+    let query = Emergency.find();
+    if (status) {
+      query = query.where('status', status);
     }
+    const docs = await query.sort({ createdAt: -1 }).lean();
 
     const emergencies = [];
     for (const doc of docs) {
-      const data = { id: doc.id, ...doc.data() } as any;
+      const data = toClient(doc) as any;
       // Enrich with patient data
       if (data.patientId) {
         try {
-          const patientDoc = await adminDb.collection('patients').doc(data.patientId).get();
-          if (patientDoc.exists) {
-            data.patient = { id: patientDoc.id, name: patientDoc.data()?.name, phone: patientDoc.data()?.phone };
+          const patientDoc = await Patient.findById(data.patientId).lean();
+          if (patientDoc) {
+            data.patient = { id: patientDoc._id.toString(), name: patientDoc.name, phone: patientDoc.phone };
           }
         } catch {}
       }
       // Enrich with nurse data
       if (data.nurseId) {
         try {
-          const nurseDoc = await adminDb.collection('users').doc(data.nurseId).get();
-          if (nurseDoc.exists) {
-            data.nurse = { id: nurseDoc.id, name: nurseDoc.data()?.name };
+          const nurseDoc = await User.findById(data.nurseId).lean();
+          if (nurseDoc) {
+            data.nurse = { id: nurseDoc._id.toString(), name: nurseDoc.name };
           }
         } catch {}
       }
@@ -81,6 +57,8 @@ export async function GET(request: NextRequest) {
 // POST: Add new emergency
 export async function POST(request: NextRequest) {
   try {
+    await dbConnect();
+
     const body = await request.json();
     const { patientId, nurseId, severity, notes, actions, procedures } = body;
 
@@ -94,18 +72,18 @@ export async function POST(request: NextRequest) {
     // Enrich with patient name
     let patientName = '';
     if (patientId) {
-      const patientDoc = await adminDb.collection('patients').doc(patientId).get();
-      if (patientDoc.exists) {
-        patientName = patientDoc.data()?.name || '';
+      const patientDoc = await Patient.findById(patientId).lean();
+      if (patientDoc) {
+        patientName = patientDoc.name || '';
       }
     }
 
     // Enrich with nurse name
     let nurseName = '';
     if (nurseId) {
-      const nurseDoc = await adminDb.collection('users').doc(nurseId).get();
-      if (nurseDoc.exists) {
-        nurseName = nurseDoc.data()?.name || '';
+      const nurseDoc = await User.findById(nurseId).lean();
+      if (nurseDoc) {
+        nurseName = nurseDoc.name || '';
       }
     }
 
@@ -119,11 +97,11 @@ export async function POST(request: NextRequest) {
       notes: notes || '',
       actions: actions || '',
       procedures: procedures || '',
-      arrivalTime: new Date().toISOString(),
-      createdAt: new Date().toISOString(),
+      arrivalTime: new Date(),
+      createdAt: new Date(),
     };
 
-    const docRef = await adminDb.collection('emergencies').add(emergencyData);
+    const doc = await Emergency.create(emergencyData);
 
     // Send urgent notification about new emergency
     const clinicId = body.clinicId || '';
@@ -137,7 +115,7 @@ export async function POST(request: NextRequest) {
           title: '🚨 حالة طوارئ جديدة',
           message: `حالة طوارئ ${severityLabel} - المريض: ${patientName}`,
           priority: severity === 'critical' ? 'urgent' : 'high',
-          relatedId: docRef.id,
+          relatedId: doc._id.toString(),
         });
       } catch (notifError) {
         console.error('Failed to send emergency notification:', notifError);
@@ -145,7 +123,7 @@ export async function POST(request: NextRequest) {
     }
 
     return NextResponse.json(
-      { id: docRef.id, ...emergencyData },
+      toClient(doc.toObject()),
       { status: 201 }
     );
   } catch (error) {

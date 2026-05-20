@@ -1,16 +1,17 @@
-import { adminDb } from '@/lib/firebase-admin';
+import dbConnect from '@/lib/mongodb';
+import Service from '@/models/Service';
+import { toClient } from '@/lib/mongoose-helpers';
 import { NextRequest, NextResponse } from 'next/server';
 
 // GET: List all active services (status != 'deleted')
 export async function GET() {
   try {
-    const snapshot = await adminDb
-      .collection('services')
-      .get();
+    await dbConnect();
 
-    const services = snapshot.docs
-      .map((doc) => ({ id: doc.id, ...doc.data() }))
-      .filter((service: any) => service.status !== 'deleted')
+    const services = await Service.find({ status: { $ne: 'deleted' } }).lean();
+
+    const result = services
+      .map((doc) => toClient(doc))
       .sort((a: any, b: any) => {
         // Sort by category then name
         const catA = a.category || '';
@@ -19,7 +20,7 @@ export async function GET() {
         return (a.nameAr || '').localeCompare(b.nameAr || '', 'ar');
       });
 
-    return NextResponse.json(services);
+    return NextResponse.json(result);
   } catch (error) {
     console.error('Services list error:', error);
     return NextResponse.json(
@@ -32,6 +33,8 @@ export async function GET() {
 // POST: Add new service (admin only)
 export async function POST(request: NextRequest) {
   try {
+    await dbConnect();
+
     const body = await request.json();
     const { nameAr, price, duration, category, description } = body;
 
@@ -50,13 +53,13 @@ export async function POST(request: NextRequest) {
       description: description || '',
       active: true,
       status: 'active',
-      createdAt: new Date().toISOString(),
+      createdAt: new Date(),
     };
 
-    const docRef = await adminDb.collection('services').add(serviceData);
+    const doc = await Service.create(serviceData);
 
     return NextResponse.json(
-      { id: docRef.id, ...serviceData },
+      toClient(doc.toObject()),
       { status: 201 }
     );
   } catch (error) {
