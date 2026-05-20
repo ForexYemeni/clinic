@@ -151,6 +151,9 @@ export function NurseAddVisit() {
   const [paidAmount, setPaidAmount] = useState('');
   const [paymentMethod, setPaymentMethod] = useState('cash');
 
+  // Payment panel
+  const [showPaymentPanel, setShowPaymentPanel] = useState(false);
+
   // Sub-step in add-visit
   const [visitSubStep, setVisitSubStep] = useState<'complaints' | 'services' | 'medications' | 'vitals'>('complaints');
 
@@ -588,85 +591,6 @@ export function NurseAddVisit() {
                   </div>
                 )}
 
-                {/* Professional Payment Summary Card - Always visible below scrollable services */}
-                <AnimatePresence>
-                  {selectedServices.length > 0 && (
-                    <motion.div
-                      initial={{ opacity: 0, y: 10 }}
-                      animate={{ opacity: 1, y: 0 }}
-                      exit={{ opacity: 0, y: 10 }}
-                      className="bg-white dark:bg-gray-800 rounded-2xl border-2 border-clinic-200 dark:border-clinic-800 overflow-hidden shadow-lg"
-                    >
-                      {/* Selected services mini-list */}
-                      <div className="p-3 border-b border-border">
-                        <div className="flex items-center justify-between mb-2">
-                          <h4 className="text-xs font-bold text-muted-foreground">الخدمات المختارة ({selectedServices.length})</h4>
-                          <button onClick={() => setSelectedServices([])} className="text-[10px] text-red-500 font-medium">مسح الكل</button>
-                        </div>
-                        <div className="space-y-1 max-h-28 overflow-y-auto">
-                          {selectedServices.map(id => {
-                            const svc = services.find(s => s.id === id);
-                            return (
-                              <div key={id} className="flex items-center justify-between py-1 px-2 bg-gray-50 dark:bg-gray-700/50 rounded-lg">
-                                <span className="text-xs font-medium">{svc?.nameAr || 'خدمة'}</span>
-                                <div className="flex items-center gap-2">
-                                  <span className="text-xs font-bold text-clinic-600">{formatCurrency(svc?.price || 0)}</span>
-                                  <button onClick={() => toggleService(id)} className="text-red-400 hover:text-red-600">
-                                    <X className="w-3.5 h-3.5" />
-                                  </button>
-                                </div>
-                              </div>
-                            );
-                          })}
-                        </div>
-                      </div>
-
-                      {/* Total */}
-                      <div className="p-3 bg-clinic-50 dark:bg-clinic-900/20 flex items-center justify-between">
-                        <span className="text-sm font-bold">الإجمالي</span>
-                        <span className="text-lg font-bold text-clinic-600 dark:text-clinic-400">{formatCurrency(totalAmount)}</span>
-                      </div>
-
-                      {/* Payment */}
-                      <div className="p-3 space-y-2.5">
-                        <h4 className="text-xs font-bold flex items-center gap-1">
-                          <CreditCard className="w-3.5 h-3.5 text-clinic-600" /> التسديد
-                        </h4>
-                        <div className="grid grid-cols-3 gap-2">
-                          {PAYMENT_METHODS.map(m => {
-                            const Icon = m.icon;
-                            return (
-                              <button key={m.value} type="button" onClick={() => setPaymentMethod(m.value)}
-                                className={`p-2 rounded-xl flex flex-col items-center gap-1 border-2 transition-all ${paymentMethod === m.value ? 'border-clinic-500 bg-clinic-50 dark:bg-clinic-900/20' : 'border-transparent bg-gray-50 dark:bg-gray-700/50'}`}>
-                                <Icon className={`w-4 h-4 ${paymentMethod === m.value ? 'text-clinic-600' : 'text-muted-foreground'}`} />
-                                <span className={`text-[10px] font-bold ${paymentMethod === m.value ? 'text-clinic-600' : 'text-muted-foreground'}`}>{m.label}</span>
-                              </button>
-                            );
-                          })}
-                        </div>
-                        <input type="number" value={paidAmount} onChange={e => setPaidAmount(e.target.value)}
-                          placeholder="المبلغ المدفوع" max={totalAmount}
-                          className="w-full h-10 px-3 bg-white dark:bg-gray-800 border border-border rounded-xl text-sm focus:outline-none focus:ring-2 focus:ring-clinic-500" dir="ltr" inputMode="numeric" />
-                        <div className="flex gap-1.5">
-                          <button onClick={() => setPaidAmount(String(totalAmount))} className="flex-1 h-7 text-[10px] font-bold bg-green-50 dark:bg-green-900/20 text-green-700 rounded-lg">دفع الكل</button>
-                          <button onClick={() => setPaidAmount('0')} className="flex-1 h-7 text-[10px] font-bold bg-red-50 dark:bg-red-900/20 text-red-700 rounded-lg">بدون دفع</button>
-                        </div>
-                        {paidNum > 0 && remainingAmount > 0 && (
-                          <div className="p-2 rounded-lg bg-amber-50 dark:bg-amber-900/20 flex items-center justify-between">
-                            <span className="text-xs font-bold">المتبقي</span>
-                            <span className="text-sm font-bold text-amber-600">{formatCurrency(remainingAmount)}</span>
-                          </div>
-                        )}
-                        {paidNum > 0 && remainingAmount <= 0 && (
-                          <div className="p-2 rounded-lg bg-green-50 dark:bg-green-900/20 text-center">
-                            <span className="text-xs font-bold text-green-600">تم الدفع بالكامل ✓</span>
-                          </div>
-                        )}
-                      </div>
-                    </motion.div>
-                  )}
-                </AnimatePresence>
-
                 <div className="flex gap-2">
                   <button onClick={() => setVisitSubStep('complaints')} className="h-10 px-4 bg-gray-100 dark:bg-gray-800 font-bold rounded-xl text-xs">رجوع</button>
                   <button onClick={() => setVisitSubStep('medications')} disabled={selectedServices.length === 0}
@@ -786,22 +710,142 @@ export function NurseAddVisit() {
         </>
       )}
 
-      {/* Sticky Bottom Bar - Shows when services are selected */}
-      {selectedServices.length > 0 && visitSubStep === 'services' && (
-        <div className="fixed bottom-0 left-0 right-0 z-50 bg-white/95 dark:bg-gray-900/95 backdrop-blur-lg border-t border-border shadow-[0_-4px_20px_rgba(0,0,0,0.1)] pb-safe">
-          <div className="max-w-lg mx-auto px-4 py-3 flex items-center justify-between">
-            <div>
-              <p className="text-xs text-muted-foreground">{selectedServices.length} خدمة محددة</p>
-              <p className="text-lg font-bold text-clinic-600">{formatCurrency(totalAmount)}</p>
-            </div>
-            <button
-              onClick={() => document.getElementById('payment-section')?.scrollIntoView({ behavior: 'smooth' })}
-              className="h-11 px-6 bg-gradient-to-l from-clinic-600 to-clinic-700 text-white font-bold rounded-xl shadow-lg active:scale-[0.97] transition-transform"
+      {/* Fixed Bottom Panel for Services Sub-Step */}
+      {visitSubStep === 'services' && selectedServices.length > 0 && (
+        <>
+          {/* Backdrop overlay when expanded */}
+          <AnimatePresence>
+            {showPaymentPanel && (
+              <motion.div
+                initial={{ opacity: 0 }}
+                animate={{ opacity: 1 }}
+                exit={{ opacity: 0 }}
+                className="fixed inset-0 z-40 bg-black/40 backdrop-blur-sm"
+                onClick={() => setShowPaymentPanel(false)}
+              />
+            )}
+          </AnimatePresence>
+
+          {/* Bottom Sheet Panel */}
+          <AnimatePresence>
+            {showPaymentPanel && (
+              <motion.div
+                initial={{ y: '100%' }}
+                animate={{ y: 0 }}
+                exit={{ y: '100%' }}
+                transition={{ type: 'spring', damping: 25, stiffness: 300 }}
+                className="fixed bottom-0 left-0 right-0 z-50 bg-white dark:bg-gray-900 rounded-t-3xl max-h-[75vh] overflow-y-auto shadow-2xl"
+              >
+                {/* Handle bar */}
+                <div className="flex justify-center pt-3 pb-2">
+                  <div className="w-10 h-1 bg-gray-300 dark:bg-gray-600 rounded-full" />
+                </div>
+
+                {/* Panel Header */}
+                <div className="px-4 pb-3 flex items-center justify-between border-b border-border">
+                  <h3 className="text-sm font-bold">الخدمات المختارة ({selectedServices.length})</h3>
+                  <button onClick={() => setSelectedServices([])} className="text-xs text-red-500 font-medium">مسح الكل</button>
+                </div>
+
+                {/* Selected services list */}
+                <div className="p-4 space-y-1.5 max-h-32 overflow-y-auto">
+                  {selectedServices.map(id => {
+                    const svc = services.find(s => s.id === id);
+                    return (
+                      <div key={id} className="flex items-center justify-between py-1.5 px-3 bg-gray-50 dark:bg-gray-700/50 rounded-xl">
+                        <span className="text-sm font-medium">{svc?.nameAr || 'خدمة'}</span>
+                        <div className="flex items-center gap-2">
+                          <span className="text-sm font-bold text-clinic-600">{formatCurrency(svc?.price || 0)}</span>
+                          <button onClick={() => toggleService(id)} className="text-red-400 hover:text-red-600">
+                            <X className="w-4 h-4" />
+                          </button>
+                        </div>
+                      </div>
+                    );
+                  })}
+                </div>
+
+                {/* Total */}
+                <div className="mx-4 p-3 bg-clinic-50 dark:bg-clinic-900/20 rounded-xl flex items-center justify-between">
+                  <span className="text-sm font-bold">الإجمالي</span>
+                  <span className="text-xl font-bold text-clinic-600 dark:text-clinic-400">{formatCurrency(totalAmount)}</span>
+                </div>
+
+                {/* Payment section */}
+                <div className="p-4 space-y-3">
+                  <h4 className="text-xs font-bold flex items-center gap-1">
+                    <CreditCard className="w-3.5 h-3.5 text-clinic-600" /> التسديد
+                  </h4>
+                  <div className="grid grid-cols-3 gap-2">
+                    {PAYMENT_METHODS.map(m => {
+                      const Icon = m.icon;
+                      return (
+                        <button key={m.value} type="button" onClick={() => setPaymentMethod(m.value)}
+                          className={`p-2 rounded-xl flex flex-col items-center gap-1 border-2 transition-all ${paymentMethod === m.value ? 'border-clinic-500 bg-clinic-50 dark:bg-clinic-900/20' : 'border-transparent bg-gray-50 dark:bg-gray-700/50'}`}>
+                          <Icon className={`w-4 h-4 ${paymentMethod === m.value ? 'text-clinic-600' : 'text-muted-foreground'}`} />
+                          <span className={`text-[10px] font-bold ${paymentMethod === m.value ? 'text-clinic-600' : 'text-muted-foreground'}`}>{m.label}</span>
+                        </button>
+                      );
+                    })}
+                  </div>
+                  <input type="number" value={paidAmount} onChange={e => setPaidAmount(e.target.value)}
+                    placeholder="المبلغ المدفوع" max={totalAmount}
+                    className="w-full h-10 px-3 bg-white dark:bg-gray-800 border border-border rounded-xl text-sm focus:outline-none focus:ring-2 focus:ring-clinic-500" dir="ltr" inputMode="numeric" />
+                  <div className="flex gap-1.5">
+                    <button onClick={() => setPaidAmount(String(totalAmount))} className="flex-1 h-7 text-[10px] font-bold bg-green-50 dark:bg-green-900/20 text-green-700 rounded-lg">دفع الكل</button>
+                    <button onClick={() => setPaidAmount('0')} className="flex-1 h-7 text-[10px] font-bold bg-red-50 dark:bg-red-900/20 text-red-700 rounded-lg">بدون دفع</button>
+                  </div>
+                  {paidNum > 0 && remainingAmount > 0 && (
+                    <div className="p-2 rounded-lg bg-amber-50 dark:bg-amber-900/20 flex items-center justify-between">
+                      <span className="text-xs font-bold">المتبقي</span>
+                      <span className="text-sm font-bold text-amber-600">{formatCurrency(remainingAmount)}</span>
+                    </div>
+                  )}
+                  {paidNum > 0 && remainingAmount <= 0 && (
+                    <div className="p-2 rounded-lg bg-green-50 dark:bg-green-900/20 text-center">
+                      <span className="text-xs font-bold text-green-600">تم الدفع بالكامل</span>
+                    </div>
+                  )}
+                </div>
+
+                {/* Next button */}
+                <div className="p-4 pt-0">
+                  <button onClick={() => { setShowPaymentPanel(false); setVisitSubStep('medications'); }} disabled={selectedServices.length === 0}
+                    className="w-full h-11 bg-gradient-to-l from-clinic-500 to-clinic-600 text-white font-bold rounded-xl text-sm active:scale-[0.98] transition-transform flex items-center justify-center gap-1 disabled:opacity-60">
+                    التالي: الأدوية <ArrowRight className="w-3 h-3 rotate-180" />
+                  </button>
+                </div>
+              </motion.div>
+            )}
+          </AnimatePresence>
+
+          {/* Compact bottom bar (always visible when collapsed) */}
+          {!showPaymentPanel && (
+            <motion.div
+              initial={{ y: 100 }}
+              animate={{ y: 0 }}
+              exit={{ y: 100 }}
+              className="fixed bottom-0 left-0 right-0 z-30"
             >
-              إكمال والتسديد
-            </button>
-          </div>
-        </div>
+              <div className="bg-white/95 dark:bg-gray-900/95 backdrop-blur-lg border-t border-clinic-200 dark:border-clinic-800 shadow-[0_-4px_20px_rgba(0,0,0,0.1)] pb-safe">
+                <div className="max-w-lg mx-auto px-4 py-3 flex items-center justify-between">
+                  <div className="flex-1">
+                    <div className="flex items-center gap-2">
+                      <div className="w-6 h-6 rounded-full bg-clinic-500 text-white text-[10px] font-bold flex items-center justify-center">{selectedServices.length}</div>
+                      <span className="text-xs text-muted-foreground">خدمة محددة</span>
+                    </div>
+                    <p className="text-lg font-bold text-clinic-600 mr-8">{formatCurrency(totalAmount)}</p>
+                  </div>
+                  <button onClick={() => setShowPaymentPanel(true)}
+                    className="h-11 px-5 bg-gradient-to-l from-clinic-500 to-clinic-600 text-white font-bold rounded-xl shadow-lg active:scale-[0.97] transition-transform flex items-center gap-2">
+                    <CreditCard className="w-4 h-4" />
+                    عرض وتسديد
+                  </button>
+                </div>
+              </div>
+            </motion.div>
+          )}
+        </>
       )}
     </div>
   );
