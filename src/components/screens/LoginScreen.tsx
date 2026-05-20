@@ -47,7 +47,7 @@ export function LoginScreen() {
       }
 
       setUser(data.user);
-      useAppStore.getState().setClinicName(data.clinicName || 'عيادة الإسعافات الأولية');
+      useAppStore.getState().setClinicName(data.clinic?.name || 'عيادة الإسعافات الأولية');
 
       if (data.user.role === 'admin') {
         setScreen('admin-dashboard');

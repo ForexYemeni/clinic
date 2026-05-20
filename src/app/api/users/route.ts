@@ -67,12 +67,17 @@ export async function POST(request: NextRequest) {
       );
     }
 
+    // Get clinic ID for nurse association
+    const clinicSnapshot = await adminDb.collection('clinic').limit(1).get();
+    const clinicId = clinicSnapshot.empty ? '' : clinicSnapshot.docs[0].id;
+
     const nurseData = {
       name,
       phone,
       password: password || '1234',
       role: 'nurse',
       active: true,
+      clinicId,
       createdAt: new Date().toISOString(),
     };
 

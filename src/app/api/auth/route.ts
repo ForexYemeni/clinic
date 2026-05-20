@@ -40,7 +40,8 @@ export async function POST(request: NextRequest) {
     const userDoc = usersSnapshot.docs[0];
     const userData = userDoc.data();
 
-    if (!userData.active) {
+    // Only block if active is explicitly set to false (not undefined/null)
+    if (userData.active === false) {
       return NextResponse.json(
         { error: 'الحساب معطل' },
         { status: 403 }
@@ -75,8 +76,10 @@ export async function POST(request: NextRequest) {
     });
   } catch (error) {
     console.error('Auth error:', error);
+    // Provide more detailed error info for debugging
+    const errorMessage = error instanceof Error ? error.message : 'خطأ في تسجيل الدخول';
     return NextResponse.json(
-      { error: 'خطأ في تسجيل الدخول' },
+      { error: 'خطأ في تسجيل الدخول', detail: errorMessage },
       { status: 500 }
     );
   }

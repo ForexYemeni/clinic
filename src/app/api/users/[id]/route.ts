@@ -21,12 +21,18 @@ export async function PUT(
 
     const userData = userDoc.data();
 
-    // Only allow updating nurses (not admin)
+    // Allow admin to change their own password, but block other admin modifications
     if (userData.role === 'admin') {
-      return NextResponse.json(
-        { error: 'لا يمكن تعديل بيانات المدير من هنا' },
-        { status: 403 }
-      );
+      // Only allow password changes for admin users
+      const allowedFields = ['password'];
+      const requestedFields = Object.keys(body);
+      const disallowedFields = requestedFields.filter(f => !allowedFields.includes(f));
+      if (disallowedFields.length > 0) {
+        return NextResponse.json(
+          { error: 'لا يمكن تعديل بيانات المدير سوى كلمة المرور' },
+          { status: 403 }
+        );
+      }
     }
 
     const updateData: Record<string, unknown> = {};

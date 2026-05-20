@@ -83,6 +83,7 @@ export async function POST(request: NextRequest) {
       password,
       role: 'admin',
       active: true,
+      clinicId: clinicRef.id,
       createdAt: new Date().toISOString(),
     });
 
