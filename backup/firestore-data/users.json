@@ -1,0 +1,44 @@
+[
+  {
+    "id": "TBcdiW3th4hVK4vB9Q7a",
+    "data": {
+      "name": "مازن المتراب",
+      "phone": "777534316",
+      "password": "$2b$12$SSPoZkhsTHl8Zc8AQwO92eCsD4MIWWLFjSb/vvScDT09ZeGm/VeeK",
+      "role": "admin",
+      "clinicId": "Hj5b169m7675GoGceNJf",
+      "active": true,
+      "recoveryCode": "8KZE23BL",
+      "createdAt": "2026-05-20T00:58:17.477Z"
+    }
+  },
+  {
+    "id": "k65ItTEeD39Vv8krc4Dc",
+    "data": {
+      "name": "المدير العام",
+      "phone": "773178684",
+      "role": "super_admin",
+      "clinicId": null,
+      "active": true,
+      "salary": 0,
+      "recoveryCode": "SUADMIN1",
+      "createdAt": "2026-05-20T00:31:11.993Z",
+      "updatedAt": "2026-05-20T00:31:11.993Z",
+      "password": "$2b$12$I7A80IwTWPrah3b/raM0seUi1Lv2FY8VnoXhOnbJcJTgLdjxIYkEa"
+    }
+  },
+  {
+    "id": "mwwhI1mmGCf6ypefK7Id",
+    "data": {
+      "name": "عدي",
+      "phone": "777890073",
+      "role": "nurse",
+      "clinicId": "Hj5b169m7675GoGceNJf",
+      "salary": 60000,
+      "createdAt": "2026-05-20T00:59:49.853Z",
+      "password": "$2b$12$OphP2A6k7LKwUzfmNMJdf.km6OGAhpUG5svp/bOKNs.9TmdaHH3Ey",
+      "active": true,
+      "updatedAt": "2026-05-20T01:45:35.249Z"
+    }
+  }
+]
