@@ -2,7 +2,7 @@
 
 import React, { useEffect, useState, useCallback } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
-import { Shield, Building2, Users, Clock, CreditCard, AlertTriangle, Database, ChevronLeft, Plus, Search, Moon, Sun, Key, ScrollText, FileText, BarChart3, Trash2, RotateCcw, Eye, EyeOff, Loader2, CheckCircle, Lock, Phone, MessageCircle, X } from 'lucide-react';
+import { Shield, Building2, Users, Clock, CreditCard, AlertTriangle, Database, ChevronLeft, Plus, Search, Moon, Sun, Key, ScrollText, FileText, BarChart3, Trash2, RotateCcw, Eye, EyeOff, Loader2, CheckCircle, Lock, Phone, MessageCircle, X, Pause, Play, PlusCircle } from 'lucide-react';
 import { useAppStore } from '@/lib/store';
 import { apiGet, apiPost, apiPut, apiDelete } from '@/lib/api';
 import { toast } from 'sonner';
@@ -227,6 +227,15 @@ export function SuperAdminDashboard({ initialTab = 'dashboard' }: Props) {
   const [resetSuccess, setResetSuccess] = useState(false);
   const RESET_CONFIRM_TEXT = 'حذف كامل المنصة';
 
+  // Clinic action confirmation card state
+  const [showClinicActionCard, setShowClinicActionCard] = useState<{
+    type: 'suspend' | 'activate' | 'extend';
+    clinicId: string;
+    clinicName: string;
+    days?: number;
+  } | null>(null);
+  const [clinicActionProcessing, setClinicActionProcessing] = useState(false);
+
   // Sync tab with initialTab prop
   useEffect(() => {
     setActiveTab(initialTab);
@@ -294,32 +303,44 @@ export function SuperAdminDashboard({ initialTab = 'dashboard' }: Props) {
   };
 
   const handleSuspendClinic = async (clinicId: string) => {
+    setClinicActionProcessing(true);
     try {
       await apiPut(`/api/super-admin/clinics/${clinicId}`, { action: 'suspend' });
       toast.success('تم إيقاف العيادة');
+      setShowClinicActionCard(null);
       loadClinics();
     } catch (err: any) {
       toast.error(err.message || 'خطأ');
+    } finally {
+      setClinicActionProcessing(false);
     }
   };
 
   const handleActivateClinic = async (clinicId: string, days: number = 30) => {
+    setClinicActionProcessing(true);
     try {
       await apiPut(`/api/super-admin/clinics/${clinicId}`, { action: 'activate', days, subscriptionType: 'monthly' });
       toast.success('تم تفعيل العيادة');
+      setShowClinicActionCard(null);
       loadClinics();
     } catch (err: any) {
       toast.error(err.message || 'خطأ');
+    } finally {
+      setClinicActionProcessing(false);
     }
   };
 
   const handleExtendClinic = async (clinicId: string, days: number) => {
+    setClinicActionProcessing(true);
     try {
       await apiPut(`/api/super-admin/clinics/${clinicId}`, { action: 'extend_subscription', days, subscriptionType: 'monthly' });
       toast.success(`تم التمديد ${days} يوم`);
+      setShowClinicActionCard(null);
       loadClinics();
     } catch (err: any) {
       toast.error(err.message || 'خطأ');
+    } finally {
+      setClinicActionProcessing(false);
     }
   };
 
@@ -641,24 +662,24 @@ export function SuperAdminDashboard({ initialTab = 'dashboard' }: Props) {
                       التفاصيل
                     </button>
                     {(clinic.subscription?.status === 'active' || clinic.subscription?.status === 'trial') && (
-                      <button onClick={() => handleSuspendClinic(clinic.id)}
+                      <button onClick={() => setShowClinicActionCard({ type: 'suspend', clinicId: clinic.id, clinicName: clinic.name })}
                         className="text-xs px-3 py-1.5 bg-yellow-50 dark:bg-yellow-900/20 text-yellow-700 dark:text-yellow-300 rounded-lg font-bold touch-feedback">
                         إيقاف
                       </button>
                     )}
                     {clinic.subscription?.status === 'expired' && (
-                      <button onClick={() => handleActivateClinic(clinic.id, 30)}
+                      <button onClick={() => setShowClinicActionCard({ type: 'activate', clinicId: clinic.id, clinicName: clinic.name, days: 30 })}
                         className="text-xs px-3 py-1.5 bg-green-50 dark:bg-green-900/20 text-green-700 dark:text-green-300 rounded-lg font-bold touch-feedback">
                         تفعيل 30 يوم
                       </button>
                     )}
                     {clinic.subscription?.status === 'suspended' && (
-                      <button onClick={() => handleActivateClinic(clinic.id, 30)}
+                      <button onClick={() => setShowClinicActionCard({ type: 'activate', clinicId: clinic.id, clinicName: clinic.name, days: 30 })}
                         className="text-xs px-3 py-1.5 bg-green-50 dark:bg-green-900/20 text-green-700 dark:text-green-300 rounded-lg font-bold touch-feedback">
                         إعادة تفعيل
                       </button>
                     )}
-                    <button onClick={() => handleExtendClinic(clinic.id, 30)}
+                    <button onClick={() => setShowClinicActionCard({ type: 'extend', clinicId: clinic.id, clinicName: clinic.name, days: 30 })}
                       className="text-xs px-3 py-1.5 bg-blue-50 dark:bg-blue-900/20 text-blue-700 dark:text-blue-300 rounded-lg font-bold touch-feedback">
                       تمديد 30 يوم
                     </button>
@@ -674,6 +695,182 @@ export function SuperAdminDashboard({ initialTab = 'dashboard' }: Props) {
             )}
           </div>
         )}
+
+        {/* ═══ Clinic Action Confirmation Modal ═══ */}
+        <AnimatePresence>
+          {showClinicActionCard && (
+            <>
+              {/* Backdrop */}
+              <motion.div
+                initial={{ opacity: 0 }}
+                animate={{ opacity: 1 }}
+                exit={{ opacity: 0 }}
+                className="fixed inset-0 z-50 bg-black/60 backdrop-blur-sm"
+                onClick={() => !clinicActionProcessing && setShowClinicActionCard(null)}
+              />
+
+              {/* Centered Modal Card */}
+              <motion.div
+                initial={{ opacity: 0, scale: 0.9, y: 20 }}
+                animate={{ opacity: 1, scale: 1, y: 0 }}
+                exit={{ opacity: 0, scale: 0.9, y: 20 }}
+                transition={{ type: 'spring', damping: 25, stiffness: 300 }}
+                className="fixed inset-0 z-50 flex items-center justify-center p-4 pointer-events-none"
+              >
+                <div className="w-full max-w-sm pointer-events-auto">
+                  <div
+                    className={`rounded-3xl shadow-2xl relative overflow-hidden ${
+                      showClinicActionCard.type === 'suspend'
+                        ? 'bg-gradient-to-br from-yellow-500 to-amber-600 shadow-yellow-500/30'
+                        : showClinicActionCard.type === 'activate'
+                        ? 'bg-gradient-to-br from-green-500 to-emerald-600 shadow-green-500/30'
+                        : 'bg-gradient-to-br from-blue-500 to-indigo-600 shadow-blue-500/30'
+                    }`}
+                  >
+                    {/* Decorative circles */}
+                    <div className="absolute -top-8 -right-8 w-32 h-32 bg-white/5 rounded-full" />
+                    <div className="absolute -bottom-6 -left-6 w-24 h-24 bg-white/5 rounded-full" />
+                    <div className="absolute top-1/2 -right-4 w-16 h-16 bg-white/5 rounded-full" />
+
+                    {/* Close button */}
+                    <button
+                      onClick={() => setShowClinicActionCard(null)}
+                      disabled={clinicActionProcessing}
+                      className="absolute top-3 left-3 w-8 h-8 rounded-full bg-white/20 flex items-center justify-center z-10 backdrop-blur-sm disabled:opacity-50"
+                    >
+                      <X className="w-4 h-4 text-white" />
+                    </button>
+
+                    <div className="relative p-5">
+                      {/* Header with icon and title */}
+                      <div className="flex flex-col items-center text-center mb-5">
+                        <div className="w-16 h-16 rounded-2xl flex items-center justify-center backdrop-blur-sm mb-3 bg-white/20">
+                          {showClinicActionCard.type === 'suspend' ? (
+                            <Pause className="w-8 h-8 text-white" />
+                          ) : showClinicActionCard.type === 'activate' ? (
+                            <Play className="w-8 h-8 text-white" />
+                          ) : (
+                            <PlusCircle className="w-8 h-8 text-white" />
+                          )}
+                        </div>
+                        <p className="text-lg font-bold text-white">
+                          {showClinicActionCard.type === 'suspend' ? 'إيقاف العيادة'
+                            : showClinicActionCard.type === 'activate' ? 'تفعيل العيادة'
+                            : 'تمديد الاشتراك'}
+                        </p>
+                        <p className="text-xs text-white/70 mt-0.5">{showClinicActionCard.clinicName}</p>
+                      </div>
+
+                      {/* Action details card */}
+                      <div className="bg-white/10 rounded-2xl p-4 mb-4 backdrop-blur-sm space-y-2">
+                        <div className="flex justify-between text-sm">
+                          <span className="text-white/70">اسم العيادة</span>
+                          <span className="font-bold text-white">{showClinicActionCard.clinicName}</span>
+                        </div>
+                        {showClinicActionCard.type === 'activate' && (
+                          <div className="flex justify-between text-sm">
+                            <span className="text-white/70">مدة التفعيل</span>
+                            <span className="font-bold text-white">{showClinicActionCard.days} يوم</span>
+                          </div>
+                        )}
+                        {showClinicActionCard.type === 'extend' && (
+                          <div className="flex justify-between text-sm">
+                            <span className="text-white/70">مدة التمديد</span>
+                            <span className="font-bold text-white">{showClinicActionCard.days} يوم</span>
+                          </div>
+                        )}
+                      </div>
+
+                      {/* Warning message */}
+                      {showClinicActionCard.type === 'suspend' && (
+                        <div className="bg-white/10 rounded-2xl p-4 mb-4 backdrop-blur-sm">
+                          <div className="flex items-start gap-3">
+                            <div className="w-8 h-8 rounded-xl bg-yellow-200/20 flex items-center justify-center flex-shrink-0 mt-0.5">
+                              <AlertTriangle className="w-4 h-4 text-yellow-200" />
+                            </div>
+                            <div>
+                              <p className="text-sm font-bold text-yellow-100">تحذير</p>
+                              <p className="text-xs text-white/80 leading-relaxed">سيتم إيقاف العيادة فوراً ولن يتمكن مدير العيادة أو الممرضون من الدخول للنظام حتى يتم تفعيلها مرة أخرى</p>
+                            </div>
+                          </div>
+                        </div>
+                      )}
+                      {showClinicActionCard.type === 'activate' && (
+                        <div className="bg-white/10 rounded-2xl p-4 mb-4 backdrop-blur-sm">
+                          <div className="flex items-start gap-3">
+                            <div className="w-8 h-8 rounded-xl bg-green-200/20 flex items-center justify-center flex-shrink-0 mt-0.5">
+                              <CheckCircle className="w-4 h-4 text-green-200" />
+                            </div>
+                            <div>
+                              <p className="text-sm font-bold text-green-100">تفعيل العيادة</p>
+                              <p className="text-xs text-white/80 leading-relaxed">سيتم تفعيل العيادة وإضافة {showClinicActionCard.days} يوم للاشتراك</p>
+                            </div>
+                          </div>
+                        </div>
+                      )}
+                      {showClinicActionCard.type === 'extend' && (
+                        <div className="bg-white/10 rounded-2xl p-4 mb-4 backdrop-blur-sm">
+                          <div className="flex items-start gap-3">
+                            <div className="w-8 h-8 rounded-xl bg-blue-200/20 flex items-center justify-center flex-shrink-0 mt-0.5">
+                              <PlusCircle className="w-4 h-4 text-blue-200" />
+                            </div>
+                            <div>
+                              <p className="text-sm font-bold text-blue-100">تمديد الاشتراك</p>
+                              <p className="text-xs text-white/80 leading-relaxed">سيتم إضافة {showClinicActionCard.days} يوم إلى اشتراك العيادة الحالي</p>
+                            </div>
+                          </div>
+                        </div>
+                      )}
+
+                      {/* Action buttons */}
+                      <div className="flex gap-3">
+                        <button
+                          onClick={() => {
+                            if (showClinicActionCard.type === 'suspend') {
+                              handleSuspendClinic(showClinicActionCard.clinicId);
+                            } else if (showClinicActionCard.type === 'activate') {
+                              handleActivateClinic(showClinicActionCard.clinicId, showClinicActionCard.days);
+                            } else {
+                              handleExtendClinic(showClinicActionCard.clinicId, showClinicActionCard.days || 30);
+                            }
+                          }}
+                          disabled={clinicActionProcessing}
+                          className={`flex-1 h-12 rounded-xl text-sm font-bold active:scale-[0.97] transition-transform shadow-lg disabled:opacity-50 flex items-center justify-center gap-2 bg-white ${
+                            showClinicActionCard.type === 'suspend'
+                              ? 'text-yellow-700'
+                              : showClinicActionCard.type === 'activate'
+                              ? 'text-green-700'
+                              : 'text-blue-700'
+                          }`}
+                        >
+                          {clinicActionProcessing ? (
+                            <Loader2 className="w-5 h-5 animate-spin" />
+                          ) : (
+                            <>
+                              {showClinicActionCard.type === 'suspend' ? <Pause className="w-5 h-5" />
+                                : showClinicActionCard.type === 'activate' ? <Play className="w-5 h-5" />
+                                : <PlusCircle className="w-5 h-5" />}
+                            </>
+                          )}
+                          {showClinicActionCard.type === 'suspend' ? 'نعم، إيقاف العيادة'
+                            : showClinicActionCard.type === 'activate' ? 'نعم، تفعيل العيادة'
+                            : 'نعم، تمديد الاشتراك'}
+                        </button>
+                        <button
+                          onClick={() => setShowClinicActionCard(null)}
+                          disabled={clinicActionProcessing}
+                          className="flex-1 h-12 bg-white/20 text-white rounded-xl text-sm font-bold backdrop-blur-sm active:scale-[0.97] transition-transform disabled:opacity-50"
+                        >
+                          إلغاء
+                        </button>
+                      </div>
+                    </div>
+                  </div>
+                </div>
+              </motion.div>
+            </>
+          )}
+        </AnimatePresence>
       </div>
     );
   }
