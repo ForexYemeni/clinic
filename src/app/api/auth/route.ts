@@ -38,7 +38,7 @@ export async function POST(request: NextRequest) {
       usersSnapshot = await adminDb
         .collection('users')
         .where('phone', '==', phone)
-        .limit(1)
+        .limit(10)
         .get();
     } catch (dbError) {
       return handleFirebaseError(dbError, 'تسجيل الدخول');
@@ -51,32 +51,53 @@ export async function POST(request: NextRequest) {
       );
     }
 
-    const userDoc = usersSnapshot.docs[0];
-    const userData = userDoc.data();
+    // If multiple users have the same phone, try each one starting with super_admin
+    // This handles the case where a super_admin and clinic admin share the same phone
+    let userDoc = usersSnapshot.docs[0];
+    let userData = userDoc.data();
+    let passwordValid = false;
 
-    if (!userData.active) {
-      return NextResponse.json(
-        { error: 'الحساب معطل' },
-        { status: 403 }
-      );
+    // Sort: try super_admin first, then admin, then nurse
+    const rolePriority: Record<string, number> = { super_admin: 0, admin: 1, nurse: 2 };
+    const sortedDocs = [...usersSnapshot.docs].sort((a, b) => {
+      const pa = rolePriority[a.data().role] ?? 3;
+      const pb = rolePriority[b.data().role] ?? 3;
+      return pa - pb;
+    });
+
+    for (const doc of sortedDocs) {
+      const data = doc.data();
+      if (!data.active) continue;
+      const valid = await verifyPassword(password, data.password);
+      if (valid) {
+        userDoc = doc;
+        userData = data;
+        passwordValid = true;
+        break;
+      }
     }
 
-    // Verify password (supports both bcrypt and legacy plaintext)
-    const passwordValid = await verifyPassword(password, userData.password);
     if (!passwordValid) {
       // Try to create audit log but don't block login response on failure
       try {
         await createAuditLog({
-          clinicId: userData.clinicId || null,
-          userId: userDoc.id,
+          clinicId: null,
+          userId: '',
           action: 'login_failed',
-          details: 'Invalid password attempt',
+          details: 'Invalid password attempt for phone: ' + phone,
           severity: 'warning',
         });
       } catch {}
       return NextResponse.json(
         { error: 'رقم الهاتف أو كلمة المرور غير صحيحة' },
         { status: 401 }
+      );
+    }
+
+    if (!userData.active) {
+      return NextResponse.json(
+        { error: 'الحساب معطل' },
+        { status: 403 }
       );
     }
 
