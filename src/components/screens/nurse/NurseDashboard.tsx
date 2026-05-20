@@ -90,7 +90,7 @@ const NurseDashboard = React.memo(function NurseDashboard() {
   }
 
   const stats = [
-    { label: 'زيارات اليوم', value: data.todayServices || 0, icon: Calendar, gradient: 'from-clinic-500 to-clinic-600', onClick: () => setScreen('nurse-patients') },
+    { label: 'زيارات اليوم', value: data.todayVisits || 0, icon: Calendar, gradient: 'from-clinic-500 to-clinic-600', onClick: () => setScreen('nurse-patients') },
     { label: 'طوارئ نشطة', value: data.activeEmergencies || 0, icon: AlertTriangle, gradient: 'from-red-500 to-red-600', onClick: () => setScreen('nurse-emergencies') },
     { label: 'خدمات اليوم', value: data.todayServices || 0, icon: Stethoscope, gradient: 'from-teal-500 to-teal-600', onClick: () => setScreen('nurse-patients') },
     { label: 'رصيد الراتب', value: salaryData?.remainingBalance || 0, icon: Wallet, gradient: 'from-amber-500 to-amber-600', isCurrency: true, onClick: () => setScreen('nurse-salary') },
@@ -179,7 +179,7 @@ const NurseDashboard = React.memo(function NurseDashboard() {
       </motion.div>
 
       {/* Active Emergencies */}
-      {data.recentEmergencies.length > 0 && (
+      {(data.recentEmergencies?.length ?? 0) > 0 && (
         <motion.div
           initial={{ opacity: 0, y: 15 }}
           animate={{ opacity: 1, y: 0 }}
@@ -196,7 +196,7 @@ const NurseDashboard = React.memo(function NurseDashboard() {
             </button>
           </div>
           <div className="space-y-2">
-            {data.recentEmergencies.slice(0, 3).map((em: EmergencyItem) => (
+            {data.recentEmergencies!.slice(0, 3).map((em: EmergencyItem) => (
               <div key={em.id} className="flex items-center justify-between py-2 border-b border-border last:border-0">
                 <div className="flex items-center gap-2">
                   <span className={`w-2 h-2 rounded-full ${em.severity === 'critical' ? 'bg-red-500' : em.severity === 'high' ? 'bg-orange-500' : 'bg-yellow-500'} animate-pulse`} />
