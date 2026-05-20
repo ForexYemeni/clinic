@@ -194,7 +194,7 @@ export function PaymentModal({
               <button
                 onClick={handleConfirm}
                 disabled={!amount || Number(amount) <= 0 || loading}
-                className="w-full h-12 bg-gradient-to-l to-clinic-600 to-clinic-600 text-white font-bold rounded-xl shadow-lg shadow-clinic-500/20 disabled:opacity-50 active:scale-[0.98] transition-transform flex items-center justify-center gap-2"
+                className="w-full h-12 bg-gradient-to-l from-clinic-600 to-clinic-600 text-white font-bold rounded-xl shadow-lg shadow-clinic-500/20 disabled:opacity-50 active:scale-[0.98] transition-transform flex items-center justify-center gap-2"
               >
                 {loading ? (
                   <div className="w-5 h-5 border-2 border-white/30 border-t-white rounded-full animate-spin" />

@@ -444,40 +444,56 @@ export function SuperAdminDashboard({ initialTab = 'dashboard' }: Props) {
 
   // ═══ DASHBOARD TAB ═══
   if (activeTab === 'dashboard') {
+    const trialCount = clinics.filter(c => c.subscription?.type === 'trial').length;
+    const activeSubCount = clinics.filter(c => c.subscription?.status === 'active' && c.subscription?.type !== 'trial').length;
+    const suspendedCount = clinics.filter(c => c.subscription?.status === 'suspended').length;
+
     return (
       <div className="p-4 space-y-4 pb-20">
-        <div className="flex items-center justify-between mb-2">
-          <div>
-            <h2 className="text-lg font-bold flex items-center gap-2">
-              <Shield className="w-5 h-5 text-purple-600" />
-              لوحة تحكم المنصة
-            </h2>
-            <p className="text-xs text-muted-foreground">الإدارة المركزية للعيادات</p>
+        {/* Professional Welcome Header */}
+        <div className="bg-gradient-to-l from-purple-500 to-purple-700 rounded-2xl p-4 text-white shadow-lg shadow-purple-500/20 relative overflow-hidden">
+          <div className="absolute -top-6 -left-6 w-24 h-24 bg-white/5 rounded-full" />
+          <div className="absolute -bottom-8 -right-8 w-32 h-32 bg-white/5 rounded-full" />
+          <div className="relative">
+            <div className="flex items-center gap-3 mb-2">
+              <div className="w-10 h-10 bg-white/20 rounded-xl flex items-center justify-center backdrop-blur-sm">
+                <Shield className="w-5 h-5 text-white" />
+              </div>
+              <div>
+                <p className="text-sm opacity-80">لوحة تحكم المنصة</p>
+                <p className="text-lg font-bold">{new Date().toLocaleDateString('ar-SA', { weekday: 'long', year: 'numeric', month: 'long', day: 'numeric' })}</p>
+              </div>
+            </div>
+            <div className="flex items-center gap-4 mt-2 text-xs text-white/80">
+              <span>{totalClinics} عيادة</span>
+              <span>{activeClinics} نشطة</span>
+              <span>{totalPatients} مريض</span>
+            </div>
           </div>
         </div>
 
-        {/* Stats Grid */}
+        {/* Stats Grid with animated counters */}
         <div className="grid grid-cols-2 gap-3">
-          <div className="bg-gradient-to-br from-purple-500 to-purple-600 rounded-2xl p-4 text-white">
+          <motion.div initial={{ opacity: 0, scale: 0.9 }} animate={{ opacity: 1, scale: 1 }} transition={{ delay: 0.05 }} className="bg-gradient-to-br from-purple-500 to-purple-600 rounded-2xl p-4 text-white shadow-lg shadow-purple-500/20">
             <Building2 className="w-6 h-6 mb-2 opacity-80" />
             <p className="text-2xl font-bold">{totalClinics}</p>
             <p className="text-xs opacity-80">إجمالي العيادات</p>
-          </div>
-          <div className="bg-gradient-to-br from-green-500 to-green-600 rounded-2xl p-4 text-white">
+          </motion.div>
+          <motion.div initial={{ opacity: 0, scale: 0.9 }} animate={{ opacity: 1, scale: 1 }} transition={{ delay: 0.1 }} className="bg-gradient-to-br from-green-500 to-green-600 rounded-2xl p-4 text-white shadow-lg shadow-green-500/20">
             <Users className="w-6 h-6 mb-2 opacity-80" />
             <p className="text-2xl font-bold">{activeClinics}</p>
             <p className="text-xs opacity-80">عيادات نشطة</p>
-          </div>
-          <div className="bg-gradient-to-br from-red-500 to-red-600 rounded-2xl p-4 text-white">
+          </motion.div>
+          <motion.div initial={{ opacity: 0, scale: 0.9 }} animate={{ opacity: 1, scale: 1 }} transition={{ delay: 0.15 }} className="bg-gradient-to-br from-red-500 to-red-600 rounded-2xl p-4 text-white shadow-lg shadow-red-500/20">
             <AlertTriangle className="w-6 h-6 mb-2 opacity-80" />
             <p className="text-2xl font-bold">{expiredClinics}</p>
             <p className="text-xs opacity-80">اشتراكات منتهية</p>
-          </div>
-          <div className="bg-gradient-to-br from-blue-500 to-blue-600 rounded-2xl p-4 text-white">
+          </motion.div>
+          <motion.div initial={{ opacity: 0, scale: 0.9 }} animate={{ opacity: 1, scale: 1 }} transition={{ delay: 0.2 }} className="bg-gradient-to-br from-blue-500 to-blue-600 rounded-2xl p-4 text-white shadow-lg shadow-blue-500/20">
             <CreditCard className="w-6 h-6 mb-2 opacity-80" />
             <p className="text-2xl font-bold">{totalPatients}</p>
             <p className="text-xs opacity-80">إجمالي المرضى</p>
-          </div>
+          </motion.div>
         </div>
 
         {/* Quick Actions */}
@@ -513,24 +529,45 @@ export function SuperAdminDashboard({ initialTab = 'dashboard' }: Props) {
           </button>
         </div>
 
-        {/* Subscription Summary */}
+        {/* Subscription Summary with visual bar */}
         <div className="space-y-2">
-          <h3 className="text-sm font-bold text-muted-foreground">ملخص الاشتراكات</h3>
+          <h3 className="text-sm font-bold text-muted-foreground">توزيع الاشتراكات</h3>
           <div className="bg-white dark:bg-gray-800 rounded-2xl border border-border p-4 space-y-3">
+            {/* Visual distribution bar */}
+            {totalClinics > 0 && (
+              <div className="flex h-3 rounded-full overflow-hidden bg-gray-100 dark:bg-gray-700">
+                {activeSubCount > 0 && <div className="bg-green-500" style={{ width: `${(activeSubCount / totalClinics) * 100}%` }} />}
+                {trialCount > 0 && <div className="bg-blue-500" style={{ width: `${(trialCount / totalClinics) * 100}%` }} />}
+                {suspendedCount > 0 && <div className="bg-yellow-500" style={{ width: `${(suspendedCount / totalClinics) * 100}%` }} />}
+                {expiredClinics > 0 && <div className="bg-red-500" style={{ width: `${(expiredClinics / totalClinics) * 100}%` }} />}
+              </div>
+            )}
             <div className="flex items-center justify-between">
-              <span className="text-xs text-muted-foreground">فترة تجريبية</span>
-              <span className="text-sm font-bold text-blue-600 dark:text-blue-400">{clinics.filter(c => c.subscription?.type === 'trial').length}</span>
+              <div className="flex items-center gap-1.5">
+                <span className="w-2.5 h-2.5 rounded-full bg-green-500" />
+                <span className="text-xs text-muted-foreground">نشط</span>
+              </div>
+              <span className="text-sm font-bold text-green-600 dark:text-green-400">{activeSubCount}</span>
             </div>
             <div className="flex items-center justify-between">
-              <span className="text-xs text-muted-foreground">اشتراك نشط</span>
-              <span className="text-sm font-bold text-green-600 dark:text-green-400">{clinics.filter(c => c.subscription?.status === 'active' && c.subscription?.type !== 'trial').length}</span>
+              <div className="flex items-center gap-1.5">
+                <span className="w-2.5 h-2.5 rounded-full bg-blue-500" />
+                <span className="text-xs text-muted-foreground">تجريبي</span>
+              </div>
+              <span className="text-sm font-bold text-blue-600 dark:text-blue-400">{trialCount}</span>
             </div>
             <div className="flex items-center justify-between">
-              <span className="text-xs text-muted-foreground">موقوفة</span>
-              <span className="text-sm font-bold text-yellow-600 dark:text-yellow-400">{clinics.filter(c => c.subscription?.status === 'suspended').length}</span>
+              <div className="flex items-center gap-1.5">
+                <span className="w-2.5 h-2.5 rounded-full bg-yellow-500" />
+                <span className="text-xs text-muted-foreground">موقوفة</span>
+              </div>
+              <span className="text-sm font-bold text-yellow-600 dark:text-yellow-400">{suspendedCount}</span>
             </div>
             <div className="flex items-center justify-between">
-              <span className="text-xs text-muted-foreground">منتهية</span>
+              <div className="flex items-center gap-1.5">
+                <span className="w-2.5 h-2.5 rounded-full bg-red-500" />
+                <span className="text-xs text-muted-foreground">منتهية</span>
+              </div>
               <span className="text-sm font-bold text-red-600 dark:text-red-400">{expiredClinics}</span>
             </div>
           </div>
@@ -539,32 +576,61 @@ export function SuperAdminDashboard({ initialTab = 'dashboard' }: Props) {
         {/* Data Reset Requests */}
         <DataResetRequestsSection />
 
-        {/* Recent Clinics */}
+        {/* Recent Clinics with improved card design */}
         <div className="space-y-2">
           <h3 className="text-sm font-bold text-muted-foreground">آخر العيادات</h3>
-          {clinics.slice(0, 5).map(clinic => (
-            <div key={clinic.id} onClick={() => { setSelectedClinicId(clinic.id); setScreen('super-admin-clinic-detail'); }} className="flex items-center justify-between p-3 bg-white dark:bg-gray-800 rounded-xl border border-border cursor-pointer active:scale-[0.98] transition-transform">
-              <div className="flex items-center gap-3">
-                <div className="w-9 h-9 rounded-xl bg-gradient-to-br from-purple-100 to-purple-200 dark:from-purple-900/30 dark:to-purple-800/30 flex items-center justify-center">
-                  {clinic.logo ? (
-                    <img src={clinic.logo} alt="" className="w-6 h-6 object-contain rounded" />
-                  ) : (
-                    <Building2 className="w-4 h-4 text-purple-600 dark:text-purple-400" />
-                  )}
+          {clinics.slice(0, 5).map((clinic, i) => {
+            const endDate = clinic.subscription?.endDate ? new Date(clinic.subscription.endDate) : null;
+            const daysRemaining = endDate ? Math.ceil((endDate.getTime() - Date.now()) / (1000 * 60 * 60 * 24)) : 0;
+            return (
+              <motion.div
+                key={clinic.id}
+                initial={{ opacity: 0, y: 10 }}
+                animate={{ opacity: 1, y: 0 }}
+                transition={{ delay: i * 0.05 }}
+                onClick={() => { setSelectedClinicId(clinic.id); setScreen('super-admin-clinic-detail'); }}
+                className="bg-white dark:bg-gray-800 rounded-xl border border-border p-3 cursor-pointer active:scale-[0.98] transition-transform"
+              >
+                <div className="flex items-center justify-between">
+                  <div className="flex items-center gap-3">
+                    <div className="w-10 h-10 rounded-xl bg-gradient-to-br from-purple-100 to-purple-200 dark:from-purple-900/30 dark:to-purple-800/30 flex items-center justify-center">
+                      {clinic.logo ? (
+                        <img src={clinic.logo} alt="" className="w-6 h-6 object-contain rounded" />
+                      ) : (
+                        <Building2 className="w-5 h-5 text-purple-600 dark:text-purple-400" />
+                      )}
+                    </div>
+                    <div>
+                      <p className="text-sm font-bold">{clinic.name}</p>
+                      <p className="text-xs text-muted-foreground">{formatDate(clinic.createdAt)}</p>
+                    </div>
+                  </div>
+                  <span className={`text-[10px] px-2 py-1 rounded-full ${statusColor(clinic.subscription?.status || 'expired')}`}>
+                    {statusLabel(clinic.subscription?.status || 'expired')}
+                  </span>
                 </div>
-                <div>
-                  <p className="text-sm font-bold">{clinic.name}</p>
-                  <p className="text-xs text-muted-foreground">{formatDate(clinic.createdAt)}</p>
-                </div>
-              </div>
-              <span className={`text-[10px] px-2 py-1 rounded-full ${statusColor(clinic.subscription?.status || 'expired')}`}>
-                {statusLabel(clinic.subscription?.status || 'expired')}
-              </span>
-            </div>
-          ))}
+                {/* Subscription progress bar */}
+                {endDate && clinic.subscription?.type !== 'lifetime' && (
+                  <div className="mt-2">
+                    <div className="flex items-center justify-between text-[10px] text-muted-foreground mb-1">
+                      <span>{daysRemaining > 0 ? `${daysRemaining} يوم متبقي` : 'منتهي'}</span>
+                    </div>
+                    <div className="h-1.5 bg-gray-100 dark:bg-gray-700 rounded-full overflow-hidden">
+                      <div
+                        className={`h-full rounded-full transition-all duration-500 ${
+                          daysRemaining <= 7 ? 'bg-red-500' : daysRemaining <= 30 ? 'bg-yellow-500' : 'bg-green-500'
+                        }`}
+                        style={{ width: `${Math.min(100, Math.max(0, (daysRemaining / 365) * 100))}%` }}
+                      />
+                    </div>
+                  </div>
+                )}
+              </motion.div>
+            );
+          })}
           {clinics.length === 0 && !loading && (
             <div className="text-center py-8 text-muted-foreground">
-              <Building2 className="w-10 h-10 mx-auto mb-2 opacity-30" />
+              <Building2 className="w-20 h-20 mx-auto mb-2 opacity-30" />
               <p className="text-sm">لا توجد عيادات بعد</p>
               <button onClick={() => setScreen('super-admin-add-clinic')} className="mt-3 flex items-center gap-2 px-4 py-2.5 bg-purple-50 dark:bg-purple-900/20 text-purple-700 dark:text-purple-300 rounded-xl border border-purple-200 dark:border-purple-800 text-sm font-bold active:scale-[0.97] transition-all">
                 <Plus className="w-4 h-4" /> إضافة عيادة جديدة

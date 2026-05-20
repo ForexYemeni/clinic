@@ -681,33 +681,33 @@ export function SuperAdminClinicDetail() {
         )}
       </AnimatePresence>
 
-      {/* Stats Card */}
+      {/* Stats Card with animated icons */}
       <div className="bg-white dark:bg-gray-800 rounded-2xl border border-border p-4 space-y-3">
         <h3 className="text-sm font-bold flex items-center gap-2">
           <TrendingUp className="w-4 h-4 text-green-600" />
           الإحصائيات
         </h3>
         <div className="grid grid-cols-2 gap-3">
-          <div className="bg-gradient-to-br from-purple-500 to-purple-600 rounded-xl p-3 text-white">
+          <motion.div initial={{ opacity: 0, scale: 0.9 }} animate={{ opacity: 1, scale: 1 }} transition={{ delay: 0.05 }} className="bg-gradient-to-br from-purple-500 to-purple-600 rounded-xl p-3 text-white shadow-lg shadow-purple-500/20">
             <Users className="w-4 h-4 mb-1 opacity-80" />
             <p className="text-lg font-bold">{clinic.stats?.userCount || 0}</p>
             <p className="text-[10px] opacity-80">المستخدمين</p>
-          </div>
-          <div className="bg-gradient-to-br from-green-500 to-green-600 rounded-xl p-3 text-white">
+          </motion.div>
+          <motion.div initial={{ opacity: 0, scale: 0.9 }} animate={{ opacity: 1, scale: 1 }} transition={{ delay: 0.1 }} className="bg-gradient-to-br from-green-500 to-green-600 rounded-xl p-3 text-white shadow-lg shadow-green-500/20">
             <Shield className="w-4 h-4 mb-1 opacity-80" />
             <p className="text-lg font-bold">{clinic.stats?.patientCount || 0}</p>
             <p className="text-[10px] opacity-80">المرضى</p>
-          </div>
-          <div className="bg-gradient-to-br from-blue-500 to-blue-600 rounded-xl p-3 text-white">
+          </motion.div>
+          <motion.div initial={{ opacity: 0, scale: 0.9 }} animate={{ opacity: 1, scale: 1 }} transition={{ delay: 0.15 }} className="bg-gradient-to-br from-blue-500 to-blue-600 rounded-xl p-3 text-white shadow-lg shadow-blue-500/20">
             <FileText className="w-4 h-4 mb-1 opacity-80" />
             <p className="text-lg font-bold">{clinic.stats?.serviceCount || 0}</p>
             <p className="text-[10px] opacity-80">الخدمات</p>
-          </div>
-          <div className="bg-gradient-to-br from-amber-500 to-amber-600 rounded-xl p-3 text-white">
+          </motion.div>
+          <motion.div initial={{ opacity: 0, scale: 0.9 }} animate={{ opacity: 1, scale: 1 }} transition={{ delay: 0.2 }} className="bg-gradient-to-br from-amber-500 to-amber-600 rounded-xl p-3 text-white shadow-lg shadow-amber-500/20">
             <CreditCard className="w-4 h-4 mb-1 opacity-80" />
             <p className="text-lg font-bold">{clinic.stats?.invoiceCount || 0}</p>
             <p className="text-[10px] opacity-80">الفواتير</p>
-          </div>
+          </motion.div>
         </div>
         {clinic.stats?.totalRevenue > 0 && (
           <div className="bg-gray-50 dark:bg-gray-700/50 rounded-xl p-3 flex items-center justify-between">
@@ -745,7 +745,7 @@ export function SuperAdminClinicDetail() {
         </div>
       )}
 
-      {/* Nurses Card */}
+      {/* Nurses Card with styled cards */}
       <div className="bg-white dark:bg-gray-800 rounded-2xl border border-border overflow-hidden">
         <div className="p-4 border-b border-border">
           <h3 className="text-sm font-bold flex items-center gap-2">
@@ -753,39 +753,56 @@ export function SuperAdminClinicDetail() {
             الممرضون ({nurseUsers.length})
           </h3>
         </div>
-        <div className="divide-y divide-border">
-          {nurseUsers.map(u => (
-            <div key={u.id} className="flex items-center justify-between p-3">
-              <div className="flex items-center gap-3">
-                <div className={`w-8 h-8 rounded-lg flex items-center justify-center text-white text-xs font-bold ${u.active ? 'bg-blue-500' : 'bg-gray-400'}`}>
-                  {u.name?.charAt(0) || '?'}
+        <div className="p-3 space-y-2">
+          {nurseUsers.map(u => {
+            const gradients = [
+              'from-blue-500 to-cyan-500',
+              'from-purple-500 to-pink-500',
+              'from-teal-500 to-emerald-500',
+              'from-orange-500 to-red-500',
+              'from-indigo-500 to-violet-500',
+            ];
+            const gradient = gradients[u.name.charCodeAt(0) % gradients.length];
+            return (
+              <motion.div
+                key={u.id}
+                initial={{ opacity: 0, x: -10 }}
+                animate={{ opacity: 1, x: 0 }}
+                className={`flex items-center justify-between p-3 rounded-xl border ${
+                  u.active ? 'bg-gray-50 dark:bg-gray-700/50 border-border' : 'bg-gray-50/50 dark:bg-gray-800/50 border-dashed opacity-60'
+                }`}
+              >
+                <div className="flex items-center gap-3">
+                  <div className={`w-9 h-9 rounded-xl bg-gradient-to-br ${gradient} flex items-center justify-center text-white text-sm font-bold shadow-sm`}>
+                    {u.name?.charAt(0) || '?'}
+                  </div>
+                  <div>
+                    <p className={`text-sm font-medium ${!u.active ? 'line-through text-muted-foreground' : ''}`}>{u.name}</p>
+                    <p className="text-[10px] text-muted-foreground" dir="ltr">+967 {u.phone}</p>
+                  </div>
                 </div>
-                <div>
-                  <p className={`text-sm font-medium ${!u.active ? 'text-muted-foreground line-through' : ''}`}>{u.name}</p>
-                  <p className="text-xs text-muted-foreground" dir="ltr">+967 {u.phone}</p>
+                <div className="flex items-center gap-1.5">
+                  <span className={`text-[10px] px-2 py-0.5 rounded-full font-bold ${u.active ? 'bg-blue-100 text-blue-700 dark:bg-blue-900/30 dark:text-blue-400' : 'bg-red-100 text-red-700 dark:bg-red-900/30 dark:text-red-400'}`}>
+                    {u.active ? 'ممرض' : 'معطل'}
+                  </span>
+                  <button
+                    onClick={() => setShowNurseCard({type: 'toggle', nurse: {id: u.id, name: u.name, active: u.active}})}
+                    className="w-7 h-7 rounded-lg flex items-center justify-center hover:bg-gray-100 dark:hover:bg-gray-600 transition-colors"
+                    title={u.active ? 'تعطيل' : 'تفعيل'}
+                  >
+                    {u.active ? <Pause className="w-3.5 h-3.5 text-yellow-600" /> : <Play className="w-3.5 h-3.5 text-green-600" />}
+                  </button>
+                  <button
+                    onClick={() => setShowNurseCard({type: 'delete', nurse: {id: u.id, name: u.name, active: u.active}})}
+                    className="w-7 h-7 rounded-lg flex items-center justify-center hover:bg-red-50 dark:hover:bg-red-900/20 transition-colors"
+                    title="حذف"
+                  >
+                    <Trash2 className="w-3.5 h-3.5 text-red-500" />
+                  </button>
                 </div>
-              </div>
-              <div className="flex items-center gap-1.5">
-                <span className={`text-[10px] px-2 py-0.5 rounded-full ${u.active ? 'bg-blue-100 text-blue-700 dark:bg-blue-900/30 dark:text-blue-400' : 'bg-red-100 text-red-700 dark:bg-red-900/30 dark:text-red-400'}`}>
-                  {u.active ? 'ممرض' : 'معطل'}
-                </span>
-                <button
-                  onClick={() => setShowNurseCard({type: 'toggle', nurse: {id: u.id, name: u.name, active: u.active}})}
-                  className="w-7 h-7 rounded-lg flex items-center justify-center hover:bg-gray-100 dark:hover:bg-gray-700 transition-colors"
-                  title={u.active ? 'تعطيل' : 'تفعيل'}
-                >
-                  {u.active ? <Pause className="w-3.5 h-3.5 text-yellow-600" /> : <Play className="w-3.5 h-3.5 text-green-600" />}
-                </button>
-                <button
-                  onClick={() => setShowNurseCard({type: 'delete', nurse: {id: u.id, name: u.name, active: u.active}})}
-                  className="w-7 h-7 rounded-lg flex items-center justify-center hover:bg-red-50 dark:hover:bg-red-900/20 transition-colors"
-                  title="حذف"
-                >
-                  <Trash2 className="w-3.5 h-3.5 text-red-500" />
-                </button>
-              </div>
-            </div>
-          ))}
+              </motion.div>
+            );
+          })}
           {nurseUsers.length === 0 && (
             <div className="p-4 text-center text-xs text-muted-foreground">لا يوجد ممرضين في هذه العيادة</div>
           )}

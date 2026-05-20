@@ -411,7 +411,7 @@ export function SystemReset() {
                 >
                   <button
                     onClick={handleSuccessDone}
-                    className="w-full h-12 bg-gradient-to-l to-clinic-600 to-clinic-700 text-white rounded-2xl text-sm font-bold active:scale-[0.97] transition-transform shadow-lg shadow-clinic-900/30"
+                    className="w-full h-12 bg-gradient-to-l from-clinic-600 to-clinic-700 text-white rounded-2xl text-sm font-bold active:scale-[0.97] transition-transform shadow-lg shadow-clinic-900/30"
                   >
                     العودة للوحة التحكم
                   </button>

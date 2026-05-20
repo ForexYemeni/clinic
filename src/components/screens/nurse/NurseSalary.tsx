@@ -176,24 +176,29 @@ export function NurseSalary() {
         راتبي
       </h2>
 
-      {/* Salary Overview Card */}
+      {/* Salary Overview Card - Payslip style */}
       <motion.div
         initial={{ opacity: 0, y: 10 }}
         animate={{ opacity: 1, y: 0 }}
-        className="mb-4 bg-gradient-to-br from-clinic-500 to-teal-600 rounded-2xl p-5 text-white shadow-lg shadow-clinic-500/20 relative overflow-hidden"
+        className="mb-4 bg-gradient-to-br from-clinic-500 to-teal-600 rounded-2xl text-white shadow-lg shadow-clinic-500/20 relative overflow-hidden"
       >
         {/* Decorative */}
         <div className="absolute -top-6 -left-6 w-24 h-24 bg-white/5 rounded-full" />
         <div className="absolute -bottom-8 -right-8 w-32 h-32 bg-white/5 rounded-full" />
+        <div className="absolute top-1/2 -right-4 w-16 h-16 bg-white/5 rounded-full" />
 
-        <div className="relative">
-          <div className="flex items-center gap-2 mb-4">
-            <DollarSign className="w-5 h-5 opacity-80" />
-            <span className="text-sm opacity-80">الراتب الشهري</span>
+        {/* Payslip header band */}
+        <div className="bg-white/10 px-5 py-3 backdrop-blur-sm">
+          <div className="flex items-center justify-between">
+            <div className="flex items-center gap-2">
+              <DollarSign className="w-5 h-5 opacity-80" />
+              <span className="text-sm font-bold">كشف راتب</span>
+            </div>
+            <span className="text-xs opacity-70">{new Date().toLocaleDateString('ar-SA', { month: 'long', year: 'numeric' })}</span>
           </div>
+        </div>
 
-          <p className="text-3xl font-bold mb-2">{formatCurrency(salary)}</p>
-
+        <div className="relative p-5">
           {/* Employment Start Date */}
           {data?.nurse?.createdAt && (
             <div className="flex items-center gap-2 mb-4 bg-white/10 rounded-xl p-2.5 backdrop-blur-sm">
@@ -205,51 +210,115 @@ export function NurseSalary() {
             </div>
           )}
 
-          <div className="grid grid-cols-3 gap-2">
-            <div className="bg-white/10 rounded-xl p-2.5 backdrop-blur-sm">
-              <div className="flex items-center gap-1 mb-1">
-                <TrendingDown className="w-3 h-3 text-red-300" />
-                <span className="text-[9px] text-white/70">المسحوب</span>
+          {/* Salary amount */}
+          <div className="text-center mb-4">
+            <p className="text-[10px] text-white/60 mb-1">الراتب الشهري</p>
+            <p className="text-4xl font-bold">{formatCurrency(salary)}</p>
+          </div>
+
+          {/* Visual salary breakdown with icons */}
+          <div className="space-y-2.5">
+            <div className="bg-white/10 rounded-xl p-3 backdrop-blur-sm flex items-center justify-between">
+              <div className="flex items-center gap-2.5">
+                <div className="w-8 h-8 bg-red-400/30 rounded-lg flex items-center justify-center">
+                  <TrendingDown className="w-4 h-4 text-red-200" />
+                </div>
+                <div>
+                  <p className="text-[9px] text-white/60">المسحوب</p>
+                  <p className="text-sm font-bold text-red-200">{formatCurrency(totalWithdrawn)}</p>
+                </div>
               </div>
-              <p className="text-sm font-bold text-red-200">{formatCurrency(totalWithdrawn)}</p>
+              <div className="text-left">
+                <p className="text-[9px] text-white/50">من الراتب</p>
+                <p className="text-xs font-bold text-red-200">{salary > 0 ? Math.round(withdrawalPercentage) : 0}%</p>
+              </div>
             </div>
-            <div className="bg-white/10 rounded-xl p-2.5 backdrop-blur-sm">
-              <div className="flex items-center gap-1 mb-1">
-                <FileText className="w-3 h-3 text-amber-300" />
-                <span className="text-[9px] text-white/70">مديونيات</span>
+            <div className="bg-white/10 rounded-xl p-3 backdrop-blur-sm flex items-center justify-between">
+              <div className="flex items-center gap-2.5">
+                <div className="w-8 h-8 bg-amber-400/30 rounded-lg flex items-center justify-center">
+                  <FileText className="w-4 h-4 text-amber-200" />
+                </div>
+                <div>
+                  <p className="text-[9px] text-white/60">مديونيات</p>
+                  <p className="text-sm font-bold text-amber-200">{formatCurrency(totalDebts)}</p>
+                </div>
               </div>
-              <p className="text-sm font-bold text-amber-200">{formatCurrency(totalDebts)}</p>
+              <div className="text-left">
+                <p className="text-[9px] text-white/50">فواتير مسددة</p>
+                <p className="text-xs font-bold text-amber-200">{allWithdrawals.filter(w => w.isDebt || w.type === 'debt').length} فاتورة</p>
+              </div>
             </div>
-            <div className="bg-white/10 rounded-xl p-2.5 backdrop-blur-sm">
-              <div className="flex items-center gap-1 mb-1">
-                <TrendingUp className="w-3 h-3 text-green-300" />
-                <span className="text-[9px] text-white/70">المتبقي</span>
+            <div className="bg-white/10 rounded-xl p-3 backdrop-blur-sm flex items-center justify-between">
+              <div className="flex items-center gap-2.5">
+                <div className="w-8 h-8 bg-green-400/30 rounded-lg flex items-center justify-center">
+                  <TrendingUp className="w-4 h-4 text-green-200" />
+                </div>
+                <div>
+                  <p className="text-[9px] text-white/60">المتبقي</p>
+                  <p className={`text-sm font-bold ${remaining >= 0 ? 'text-green-200' : 'text-red-200'}`}>{formatCurrency(remaining)}</p>
+                </div>
               </div>
-              <p className={`text-sm font-bold ${remaining >= 0 ? 'text-green-200' : 'text-red-200'}`}>{formatCurrency(remaining)}</p>
+              <div className="text-left">
+                <p className="text-[9px] text-white/50">متاح للسحب</p>
+                <p className={`text-xs font-bold ${remaining >= 0 ? 'text-green-200' : 'text-red-200'}`}>{salary > 0 ? Math.round(((salary - totalWithdrawn) / salary) * 100) : 0}%</p>
+              </div>
             </div>
           </div>
 
-          {/* Progress bar */}
+          {/* Progress bar with gradient fill and animation */}
           {salary > 0 && (
             <div className="mt-4">
               <div className="flex items-center justify-between mb-1.5">
                 <span className="text-[10px] text-white/70">نسبة السحب من الراتب</span>
                 <span className="text-[10px] font-bold text-white/90">{Math.round(withdrawalPercentage)}%</span>
               </div>
-              <div className="h-2.5 bg-white/10 rounded-full overflow-hidden">
-                <div
-                  className={`h-2.5 rounded-full transition-all duration-700 ${
-                    withdrawalPercentage >= 90 ? 'bg-red-400' :
-                    withdrawalPercentage >= 60 ? 'bg-yellow-400' :
-                    'bg-green-400'
+              <div className="h-3 bg-white/10 rounded-full overflow-hidden">
+                <motion.div
+                  initial={{ width: 0 }}
+                  animate={{ width: `${withdrawalPercentage}%` }}
+                  transition={{ duration: 1, ease: 'easeOut', delay: 0.3 }}
+                  className={`h-full rounded-full ${
+                    withdrawalPercentage >= 90 ? 'bg-gradient-to-l from-red-400 to-red-500' :
+                    withdrawalPercentage >= 60 ? 'bg-gradient-to-l from-yellow-400 to-amber-500' :
+                    'bg-gradient-to-l from-green-400 to-emerald-500'
                   }`}
-                  style={{ width: `${withdrawalPercentage}%` }}
                 />
               </div>
             </div>
           )}
         </div>
       </motion.div>
+
+      {/* Quick preview of recent withdrawals */}
+      {approvedWithdrawals.length > 0 && (
+        <motion.div
+          initial={{ opacity: 0, y: 10 }}
+          animate={{ opacity: 1, y: 0 }}
+          transition={{ delay: 0.1 }}
+          className="mb-4 bg-white dark:bg-gray-800 rounded-2xl p-4 shadow-sm border border-border"
+        >
+          <h3 className="font-bold text-sm mb-3 flex items-center gap-2">
+            <Banknote className="w-4 h-4 text-red-500" />
+            آخر السحوبات
+          </h3>
+          <div className="space-y-2">
+            {approvedWithdrawals.slice(0, 3).map((w) => (
+              <div key={w.id} className="flex items-center justify-between py-2 border-b border-border last:border-0">
+                <div className="flex items-center gap-2">
+                  <div className="w-7 h-7 bg-red-50 dark:bg-red-900/20 rounded-lg flex items-center justify-center">
+                    <Banknote className="w-3.5 h-3.5 text-red-500" />
+                  </div>
+                  <div>
+                    <p className="text-xs font-medium">{w.description || 'سحب من الراتب'}</p>
+                    <p className="text-[10px] text-muted-foreground">{formatDate(w.createdAt)}</p>
+                  </div>
+                </div>
+                <span className="text-xs font-bold text-red-600 dark:text-red-400">-{formatCurrency(w.amount)}</span>
+              </div>
+            ))}
+          </div>
+        </motion.div>
+      )}
 
       {/* Pending Requests Alert */}
       {pendingRequests.length > 0 && (

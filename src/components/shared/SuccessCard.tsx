@@ -172,7 +172,7 @@ export function SuccessCard({
               {/* Close Button */}
               <button
                 onClick={onClose}
-                className="w-full h-11 bg-gradient-to-l to-clinic-600 to-clinic-600 text-white font-bold rounded-xl shadow-lg shadow-clinic-500/20 active:scale-[0.98] transition-transform"
+                className="w-full h-11 bg-gradient-to-l from-clinic-600 to-clinic-600 text-white font-bold rounded-xl shadow-lg shadow-clinic-500/20 active:scale-[0.98] transition-transform"
               >
                 تم
               </button>

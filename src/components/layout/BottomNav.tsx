@@ -1,7 +1,7 @@
 'use client';
 
 import React, { useMemo } from 'react';
-import { Users, AlertTriangle, FileText, MoreHorizontal } from 'lucide-react';
+import { Users, AlertTriangle, FileText, MoreHorizontal, LayoutDashboard } from 'lucide-react';
 import { useAppStore, ScreenType } from '@/lib/store';
 
 const BottomNav = React.memo(function BottomNav() {
@@ -17,9 +17,9 @@ const BottomNav = React.memo(function BottomNav() {
   ], []);
 
   const nurseTabs = useMemo(() => [
+    { id: 'nurse-dashboard', label: 'الرئيسية', icon: LayoutDashboard, matchPrefix: 'nurse-dashboard' },
     { id: 'nurse-patients', label: 'المرضى', icon: Users, matchPrefix: 'nurse-patient' },
     { id: 'nurse-emergencies', label: 'الطوارئ', icon: AlertTriangle, matchPrefix: 'nurse-emergenc' },
-    { id: 'nurse-reports', label: 'التقارير', icon: FileText, matchPrefix: 'nurse-report' },
     { id: 'nurse-more', label: 'المزيد', icon: MoreHorizontal, matchPrefix: 'nurse-more' },
   ], []);
 
@@ -30,7 +30,7 @@ const BottomNav = React.memo(function BottomNav() {
     if (!isAdmin && (screen === 'nurse-add-visit' || screen === 'nurse-add-emergency')) {
       return 'nurse-patients';
     }
-    if (!isAdmin && (screen === 'nurse-change-password' || screen === 'nurse-finance')) {
+    if (!isAdmin && (screen === 'nurse-change-password' || screen === 'nurse-finance' || screen === 'nurse-salary' || screen === 'nurse-reports')) {
       return 'nurse-more';
     }
     for (const tab of tabs) {

@@ -107,7 +107,13 @@ export function PatientDetail({ role = 'admin' }: Props) {
   return (
     <div className="pb-24">
       {/* Patient Header */}
-      <div className="bg-gradient-to-l to-clinic-600 to-teal-600 text-white p-4 pb-6">
+      <div className="bg-gradient-to-l from-clinic-600 to-teal-600 text-white p-4 pb-6 relative overflow-hidden">
+        {/* Animated background pattern */}
+        <div className="absolute inset-0 opacity-[0.04]">
+          <div className="absolute top-2 right-8 w-20 h-20 border-2 border-white rounded-full" />
+          <div className="absolute -bottom-4 -left-4 w-32 h-32 border-2 border-white rounded-full" />
+          <div className="absolute top-1/2 right-1/3 w-16 h-16 border border-white rounded-full" />
+        </div>
         <div className="flex items-center justify-between mb-3">
           <button onClick={() => setScreen(role === 'admin' ? 'admin-patients' : 'nurse-patients')} className="flex items-center gap-2 px-3 py-2 bg-white/10 backdrop-blur-sm rounded-xl border border-white/20 text-white/80 text-sm font-medium active:scale-[0.97] transition-all">
             <div className="w-7 h-7 rounded-lg bg-white/10 flex items-center justify-center">
@@ -167,16 +173,23 @@ export function PatientDetail({ role = 'admin' }: Props) {
         </div>
       </div>
 
-      {/* Tabs */}
+      {/* Tabs with sliding indicator */}
       <div className="px-4 -mt-4">
-        <div className="bg-white dark:bg-gray-800 rounded-2xl p-1 flex shadow-sm border border-border">
+        <div className="bg-white dark:bg-gray-800 rounded-2xl p-1 flex shadow-sm border border-border relative">
+          {/* Sliding indicator */}
+          <motion.div
+            layoutId="tab-indicator"
+            className="absolute top-1 bottom-1 rounded-xl bg-clinic-600 shadow-sm"
+            style={{ width: `${100 / tabs.length}%`, left: `${(tabs.findIndex(t => t.id === activeTab) / tabs.length) * 100}%` }}
+            transition={{ type: 'spring', stiffness: 300, damping: 30 }}
+          />
           {tabs.map(tab => (
             <button
               key={tab.id}
               onClick={() => setActiveTab(tab.id)}
-              className={`flex-1 flex items-center justify-center gap-1 py-2.5 rounded-xl text-xs font-medium transition-all ${
+              className={`relative z-10 flex-1 flex items-center justify-center gap-1 py-2.5 rounded-xl text-xs font-medium transition-colors ${
                 activeTab === tab.id
-                  ? 'bg-clinic-600 text-white shadow-sm'
+                  ? 'text-white'
                   : 'text-muted-foreground hover:text-foreground'
               }`}
             >
@@ -196,7 +209,7 @@ export function PatientDetail({ role = 'admin' }: Props) {
       <div className="p-4">
         <AnimatePresence mode="wait">
           {activeTab === 'visits' && (
-            <motion.div key="visits" initial={{ opacity: 0 }} animate={{ opacity: 1 }} exit={{ opacity: 0 }} className="space-y-3">
+            <motion.div key="visits" initial={{ opacity: 0, x: -10 }} animate={{ opacity: 1, x: 0 }} exit={{ opacity: 0, x: 10 }} transition={{ duration: 0.2 }} className="space-y-3">
               {visits.length === 0 ? (
                 <div className="text-center py-8 text-muted-foreground">
                   <Calendar className="w-10 h-10 mx-auto mb-2 opacity-30" />
@@ -269,7 +282,7 @@ export function PatientDetail({ role = 'admin' }: Props) {
           )}
 
           {activeTab === 'services' && (
-            <motion.div key="services" initial={{ opacity: 0 }} animate={{ opacity: 1 }} exit={{ opacity: 0 }} className="space-y-3">
+            <motion.div key="services" initial={{ opacity: 0, x: -10 }} animate={{ opacity: 1, x: 0 }} exit={{ opacity: 0, x: 10 }} transition={{ duration: 0.2 }} className="space-y-3">
               {services.length === 0 ? (
                 <div className="text-center py-8 text-muted-foreground">
                   <Stethoscope className="w-10 h-10 mx-auto mb-2 opacity-30" />
@@ -303,7 +316,7 @@ export function PatientDetail({ role = 'admin' }: Props) {
           )}
 
           {activeTab === 'invoices' && (
-            <motion.div key="invoices" initial={{ opacity: 0 }} animate={{ opacity: 1 }} exit={{ opacity: 0 }} className="space-y-3">
+            <motion.div key="invoices" initial={{ opacity: 0, x: -10 }} animate={{ opacity: 1, x: 0 }} exit={{ opacity: 0, x: 10 }} transition={{ duration: 0.2 }} className="space-y-3">
               {invoices.length === 0 ? (
                 <div className="text-center py-8 text-muted-foreground">
                   <CreditCard className="w-10 h-10 mx-auto mb-2 opacity-30" />
@@ -359,7 +372,7 @@ export function PatientDetail({ role = 'admin' }: Props) {
           )}
 
           {activeTab === 'medical' && (
-            <motion.div key="medical" initial={{ opacity: 0 }} animate={{ opacity: 1 }} exit={{ opacity: 0 }} className="space-y-4">
+            <motion.div key="medical" initial={{ opacity: 0, x: -10 }} animate={{ opacity: 1, x: 0 }} exit={{ opacity: 0, x: 10 }} transition={{ duration: 0.2 }} className="space-y-4">
               {/* Medical Info */}
               <div className="bg-white dark:bg-gray-800 rounded-xl p-3 border border-border">
                 <h3 className="font-bold text-sm mb-3 flex items-center gap-2">

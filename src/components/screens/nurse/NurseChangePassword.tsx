@@ -83,7 +83,7 @@ export function NurseChangePassword() {
         <button
           type="submit"
           disabled={loading}
-          className="w-full h-12 bg-gradient-to-l to-clinic-600 to-teal-600 text-white font-bold rounded-xl shadow-lg disabled:opacity-60 active:scale-[0.98] transition-transform"
+          className="w-full h-12 bg-gradient-to-l from-clinic-600 to-teal-600 text-white font-bold rounded-xl shadow-lg disabled:opacity-60 active:scale-[0.98] transition-transform"
         >
           {loading ? <div className="w-5 h-5 border-2 border-white/30 border-t-white rounded-full animate-spin mx-auto" /> : 'تغيير كلمة المرور'}
         </button>

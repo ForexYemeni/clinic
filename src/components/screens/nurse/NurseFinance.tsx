@@ -274,7 +274,7 @@ export function NurseFinance() {
                 {inv.remaining > 0 && (
                   <button
                     onClick={() => handlePayClick(inv)}
-                    className="w-full mt-3 h-10 bg-gradient-to-l to-clinic-600 to-teal-600 text-white font-bold rounded-xl text-sm flex items-center justify-center gap-2 shadow-sm shadow-clinic-500/20 active:scale-[0.98] transition-transform"
+                    className="w-full mt-3 h-10 bg-gradient-to-l from-clinic-600 to-teal-600 text-white font-bold rounded-xl text-sm flex items-center justify-center gap-2 shadow-sm shadow-clinic-500/20 active:scale-[0.98] transition-transform"
                   >
                     <Banknote className="w-4 h-4" />
                     تسديد {formatCurrency(inv.remaining)}

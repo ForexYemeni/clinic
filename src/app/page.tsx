@@ -93,6 +93,7 @@ const NurseChangePassword = dynamic(() => import('@/components/screens/nurse/Nur
 const NurseFinance = dynamic(() => import('@/components/screens/nurse/NurseFinance').then(m => ({ default: m.NurseFinance })), { ssr: false });
 const NurseMoreMenu = dynamic(() => import('@/components/screens/nurse/NurseMoreMenu').then(m => ({ default: m.NurseMoreMenu })), { ssr: false });
 const NurseSalary = dynamic(() => import('@/components/screens/nurse/NurseSalary').then(m => ({ default: m.NurseSalary })), { ssr: false });
+const NurseDashboard = dynamic(() => import('@/components/screens/nurse/NurseDashboard').then(m => ({ default: m.NurseDashboard })), { ssr: false });
 
 // Lazy-loaded super admin screens
 const SuperAdminDashboard = dynamic(() => import('@/components/screens/SuperAdminDashboard').then(m => ({ default: m.SuperAdminDashboard })), { ssr: false });
@@ -279,6 +280,7 @@ function ClinicApp() {
       case 'admin-clinic-settings': return <ClinicSettings />;
       case 'admin-system-reset': return <SystemReset />;
       case 'nurse-patients': return <PatientList role="nurse" />;
+      case 'nurse-dashboard': return <NurseDashboard />;
       case 'nurse-patient-detail': return <PatientDetail role="nurse" />;
       case 'nurse-add-visit': return <NurseAddVisit />;
       case 'nurse-emergencies': return <NurseEmergencies />;
@@ -289,7 +291,7 @@ function ClinicApp() {
       case 'nurse-more': return <NurseMoreMenu />;
       case 'nurse-salary': return <NurseSalary />;
       case 'subscription-expired': return <SubscriptionExpired />;
-      default: return user?.role === 'admin' ? <AdminDashboard /> : <PatientList role="nurse" />;
+      default: return user?.role === 'admin' ? <AdminDashboard /> : <NurseDashboard />;
     }
   };
 

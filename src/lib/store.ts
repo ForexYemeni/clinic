@@ -8,7 +8,7 @@ export type ScreenType =
   | 'admin-add-payment' | 'admin-add-service' | 'admin-clinic-settings' | 'admin-system-reset'
   | 'admin-nurse-salary'
   | 'nurse-patients' | 'nurse-emergencies' | 'nurse-reports' | 'nurse-more' | 'nurse-finance'
-  | 'nurse-patient-detail' | 'nurse-add-emergency' | 'nurse-add-visit' | 'nurse-change-password'
+  | 'nurse-dashboard' | 'nurse-patient-detail' | 'nurse-add-emergency' | 'nurse-add-visit' | 'nurse-change-password'
   | 'nurse-salary'
   | 'subscription-expired'
   // Super Admin screens
