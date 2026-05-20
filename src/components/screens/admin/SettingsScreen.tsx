@@ -15,7 +15,7 @@ export function SettingsScreen() {
   const handleSaveName = async () => {
     if (!newClinicName.trim()) return;
     try {
-      // Update clinic name in Firestore would require an API call
+      // Update clinic name in database would require an API call
       setClinicName(newClinicName.trim());
       setEditingName(false);
       toast.success('تم تحديث اسم العيادة');

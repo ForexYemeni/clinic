@@ -1,5 +1,4 @@
-// Helper to convert Mongoose lean document to Firestore-like format
-// Firestore returns: { id: doc.id, ...doc.data() }
+// Helper to convert Mongoose lean document to API response format
 // Mongoose lean returns: { _id: ObjectId, ...fields }
 // This function maps _id to id for API response compatibility
 
