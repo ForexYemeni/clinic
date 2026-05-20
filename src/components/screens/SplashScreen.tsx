@@ -138,11 +138,15 @@ export function SplashScreen() {
           if (res.ok) {
             const data = await res.json();
             if (data.setupNeeded) {
-              setIsFirstSetup(true);
-              if (!data.platformSetup) {
-                useAppStore.getState().setScreen('super-admin-setup');
+              // If platform is set up (super_admin exists), go to login screen
+              // Super admin creates clinics from the dashboard, not from a forced setup screen
+              if (data.platformSetup) {
+                // Platform is ready, user just needs to log in
+                // Don't force any setup screen
               } else {
-                useAppStore.getState().setScreen('admin-setup');
+                // No super_admin exists yet - first time setup
+                setIsFirstSetup(true);
+                useAppStore.getState().setScreen('super-admin-setup');
               }
             }
           }
