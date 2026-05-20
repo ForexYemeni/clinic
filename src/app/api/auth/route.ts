@@ -7,7 +7,13 @@ import { NextRequest, NextResponse } from 'next/server';
 // POST: Login with phone + password
 export async function POST(request: NextRequest) {
   try {
-    await dbConnect();
+    const connectResult = await dbConnect();
+    if (!connectResult) {
+      return NextResponse.json(
+        { error: 'خطأ في الاتصال بقاعدة البيانات' },
+        { status: 500 }
+      );
+    }
 
     const body = await request.json();
     const { phone, password } = body;
@@ -38,7 +44,7 @@ export async function POST(request: NextRequest) {
       );
     }
 
-    // Only block if active is explicitly set to false (not undefined/null)
+    // Only block if active is explicitly set to false
     if (userDoc.active === false) {
       return NextResponse.json(
         { error: 'الحساب معطل' },
@@ -76,6 +82,14 @@ export async function POST(request: NextRequest) {
   } catch (error) {
     console.error('Auth error:', error);
     const errorMessage = error instanceof Error ? error.message : 'خطأ في تسجيل الدخول';
+    // Check if it's a MongoDB connection error
+    if (errorMessage.includes('MONGODB_URI') || errorMessage.includes('ECONNREFUSED') || 
+        errorMessage.includes('MongoServerError') || errorMessage.includes('timeout')) {
+      return NextResponse.json(
+        { error: 'خطأ في الاتصال بقاعدة البيانات - يرجى المحاولة لاحقاً', detail: errorMessage },
+        { status: 500 }
+      );
+    }
     return NextResponse.json(
       { error: 'خطأ في تسجيل الدخول', detail: errorMessage },
       { status: 500 }
@@ -98,9 +112,12 @@ export async function GET() {
     });
   } catch (error) {
     console.error('Setup check error:', error);
-    return NextResponse.json(
-      { error: 'خطأ في التحقق من الإعداد' },
-      { status: 500 }
-    );
+    // If DB fails, don't redirect to setup - return setupNeeded: false
+    // so user sees login screen, not setup screen
+    return NextResponse.json({
+      setupNeeded: false,
+      clinic: null,
+      error: 'خطأ في الاتصال بقاعدة البيانات',
+    });
   }
 }

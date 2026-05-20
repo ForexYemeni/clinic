@@ -2,7 +2,7 @@
 
 import React, { useState } from 'react';
 import { motion } from 'framer-motion';
-import { Heart, Phone, Lock, Eye, EyeOff, AlertCircle } from 'lucide-react';
+import { Heart, Phone, Lock, Eye, EyeOff, AlertCircle, WifiOff } from 'lucide-react';
 import { useAppStore } from '@/lib/store';
 import { toast } from 'sonner';
 
@@ -37,6 +37,11 @@ export function LoginScreen() {
       const data = await res.json();
 
       if (!res.ok) {
+        // Check if it's a connection/database error
+        if (res.status === 500 && data.detail) {
+          setError(`خطأ في الخادم: ${data.detail}`);
+          return;
+        }
         if (data.setupNeeded) {
           setIsFirstSetup(true);
           setScreen('admin-setup');
@@ -56,7 +61,7 @@ export function LoginScreen() {
       }
       toast.success(`مرحباً ${data.user.name}`);
     } catch {
-      setError('خطأ في الاتصال بالخادم');
+      setError('خطأ في الاتصال بالخادم - تأكد من اتصال الإنترنت');
     } finally {
       setLoading(false);
     }
@@ -157,7 +162,11 @@ export function LoginScreen() {
               animate={{ opacity: 1, y: 0 }}
               className="flex items-center gap-2 text-red-600 dark:text-red-400 text-sm bg-red-50 dark:bg-red-900/20 p-3 rounded-xl"
             >
-              <AlertCircle className="w-4 h-4 shrink-0" />
+              {error.includes('الاتصال') || error.includes('الخادم') ? (
+                <WifiOff className="w-4 h-4 shrink-0" />
+              ) : (
+                <AlertCircle className="w-4 h-4 shrink-0" />
+              )}
               <span>{error}</span>
             </motion.div>
           )}
@@ -176,9 +185,15 @@ export function LoginScreen() {
           </button>
         </form>
 
-        <p className="text-center text-xs text-muted-foreground mt-6">
-          لأول مرة؟ سيتم إنشاء حساب الإدارة تلقائياً
-        </p>
+        <button
+          onClick={() => {
+            setIsFirstSetup(true);
+            setScreen('admin-setup');
+          }}
+          className="w-full mt-4 text-center text-xs text-emerald-600 hover:text-emerald-700 dark:text-emerald-400 font-medium"
+        >
+          إعداد العيادة لأول مرة
+        </button>
       </motion.div>
     </div>
   );

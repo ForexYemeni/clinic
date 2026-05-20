@@ -19,7 +19,10 @@ export function SplashScreen() {
             useAppStore.getState().setScreen('admin-setup');
           }
         }
-      } catch {}
+        // If API fails, just show login screen - don't redirect to setup
+      } catch {
+        // Connection error - just show login screen
+      }
       setTimeout(() => setSplashDone(true), 1800);
     };
     checkSetup();
