@@ -1,12 +1,14 @@
 // ═══════════════════════════════════════════════════════════
 // 🔐 Authentication API
 // Login with phone + password, JWT tokens, subscription check
+// Includes Firebase error handling for quota/billing issues
 // ═══════════════════════════════════════════════════════════
 
 import { adminDb } from '@/lib/firebase-admin';
 import { NextRequest, NextResponse } from 'next/server';
 import { verifyPassword, generateToken, hashPassword } from '@/lib/auth';
 import { checkClinicSubscription, getPlatformConfig, getClinicById, createAuditLog } from '@/lib/multi-tenant';
+import { isFirebaseUnavailableError, handleFirebaseError } from '@/lib/firebase-error-handler';
 
 // POST: Login with phone + password
 export async function POST(request: NextRequest) {
@@ -31,11 +33,16 @@ export async function POST(request: NextRequest) {
     }
 
     // Find user by phone in Firestore
-    const usersSnapshot = await adminDb
-      .collection('users')
-      .where('phone', '==', phone)
-      .limit(1)
-      .get();
+    let usersSnapshot;
+    try {
+      usersSnapshot = await adminDb
+        .collection('users')
+        .where('phone', '==', phone)
+        .limit(1)
+        .get();
+    } catch (dbError) {
+      return handleFirebaseError(dbError, 'تسجيل الدخول');
+    }
 
     if (usersSnapshot.empty) {
       return NextResponse.json(
@@ -57,20 +64,23 @@ export async function POST(request: NextRequest) {
     // Verify password (supports both bcrypt and legacy plaintext)
     const passwordValid = await verifyPassword(password, userData.password);
     if (!passwordValid) {
-      await createAuditLog({
-        clinicId: userData.clinicId || null,
-        userId: userDoc.id,
-        action: 'login_failed',
-        details: 'Invalid password attempt',
-        severity: 'warning',
-      });
+      // Try to create audit log but don't block login response on failure
+      try {
+        await createAuditLog({
+          clinicId: userData.clinicId || null,
+          userId: userDoc.id,
+          action: 'login_failed',
+          details: 'Invalid password attempt',
+          severity: 'warning',
+        });
+      } catch {}
       return NextResponse.json(
         { error: 'رقم الهاتف أو كلمة المرور غير صحيحة' },
         { status: 401 }
       );
     }
 
-    // Migrate plaintext password to bcrypt if needed
+    // Migrate plaintext password to bcrypt if needed (non-blocking)
     if (!userData.password.startsWith('$2a$') && !userData.password.startsWith('$2b$')) {
       try {
         const hashedPassword = await hashPassword(password);
@@ -91,16 +101,26 @@ export async function POST(request: NextRequest) {
       subscriptionValid = true;
     } else if (clinicId) {
       // Regular user - check clinic subscription
-      const subCheck = await checkClinicSubscription(clinicId);
-      subscriptionValid = subCheck.valid;
-      subscriptionStatus = subCheck.status;
-      subscriptionEndDate = subCheck.endDate;
-      daysRemaining = subCheck.daysRemaining;
+      try {
+        const subCheck = await checkClinicSubscription(clinicId);
+        subscriptionValid = subCheck.valid;
+        subscriptionStatus = subCheck.status;
+        subscriptionEndDate = subCheck.endDate;
+        daysRemaining = subCheck.daysRemaining;
 
-      // Get clinic name
-      const clinic = await getClinicById(clinicId);
-      if (clinic) {
-        clinicName = clinic.name;
+        const clinic = await getClinicById(clinicId);
+        if (clinic) {
+          clinicName = clinic.name;
+        }
+      } catch (subError) {
+        // If subscription check fails due to Firebase, still allow login
+        // but mark subscription as potentially invalid
+        console.error('Subscription check error during login:', subError);
+        if (isFirebaseUnavailableError(subError)) {
+          // Allow login but with a warning - don't block users
+          subscriptionValid = true; // Allow access when we can't verify
+          subscriptionStatus = 'active';
+        }
       }
     } else {
       // User without clinicId - check if they exist in old 'clinic' collection
@@ -109,8 +129,10 @@ export async function POST(request: NextRequest) {
         if (!oldClinicSnapshot.empty) {
           clinicId = oldClinicSnapshot.docs[0].id;
           clinicName = oldClinicSnapshot.docs[0].data().name || '';
-          // Update user with clinicId
-          await adminDb.collection('users').doc(userDoc.id).update({ clinicId });
+          // Update user with clinicId (non-blocking)
+          try {
+            await adminDb.collection('users').doc(userDoc.id).update({ clinicId });
+          } catch {}
 
           const subCheck = await checkClinicSubscription(clinicId);
           subscriptionValid = subCheck.valid;
@@ -142,13 +164,15 @@ export async function POST(request: NextRequest) {
       clinicName,
     });
 
-    // Audit log
-    await createAuditLog({
-      clinicId,
-      userId: userDoc.id,
-      action: 'login_success',
-      details: `User ${userData.name} logged in`,
-    });
+    // Audit log (non-blocking - don't fail login if audit fails)
+    try {
+      await createAuditLog({
+        clinicId,
+        userId: userDoc.id,
+        action: 'login_success',
+        details: `User ${userData.name} logged in`,
+      });
+    } catch {}
 
     return NextResponse.json({
       user: {
@@ -170,8 +194,12 @@ export async function POST(request: NextRequest) {
     });
   } catch (error) {
     console.error('Auth error:', error);
+    // Check if this is a Firebase quota/billing error
+    if (isFirebaseUnavailableError(error)) {
+      return handleFirebaseError(error, 'تسجيل الدخول');
+    }
     return NextResponse.json(
-      { error: 'خطأ في تسجيل الدخول' },
+      { error: 'خطأ في تسجيل الدخول. يرجى المحاولة مرة أخرى.' },
       { status: 500 }
     );
   }
@@ -192,7 +220,13 @@ export async function GET(request: NextRequest) {
       }
 
       // Get user data from Firestore
-      const userDoc = await adminDb.collection('users').doc(authResult.userId).get();
+      let userDoc;
+      try {
+        userDoc = await adminDb.collection('users').doc(authResult.userId).get();
+      } catch (dbError) {
+        return handleFirebaseError(dbError, 'استعادة الجلسة');
+      }
+
       if (!userDoc.exists) {
         return NextResponse.json({ error: 'المستخدم غير موجود' }, { status: 401 });
       }
@@ -213,14 +247,21 @@ export async function GET(request: NextRequest) {
       if (authResult.role === 'super_admin') {
         subscriptionValid = true;
       } else if (clinicId) {
-        const subCheck = await checkClinicSubscription(clinicId);
-        subscriptionValid = subCheck.valid;
-        subscriptionStatus = subCheck.status;
-        subscriptionEndDate = subCheck.endDate;
-        daysRemaining = subCheck.daysRemaining;
+        try {
+          const subCheck = await checkClinicSubscription(clinicId);
+          subscriptionValid = subCheck.valid;
+          subscriptionStatus = subCheck.status;
+          subscriptionEndDate = subCheck.endDate;
+          daysRemaining = subCheck.daysRemaining;
 
-        const clinic = await getClinicById(clinicId);
-        if (clinic) clinicName = clinic.name;
+          const clinic = await getClinicById(clinicId);
+          if (clinic) clinicName = clinic.name;
+        } catch (subError) {
+          // Allow session restore even if subscription check fails
+          if (isFirebaseUnavailableError(subError)) {
+            subscriptionValid = true;
+          }
+        }
       }
 
       return NextResponse.json({
@@ -239,7 +280,11 @@ export async function GET(request: NextRequest) {
           daysRemaining,
         },
       });
-    } catch {
+    } catch (error) {
+      // If Firebase is down, the catch block below for the outer try will handle it
+      if (isFirebaseUnavailableError(error)) {
+        return handleFirebaseError(error, 'استعادة الجلسة');
+      }
       return NextResponse.json({ error: 'جلسة منتهية' }, { status: 401 });
     }
   }
@@ -277,6 +322,9 @@ export async function GET(request: NextRequest) {
     });
   } catch (error) {
     console.error('Setup check error:', error);
+    if (isFirebaseUnavailableError(error)) {
+      return handleFirebaseError(error, 'فحص الإعداد');
+    }
     // On error, default to setupNeeded: false so we don't trap users on setup page
     return NextResponse.json({ setupNeeded: false, platformSetup: true });
   }

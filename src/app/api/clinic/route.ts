@@ -7,6 +7,7 @@ import { adminDb } from '@/lib/firebase-admin';
 import { NextRequest, NextResponse } from 'next/server';
 import { extractAuthAndClinicId } from '@/lib/auth';
 import { DEFAULT_SERVICES } from '@/lib/services-data';
+import { isFirebaseUnavailableError, handleFirebaseError } from '@/lib/firebase-error-handler';
 
 // Route segment config for larger body size (logo uploads)
 export const maxDuration = 30;
@@ -30,7 +31,16 @@ async function getClinicData(clinicId: string | null) {
 export async function GET(request: NextRequest) {
   try {
     const { auth, effectiveClinicId } = extractAuthAndClinicId(request);
-    const data = await getClinicData(effectiveClinicId);
+    let data;
+    try {
+      data = await getClinicData(effectiveClinicId);
+    } catch (dbError) {
+      // If Firebase is down, return default settings instead of failing
+      if (isFirebaseUnavailableError(dbError)) {
+        return NextResponse.json({ name: 'عيادتي', description: '', phone: '', address: '', logo: '', primaryColor: 'emerald' });
+      }
+      throw dbError;
+    }
 
     if (!data) {
       return NextResponse.json({ name: 'عيادتي', description: '', phone: '', address: '', logo: '', primaryColor: 'emerald' });
@@ -47,6 +57,10 @@ export async function GET(request: NextRequest) {
     });
   } catch (error) {
     console.error('Get clinic error:', error);
+    if (isFirebaseUnavailableError(error)) {
+      // Return default settings instead of error for GET - allows app to still render
+      return NextResponse.json({ name: 'عيادتي', description: '', phone: '', address: '', logo: '', primaryColor: 'emerald' });
+    }
     return NextResponse.json({ error: 'خطأ في جلب بيانات العيادة' }, { status: 500 });
   }
 }

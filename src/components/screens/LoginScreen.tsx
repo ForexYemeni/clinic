@@ -97,6 +97,10 @@ export function LoginScreen() {
 
       // Handle non-OK responses
       if (!res.ok) {
+        // Check if this is a Firebase/database unavailable error (503)
+        if (res.status === 503 && data?.firebaseDown) {
+          throw new Error('قاعدة البيانات غير متاحة حالياً. يرجى المحاولة بعد قليل.');
+        }
         // Check if this is a subscription expired/suspended error (403)
         if (res.status === 403 && data?.subscriptionExpired) {
           setSubError({
