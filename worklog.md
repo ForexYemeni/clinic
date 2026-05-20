@@ -198,3 +198,27 @@ Stage Summary:
 - Bug fix: Super-admin API routes no longer get duplicate clinicId query params
 - Feature: Age categories changed to كبير/طفل/بالغ per user request
 - Feature: Eye complaint category added to NurseAddVisit
+
+---
+Task ID: 1
+Agent: Main Agent
+Task: Fix app stuck on splash screen ("عيادتي" page with loading icon) - critical login issue
+
+Work Log:
+- Read and analyzed all critical files: SplashScreen.tsx, LoginScreen.tsx, api.ts, store.ts, page.tsx, auth route, clinic route, platform route, firebase-admin.ts, multi-tenant.ts, sw.js, pwa-install.ts
+- Identified root cause: SplashScreen had no timeout on API calls - if any fetch hung (Firebase unreachable, slow network), the splash would never resolve, trapping users on the "عيادتي" screen forever
+- Secondary issue: Service Worker using old cache version (v2) with cache-first strategy for JS/CSS, potentially serving stale broken code
+- No error boundary - if any component crashed, the whole app would go blank
+
+Fixes Applied:
+1. SplashScreen: Added 10-second hard timeout + per-fetch timeouts (4-6s) using AbortController
+2. LoginScreen: Added fetchWithTimeout to login POST (10s) and other fetches (5s)
+3. Service Worker: Bumped cache from v2→v3, changed JS/CSS to network-first strategy
+4. Added React ErrorBoundary with Arabic recovery UI and auto token cleanup
+5. Service worker registration now forces update check on every page load
+6. SplashScreen clears corrupt tokens on network errors during session restore
+
+Stage Summary:
+- Build succeeded and pushed to git (commit 8550630)
+- All 4 files modified: SplashScreen.tsx, LoginScreen.tsx, page.tsx, sw.js
+- Key architectural improvement: App is now resilient to network failures and API hangs
