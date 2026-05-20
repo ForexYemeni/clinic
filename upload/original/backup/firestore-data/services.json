@@ -1,0 +1,2338 @@
+[
+  {
+    "id": "00N4iVGYk4GnmfCF4RSj",
+    "data": {
+      "nameAr": "مورفين (حقنة)",
+      "price": 3000,
+      "duration": 15,
+      "category": "المهدئات والألم",
+      "description": "مسكن أفيوني قوي جداً للآلام الشديدة والحرجة - وصفة طبية خاصة",
+      "icon": "💉",
+      "color": "slate",
+      "active": true,
+      "status": "active",
+      "clinicId": "Hj5b169m7675GoGceNJf",
+      "createdAt": "2026-05-20T00:58:17.581Z"
+    }
+  },
+  {
+    "id": "1N7aJHbHYJfRJFllYXUs",
+    "data": {
+      "nameAr": "قياس معدل التنفس",
+      "price": 200,
+      "duration": 5,
+      "category": "العلامات الحيوية",
+      "description": "مراقبة معدل التنفس وعمقه لتقييم الوظيفة التنفسية",
+      "icon": "🌬️",
+      "color": "pink",
+      "active": true,
+      "status": "active",
+      "clinicId": "Hj5b169m7675GoGceNJf",
+      "createdAt": "2026-05-20T00:58:17.580Z"
+    }
+  },
+  {
+    "id": "1ZZp96YVzWuhQwSAlKZZ",
+    "data": {
+      "nameAr": "رعاية قرحة الضغط",
+      "price": 1500,
+      "duration": 30,
+      "category": "رعاية كبار السن",
+      "description": "علاج والاعتناء بقرح الضغط لدى المرضى طريحي الفراش",
+      "icon": "🛏️",
+      "color": "teal",
+      "active": true,
+      "status": "active",
+      "clinicId": "Hj5b169m7675GoGceNJf",
+      "createdAt": "2026-05-20T00:58:17.581Z"
+    }
+  },
+  {
+    "id": "1dHOWolDugWoHpGeN3SK",
+    "data": {
+      "nameAr": "أمبيبيرازين (مضاد تشنج)",
+      "price": 1000,
+      "duration": 10,
+      "category": "المهدئات والألم",
+      "description": "مضاد للتشنجات والقلق واضطرابات الجهاز العصبي",
+      "icon": "💊",
+      "color": "slate",
+      "active": true,
+      "status": "active",
+      "clinicId": "Hj5b169m7675GoGceNJf",
+      "createdAt": "2026-05-20T00:58:17.581Z"
+    }
+  },
+  {
+    "id": "1q5Vt1tkOFCuaWxIEeEP",
+    "data": {
+      "nameAr": "علاج جرح الحلاقة والقطع",
+      "price": 700,
+      "duration": 15,
+      "category": "الحروق والجروح",
+      "description": "إسعاف القطوع السطحية والحلاق وإيقاف النزيف",
+      "icon": "🔪",
+      "color": "orange",
+      "active": true,
+      "status": "active",
+      "clinicId": "Hj5b169m7675GoGceNJf",
+      "createdAt": "2026-05-20T00:58:17.580Z"
+    }
+  },
+  {
+    "id": "2BquCjBanR3OqFjvXlWi",
+    "data": {
+      "nameAr": "ديكلوفيناك",
+      "price": 600,
+      "duration": 5,
+      "category": "المهدئات والألم",
+      "description": "مسكن قوي مضاد للالتهاب لآلام المفاصل والعضلات",
+      "icon": "😴",
+      "color": "slate",
+      "active": true,
+      "status": "active",
+      "clinicId": "Hj5b169m7675GoGceNJf",
+      "createdAt": "2026-05-20T00:58:17.581Z"
+    }
+  },
+  {
+    "id": "2Sdqi4PJ6faZMHMhSQMw",
+    "data": {
+      "nameAr": "دوكسيسايكلين",
+      "price": 800,
+      "duration": 10,
+      "category": "المضادات الحيوية",
+      "description": "مضاد حيوي تتراسيكلين للملاريا والأمراض المنقولة جنسياً والتهابات الجلد",
+      "icon": "💊",
+      "color": "fuchsia",
+      "active": true,
+      "status": "active",
+      "clinicId": "Hj5b169m7675GoGceNJf",
+      "createdAt": "2026-05-20T00:58:17.581Z"
+    }
+  },
+  {
+    "id": "2SkiFgu4PMmfi6WNJ9u0",
+    "data": {
+      "nameAr": "حقنة مضاد للحساسية",
+      "price": 1000,
+      "duration": 15,
+      "category": "الحقن والأدوية",
+      "description": "حقن مضاد الهيستامين لعلاج ردود الفعل التحسسية",
+      "icon": "💉",
+      "color": "blue",
+      "active": true,
+      "status": "active",
+      "clinicId": "Hj5b169m7675GoGceNJf",
+      "createdAt": "2026-05-20T00:58:17.580Z"
+    }
+  },
+  {
+    "id": "3Jt7xhebQPV8z6SBiiNI",
+    "data": {
+      "nameAr": "قياس ضغط الدم",
+      "price": 300,
+      "duration": 10,
+      "category": "العلامات الحيوية",
+      "description": "قياس ضغط الدم الانقباضي والانبساطي بجهاز دقيق",
+      "icon": "💓",
+      "color": "pink",
+      "active": true,
+      "status": "active",
+      "clinicId": "Hj5b169m7675GoGceNJf",
+      "createdAt": "2026-05-20T00:58:17.580Z"
+    }
+  },
+  {
+    "id": "3ceCjTEop5wi15bNWEw4",
+    "data": {
+      "nameAr": "حقنة منزلية",
+      "price": 1500,
+      "duration": 20,
+      "category": "الخدمات المنزلية",
+      "description": "ممرض لحقن الدواء في المنزل حسب وصفة الطبيب",
+      "icon": "💉",
+      "color": "emerald",
+      "active": true,
+      "status": "active",
+      "clinicId": "Hj5b169m7675GoGceNJf",
+      "createdAt": "2026-05-20T00:58:17.580Z"
+    }
+  },
+  {
+    "id": "3d9yvOPoizD3bxyKb3RQ",
+    "data": {
+      "nameAr": "علاج حمى الأطفال",
+      "price": 600,
+      "duration": 15,
+      "category": "رعاية الأطفال",
+      "description": "علاج ارتفاع حرارة الطفل وخفض الحمى بالأدوية المناسبة",
+      "icon": "🌡️",
+      "color": "sky",
+      "active": true,
+      "status": "active",
+      "clinicId": "Hj5b169m7675GoGceNJf",
+      "createdAt": "2026-05-20T00:58:17.580Z"
+    }
+  },
+  {
+    "id": "3oF9Vb7mCcYYyCcVVkAG",
+    "data": {
+      "nameAr": "صرف وصفة طبية",
+      "price": 500,
+      "duration": 10,
+      "category": "الحقن والأدوية",
+      "description": "صرف الأدوية حسب الوصفة الطبية مع شرح الاستخدام",
+      "icon": "📋",
+      "color": "blue",
+      "active": true,
+      "status": "active",
+      "clinicId": "Hj5b169m7675GoGceNJf",
+      "createdAt": "2026-05-20T00:58:17.580Z"
+    }
+  },
+  {
+    "id": "3wQO7r97LF6w1suO87lt",
+    "data": {
+      "nameAr": "قياس درجة الحرارة",
+      "price": 200,
+      "duration": 5,
+      "category": "العلامات الحيوية",
+      "description": "قياس درجة حرارة الجسم بميزان حراري رقمي دقيق",
+      "icon": "🌡️",
+      "color": "pink",
+      "active": true,
+      "status": "active",
+      "clinicId": "Hj5b169m7675GoGceNJf",
+      "createdAt": "2026-05-20T00:58:17.580Z"
+    }
+  },
+  {
+    "id": "4NfcqF8YEAGyhpU8xNDR",
+    "data": {
+      "nameAr": "حقنة مضاد حيوي",
+      "price": 1500,
+      "duration": 15,
+      "category": "الحقن والأدوية",
+      "description": "حقن مضاد حيوي عضلية أو وريدية حسب وصفة الطبيب",
+      "icon": "💉",
+      "color": "blue",
+      "active": true,
+      "status": "active",
+      "clinicId": "Hj5b169m7675GoGceNJf",
+      "createdAt": "2026-05-20T00:58:17.580Z"
+    }
+  },
+  {
+    "id": "4O15vLaHb5UbYYBKF7lY",
+    "data": {
+      "nameAr": "حقنة مضاد للقيء",
+      "price": 700,
+      "duration": 10,
+      "category": "الحقن والأدوية",
+      "description": "حقنة لوقف القيء والغثيان الشديد",
+      "icon": "💊",
+      "color": "blue",
+      "active": true,
+      "status": "active",
+      "clinicId": "Hj5b169m7675GoGceNJf",
+      "createdAt": "2026-05-20T00:58:17.580Z"
+    }
+  },
+  {
+    "id": "4RlkuriAt3Idxr1WIdTM",
+    "data": {
+      "nameAr": "مراقبة ضغط الدم للمسنين",
+      "price": 500,
+      "duration": 15,
+      "category": "رعاية كبار السن",
+      "description": "قياس ومتابعة ضغط الدم لكبار السن بشكل دوري",
+      "icon": "💓",
+      "color": "teal",
+      "active": true,
+      "status": "active",
+      "clinicId": "Hj5b169m7675GoGceNJf",
+      "createdAt": "2026-05-20T00:58:17.580Z"
+    }
+  },
+  {
+    "id": "4tKODat7JRrhFV0Fzzus",
+    "data": {
+      "nameAr": "علاج الحروق من الدرجة الثانية",
+      "price": 1500,
+      "duration": 30,
+      "category": "الحروق والجروح",
+      "description": "علاج الحروق المتوسطة مع فقاعات وتطهير وضماد متخصص",
+      "icon": "🔥",
+      "color": "orange",
+      "active": true,
+      "status": "active",
+      "clinicId": "Hj5b169m7675GoGceNJf",
+      "createdAt": "2026-05-20T00:58:17.580Z"
+    }
+  },
+  {
+    "id": "5S0WBqnll1vNG8DiGSpK",
+    "data": {
+      "nameAr": "استنشاق محلول ملحي",
+      "price": 600,
+      "duration": 20,
+      "category": "التنفس والأكسجين",
+      "description": "علاج بالاستنشاق عبر جهاز النيبولايزر لتوسيع الشعب",
+      "icon": "💧",
+      "color": "cyan",
+      "active": true,
+      "status": "active",
+      "clinicId": "Hj5b169m7675GoGceNJf",
+      "createdAt": "2026-05-20T00:58:17.580Z"
+    }
+  },
+  {
+    "id": "61vaIszCbkFNe8pK7KF4",
+    "data": {
+      "nameAr": "علاج الحروق من الدرجة الأولى",
+      "price": 800,
+      "duration": 20,
+      "category": "الحروق والجروح",
+      "description": "علاج الحروق السطحية الخفيفة بالمراهم والضمادات المبردة",
+      "icon": "🔥",
+      "color": "orange",
+      "active": true,
+      "status": "active",
+      "clinicId": "Hj5b169m7675GoGceNJf",
+      "createdAt": "2026-05-20T00:58:17.580Z"
+    }
+  },
+  {
+    "id": "6NJ4R8TjCqPQbBTbPJHD",
+    "data": {
+      "nameAr": "إنعاش قلبي رئوي",
+      "price": 3000,
+      "duration": 30,
+      "category": "الطوارئ",
+      "description": "إجراء إنعاش قلبي رئوي فوري لحالات توقف القلب والتنفس",
+      "icon": "❤️‍🩹",
+      "color": "rose",
+      "active": true,
+      "status": "active",
+      "clinicId": "Hj5b169m7675GoGceNJf",
+      "createdAt": "2026-05-20T00:58:17.580Z"
+    }
+  },
+  {
+    "id": "6rORNcTyKZD1nl4doF5s",
+    "data": {
+      "nameAr": "متابعة الكسور",
+      "price": 800,
+      "duration": 15,
+      "category": "متابعة العلاج",
+      "description": "فحص الكسور المتجبرة ومتابعة التئام العظم",
+      "icon": "🦴",
+      "color": "indigo",
+      "active": true,
+      "status": "active",
+      "clinicId": "Hj5b169m7675GoGceNJf",
+      "createdAt": "2026-05-20T00:58:17.581Z"
+    }
+  },
+  {
+    "id": "77DNtavx7AJ2G7tYlmoV",
+    "data": {
+      "nameAr": "إيبوبروفين",
+      "price": 500,
+      "duration": 5,
+      "category": "المهدئات والألم",
+      "description": "مضاد التهاب غير ستيرويدي مسكن للآلام والالتهابات",
+      "icon": "😴",
+      "color": "slate",
+      "active": true,
+      "status": "active",
+      "clinicId": "Hj5b169m7675GoGceNJf",
+      "createdAt": "2026-05-20T00:58:17.581Z"
+    }
+  },
+  {
+    "id": "7nhZsajgFdVMvfmYcwHL",
+    "data": {
+      "nameAr": "حقنة مضاد للالتهاب",
+      "price": 1200,
+      "duration": 15,
+      "category": "الحقن والأدوية",
+      "description": "حقن كورتيزون أو مضاد التهاب غير ستيرويدي",
+      "icon": "💉",
+      "color": "blue",
+      "active": true,
+      "status": "active",
+      "clinicId": "Hj5b169m7675GoGceNJf",
+      "createdAt": "2026-05-20T00:58:17.580Z"
+    }
+  },
+  {
+    "id": "81gGSVijIs4dUBjDXPXi",
+    "data": {
+      "nameAr": "قياس مستوى الأكسجين",
+      "price": 300,
+      "duration": 5,
+      "category": "العلامات الحيوية",
+      "description": "قياس تشبع الدم بالأكسجين بجهاز نبض الأكسجين",
+      "icon": "🫁",
+      "color": "pink",
+      "active": true,
+      "status": "active",
+      "clinicId": "Hj5b169m7675GoGceNJf",
+      "createdAt": "2026-05-20T00:58:17.580Z"
+    }
+  },
+  {
+    "id": "8K8TJEeBqPLDxdNiTi1c",
+    "data": {
+      "nameAr": "فحص الحمل",
+      "price": 500,
+      "duration": 10,
+      "category": "الفحوصات السريعة",
+      "description": "فحص سريع لتأكيد الحمل بتحليل البول",
+      "icon": "🤰",
+      "color": "violet",
+      "active": true,
+      "status": "active",
+      "clinicId": "Hj5b169m7675GoGceNJf",
+      "createdAt": "2026-05-20T00:58:17.580Z"
+    }
+  },
+  {
+    "id": "8x4dFiy5UViBYtqVU7RW",
+    "data": {
+      "nameAr": "ضماد الحروق المتخصص",
+      "price": 1000,
+      "duration": 20,
+      "category": "الحروق والجروح",
+      "description": "وضع ضمادات حروق متخصصة مغطاة بالجل المائي",
+      "icon": "🧴",
+      "color": "orange",
+      "active": true,
+      "status": "active",
+      "clinicId": "Hj5b169m7675GoGceNJf",
+      "createdAt": "2026-05-20T00:58:17.580Z"
+    }
+  },
+  {
+    "id": "A6Gbc8eg9mHPF2Zb1JhF",
+    "data": {
+      "nameAr": "إسعاف الحساسية الموسمية",
+      "price": 600,
+      "duration": 15,
+      "category": "الإسعافات الأولية",
+      "description": "علاج أعراض الحساسية الموسمية والتهابات الأنف والعين",
+      "icon": "🤧",
+      "color": "red",
+      "active": true,
+      "status": "active",
+      "clinicId": "Hj5b169m7675GoGceNJf",
+      "createdAt": "2026-05-20T00:58:17.580Z"
+    }
+  },
+  {
+    "id": "B6xVcUz03jF56q13XDAD",
+    "data": {
+      "nameAr": "علاج الدوخة والإغماء",
+      "price": 700,
+      "duration": 20,
+      "category": "الإسعافات الأولية",
+      "description": "إسعاف حالات الدوخة والإغماء ومراقبة حالة المريض",
+      "icon": "😵",
+      "color": "red",
+      "active": true,
+      "status": "active",
+      "clinicId": "Hj5b169m7675GoGceNJf",
+      "createdAt": "2026-05-20T00:58:17.580Z"
+    }
+  },
+  {
+    "id": "CIdHXLtHJW72NuzZFtxr",
+    "data": {
+      "nameAr": "فحص كوفيد السريع",
+      "price": 1000,
+      "duration": 15,
+      "category": "الفحوصات السريعة",
+      "description": "فحص سريع للكشف عن فيروس كورونا المستجد",
+      "icon": "🦠",
+      "color": "violet",
+      "active": true,
+      "status": "active",
+      "clinicId": "Hj5b169m7675GoGceNJf",
+      "createdAt": "2026-05-20T00:58:17.580Z"
+    }
+  },
+  {
+    "id": "DBQcMSocmm2pQ6za2UEk",
+    "data": {
+      "nameAr": "سيفالكسين",
+      "price": 900,
+      "duration": 10,
+      "category": "المضادات الحيوية",
+      "description": "مضاد حيوي سيفالوسبورين للعدوى الجلدية والمسالك البولية",
+      "icon": "💊",
+      "color": "fuchsia",
+      "active": true,
+      "status": "active",
+      "clinicId": "Hj5b169m7675GoGceNJf",
+      "createdAt": "2026-05-20T00:58:17.581Z"
+    }
+  },
+  {
+    "id": "DO7IKjPNZvtjpxH1qCJb",
+    "data": {
+      "nameAr": "تصوير شعاعي أولي",
+      "price": 1500,
+      "duration": 15,
+      "category": "الكسور والإصابات",
+      "description": "أشعة سينية سريعة للكشف عن الكسور والإصابات العظمية",
+      "icon": "☢️",
+      "color": "amber",
+      "active": true,
+      "status": "active",
+      "clinicId": "Hj5b169m7675GoGceNJf",
+      "createdAt": "2026-05-20T00:58:17.580Z"
+    }
+  },
+  {
+    "id": "EEdJkmuwOA9W5mlXZT2P",
+    "data": {
+      "nameAr": "تخطيط القلب السريع",
+      "price": 1500,
+      "duration": 15,
+      "category": "العلامات الحيوية",
+      "description": "تخطيط كهربائية القلب لفحص نظم القلب واكتشاف المشاكل",
+      "icon": "📈",
+      "color": "pink",
+      "active": true,
+      "status": "active",
+      "clinicId": "Hj5b169m7675GoGceNJf",
+      "createdAt": "2026-05-20T00:58:17.580Z"
+    }
+  },
+  {
+    "id": "EJLWd9heBqHoEP2TZ6Bo",
+    "data": {
+      "nameAr": "تغيير الضمادات",
+      "price": 300,
+      "duration": 10,
+      "category": "الحروق والجروح",
+      "description": "تغيير الضمادات القديمة وتطهير الجرح ووضع ضمادات جديدة",
+      "icon": "🩹",
+      "color": "orange",
+      "active": true,
+      "status": "active",
+      "clinicId": "Hj5b169m7675GoGceNJf",
+      "createdAt": "2026-05-20T00:58:17.580Z"
+    }
+  },
+  {
+    "id": "F8C2p7jaVDQAyEXDv3pa",
+    "data": {
+      "nameAr": "ضماد وإراحة العضلات",
+      "price": 400,
+      "duration": 15,
+      "category": "الإسعافات الأولية",
+      "description": "وضع ضمادات مرنة لدعم العضلات والمفاصل المصابة",
+      "icon": "🩹",
+      "color": "red",
+      "clinicId": "Hj5b169m7675GoGceNJf",
+      "createdAt": "2026-05-20T00:58:17.580Z",
+      "active": false,
+      "status": "deleted"
+    }
+  },
+  {
+    "id": "F9csTjumZHcSo4cAoiBO",
+    "data": {
+      "nameAr": "فحص التيفوئيد",
+      "price": 900,
+      "duration": 15,
+      "category": "الفحوصات السريعة",
+      "description": "فحص سريع للكشف عن حمى التيفوئيد",
+      "icon": "🌡️",
+      "color": "violet",
+      "active": true,
+      "status": "active",
+      "clinicId": "Hj5b169m7675GoGceNJf",
+      "createdAt": "2026-05-20T00:58:17.580Z"
+    }
+  },
+  {
+    "id": "FFn39a5SWXoXYTua18Wv",
+    "data": {
+      "nameAr": "علاج إسهال الأطفال",
+      "price": 800,
+      "duration": 20,
+      "category": "رعاية الأطفال",
+      "description": "علاج الإسهال عند الأطفال ومحلول الإماهة الفموية",
+      "icon": "🥤",
+      "color": "sky",
+      "active": true,
+      "status": "active",
+      "clinicId": "Hj5b169m7675GoGceNJf",
+      "createdAt": "2026-05-20T00:58:17.580Z"
+    }
+  },
+  {
+    "id": "FhsUO34i3u0N6jChwKtV",
+    "data": {
+      "nameAr": "فحص البول",
+      "price": 600,
+      "duration": 10,
+      "category": "الفحوصات السريعة",
+      "description": "تحليل البول للكشف عن التهابات المسالك البولية",
+      "icon": "🧪",
+      "color": "violet",
+      "active": true,
+      "status": "active",
+      "clinicId": "Hj5b169m7675GoGceNJf",
+      "createdAt": "2026-05-20T00:58:17.580Z"
+    }
+  },
+  {
+    "id": "FpvllVLzzq9Uzp2tX7dp",
+    "data": {
+      "nameAr": "حقنة فيتامين ب12",
+      "price": 1800,
+      "duration": 10,
+      "category": "الفيتامينات والمكملات",
+      "description": "حقنة فيتامين ب12 عضلية لعلاج فقر الدم وضعف الأعصاب",
+      "icon": "💉",
+      "color": "yellow",
+      "active": true,
+      "status": "active",
+      "clinicId": "Hj5b169m7675GoGceNJf",
+      "createdAt": "2026-05-20T00:58:17.581Z"
+    }
+  },
+  {
+    "id": "Fr9hYx6Ltw27b7BmvBvW",
+    "data": {
+      "nameAr": "فحص الدم الشامل",
+      "price": 1500,
+      "duration": 15,
+      "category": "الفحوصات السريعة",
+      "description": "تحليل دم شامل لفحص كريات الدم والهيموغلوبين والصفائح",
+      "icon": "🩸",
+      "color": "violet",
+      "active": true,
+      "status": "active",
+      "clinicId": "Hj5b169m7675GoGceNJf",
+      "createdAt": "2026-05-20T00:58:17.580Z"
+    }
+  },
+  {
+    "id": "Fx2ZeQ63DzlkGGe3mJcR",
+    "data": {
+      "nameAr": "علاج الحروق الشديدة",
+      "price": 3500,
+      "duration": 40,
+      "category": "الطوارئ",
+      "description": "إسعاف الحروق من الدرجة الثالثة والشديدة وتثبيت الحالة",
+      "icon": "🔥",
+      "color": "rose",
+      "active": true,
+      "status": "active",
+      "clinicId": "Hj5b169m7675GoGceNJf",
+      "createdAt": "2026-05-20T00:58:17.580Z"
+    }
+  },
+  {
+    "id": "G0HCzYpFdlzmQYkCts8T",
+    "data": {
+      "nameAr": "فحص الكوليرا السريع",
+      "price": 800,
+      "duration": 10,
+      "category": "الفحوصات السريعة",
+      "description": "فحص سريع للكشف عن بكتيريا الكوليرا",
+      "icon": "🦠",
+      "color": "violet",
+      "active": true,
+      "status": "active",
+      "clinicId": "Hj5b169m7675GoGceNJf",
+      "createdAt": "2026-05-20T00:58:17.580Z"
+    }
+  },
+  {
+    "id": "GCjat3UJZAuXMndFoGDG",
+    "data": {
+      "nameAr": "علاج إصابة الرقبة",
+      "price": 1200,
+      "duration": 20,
+      "category": "الكسور والإصابات",
+      "description": "علاج آلام الرقبة وتمدد العضلات بطوق الرقبة",
+      "icon": "🦴",
+      "color": "amber",
+      "active": true,
+      "status": "active",
+      "clinicId": "Hj5b169m7675GoGceNJf",
+      "createdAt": "2026-05-20T00:58:17.580Z"
+    }
+  },
+  {
+    "id": "Grl4oNGwU6GA1oU5yM6H",
+    "data": {
+      "nameAr": "خياطة الجروح",
+      "price": 2000,
+      "duration": 30,
+      "category": "الحروق والجروح",
+      "description": "خياطة الجروح العميقة بخيوط طبية مع تخدير موضعي",
+      "icon": "🪡",
+      "color": "orange",
+      "active": true,
+      "status": "active",
+      "clinicId": "Hj5b169m7675GoGceNJf",
+      "createdAt": "2026-05-20T00:58:17.580Z"
+    }
+  },
+  {
+    "id": "H6KaqvYnAq6FQcZ1hzq0",
+    "data": {
+      "nameAr": "فحص الدنجي",
+      "price": 1000,
+      "duration": 15,
+      "category": "الفحوصات السريعة",
+      "description": "فحص سريع للكشف عن حمى الدنجي",
+      "icon": "🦟",
+      "color": "violet",
+      "active": true,
+      "status": "active",
+      "clinicId": "Hj5b169m7675GoGceNJf",
+      "createdAt": "2026-05-20T00:58:17.580Z"
+    }
+  },
+  {
+    "id": "HGmpxjNyX9px3YDbxiAM",
+    "data": {
+      "nameAr": "أزيثرومايسين",
+      "price": 1500,
+      "duration": 10,
+      "category": "المضادات الحيوية",
+      "description": "مضاد حيوي ماكرولايد للتهابات الحلق والرئة والأذن",
+      "icon": "💊",
+      "color": "fuchsia",
+      "active": true,
+      "status": "active",
+      "clinicId": "Hj5b169m7675GoGceNJf",
+      "createdAt": "2026-05-20T00:58:17.581Z"
+    }
+  },
+  {
+    "id": "IjuEFBUlovKjVIclwXuE",
+    "data": {
+      "nameAr": "حقنة فيتامين د",
+      "price": 1800,
+      "duration": 10,
+      "category": "الحقن والأدوية",
+      "description": "حقن فيتامين د عضلية لعلاج النقص الحاد",
+      "icon": "☀️",
+      "color": "blue",
+      "active": true,
+      "status": "active",
+      "clinicId": "Hj5b169m7675GoGceNJf",
+      "createdAt": "2026-05-20T00:58:17.580Z"
+    }
+  },
+  {
+    "id": "IzbbnkVzHxjL54uLZbuA",
+    "data": {
+      "nameAr": "حقنة مسكنة وريدية",
+      "price": 2000,
+      "duration": 15,
+      "category": "المهدئات والألم",
+      "description": "حقنة مسكنة وريدية سريعة المفعول للآلام الحادة",
+      "icon": "💉",
+      "color": "slate",
+      "active": true,
+      "status": "active",
+      "clinicId": "Hj5b169m7675GoGceNJf",
+      "createdAt": "2026-05-20T00:58:17.581Z"
+    }
+  },
+  {
+    "id": "JH5IUvwsytmAeO92u6kW",
+    "data": {
+      "nameAr": "استشارة ما بعد العلاج",
+      "price": 500,
+      "duration": 15,
+      "category": "متابعة العلاج",
+      "description": "استشارة طبية بعد انتهاء العلاج للتأكد من الشفاء الكامل",
+      "icon": "👨‍⚕️",
+      "color": "indigo",
+      "active": true,
+      "status": "active",
+      "clinicId": "Hj5b169m7675GoGceNJf",
+      "createdAt": "2026-05-20T00:58:17.581Z"
+    }
+  },
+  {
+    "id": "JXBfNrSuZKjHjSq9A6iB",
+    "data": {
+      "nameAr": "إيقاف النزيف الخفيف",
+      "price": 600,
+      "duration": 15,
+      "category": "الإسعافات الأولية",
+      "description": "إيقاف النزيف السطحي والخفيف بالضغط والضمادات المناسبة",
+      "icon": "🩸",
+      "color": "red",
+      "active": true,
+      "status": "active",
+      "clinicId": "Hj5b169m7675GoGceNJf",
+      "createdAt": "2026-05-20T00:58:17.580Z"
+    }
+  },
+  {
+    "id": "KEy0ebdFburyU0wL6ka9",
+    "data": {
+      "nameAr": "فحص حديثي الولادة",
+      "price": 1200,
+      "duration": 25,
+      "category": "رعاية الأطفال",
+      "description": "فحص شامل لحديثي الولادة وتقييم الصحة العامة",
+      "icon": "🍼",
+      "color": "sky",
+      "active": true,
+      "status": "active",
+      "clinicId": "Hj5b169m7675GoGceNJf",
+      "createdAt": "2026-05-20T00:58:17.580Z"
+    }
+  },
+  {
+    "id": "KRl789lgMe9fPrWQZzxp",
+    "data": {
+      "nameAr": "ديازيبام (فاليوم)",
+      "price": 1200,
+      "duration": 10,
+      "category": "المهدئات والألم",
+      "description": "مهدئ للقلق والتشنجات العضلية واضطرابات النوم",
+      "icon": "😴",
+      "color": "slate",
+      "active": true,
+      "status": "active",
+      "clinicId": "Hj5b169m7675GoGceNJf",
+      "createdAt": "2026-05-20T00:58:17.581Z"
+    }
+  },
+  {
+    "id": "KkXYqf1He3k6F9yJW57a",
+    "data": {
+      "nameAr": "قياس العلامات الحيوية منزلياً",
+      "price": 800,
+      "duration": 15,
+      "category": "الخدمات المنزلية",
+      "description": "فحص الضغط والسكر والحرارة في المنزل",
+      "icon": "🫀",
+      "color": "emerald",
+      "active": true,
+      "status": "active",
+      "clinicId": "Hj5b169m7675GoGceNJf",
+      "createdAt": "2026-05-20T00:58:17.580Z"
+    }
+  },
+  {
+    "id": "Kq69nxee6HWvKENeRfQI",
+    "data": {
+      "nameAr": "علاج لسعات الحشرات",
+      "price": 500,
+      "duration": 15,
+      "category": "الإسعافات الأولية",
+      "description": "إسعاف لسعات الحشرات والنمل والنحل وتخفيف التورم",
+      "icon": "🐝",
+      "color": "red",
+      "active": true,
+      "status": "active",
+      "clinicId": "Hj5b169m7675GoGceNJf",
+      "createdAt": "2026-05-20T00:58:17.580Z"
+    }
+  },
+  {
+    "id": "L0tSFDm6PRT3qa9rMLGm",
+    "data": {
+      "nameAr": "رعاية مريض طريح الفراش",
+      "price": 2500,
+      "duration": 60,
+      "category": "الخدمات المنزلية",
+      "description": "رعاية شاملة للمريض طريح الفراش في المنزل",
+      "icon": "🛏️",
+      "color": "emerald",
+      "active": true,
+      "status": "active",
+      "clinicId": "Hj5b169m7675GoGceNJf",
+      "createdAt": "2026-05-20T00:58:17.580Z"
+    }
+  },
+  {
+    "id": "LWjwA7ewUrIlY8RcBkao",
+    "data": {
+      "nameAr": "علاج الربو المستمر",
+      "price": 1200,
+      "duration": 20,
+      "category": "التنفس والأكسجين",
+      "description": "علاج نوبات الربو بالبخاخات والأدوية الموسعة للشعب",
+      "icon": "💨",
+      "color": "cyan",
+      "active": true,
+      "status": "active",
+      "clinicId": "Hj5b169m7675GoGceNJf",
+      "createdAt": "2026-05-20T00:58:17.580Z"
+    }
+  },
+  {
+    "id": "LXPymMRrGKJgGJKgYvjj",
+    "data": {
+      "nameAr": "كورتيزون (بريدنيزولون)",
+      "price": 1800,
+      "duration": 10,
+      "category": "المهدئات والألم",
+      "description": "كورتيكوستيرويد للالتهابات الشديدة والحساسية والأزمات",
+      "icon": "💊",
+      "color": "slate",
+      "active": true,
+      "status": "active",
+      "clinicId": "Hj5b169m7675GoGceNJf",
+      "createdAt": "2026-05-20T00:58:17.581Z"
+    }
+  },
+  {
+    "id": "M5ClYFzWJ54IG55ViPuI",
+    "data": {
+      "nameAr": "قياس وظائف التنفس",
+      "price": 1000,
+      "duration": 20,
+      "category": "التنفس والأكسجين",
+      "description": "فحص وظائف الرئة بجهاز قياس التنفس لتقييم القدرة التنفسية",
+      "icon": "📊",
+      "color": "cyan",
+      "active": true,
+      "status": "active",
+      "clinicId": "Hj5b169m7675GoGceNJf",
+      "createdAt": "2026-05-20T00:58:17.580Z"
+    }
+  },
+  {
+    "id": "MHtfIVQc4MjUbKXTzhFH",
+    "data": {
+      "nameAr": "دكستروز 10%",
+      "price": 2000,
+      "duration": 40,
+      "category": "المحاليل الوريدية",
+      "description": "محلول الجلوكوز المركز للتغذية الوريدية وحالات نقص السكر الشديد",
+      "icon": "💉",
+      "color": "lime",
+      "active": true,
+      "status": "active",
+      "clinicId": "Hj5b169m7675GoGceNJf",
+      "createdAt": "2026-05-20T00:58:17.581Z"
+    }
+  },
+  {
+    "id": "MxFw4if82IHSlx00Osht",
+    "data": {
+      "nameAr": "تطعيم الكزاز",
+      "price": 1200,
+      "duration": 10,
+      "category": "الحقن والأدوية",
+      "description": "حقنة تطعيم ضد الكزاز للجروح والإصابات",
+      "icon": "💉",
+      "color": "blue",
+      "active": true,
+      "status": "active",
+      "clinicId": "Hj5b169m7675GoGceNJf",
+      "createdAt": "2026-05-20T00:58:17.580Z"
+    }
+  },
+  {
+    "id": "NXyGeV3mYivvme1WJEdF",
+    "data": {
+      "nameAr": "إزالة الجبيرة",
+      "price": 500,
+      "duration": 15,
+      "category": "الكسور والإصابات",
+      "description": "إزالة الجبيرة بعد التئام الكسر وتقييم حالة العظم",
+      "icon": "🛠️",
+      "color": "amber",
+      "active": true,
+      "status": "active",
+      "clinicId": "Hj5b169m7675GoGceNJf",
+      "createdAt": "2026-05-20T00:58:17.580Z"
+    }
+  },
+  {
+    "id": "NixSztBebFawIOLxxRbj",
+    "data": {
+      "nameAr": "حقنة حديد وريدية",
+      "price": 2500,
+      "duration": 30,
+      "category": "الحقن والأدوية",
+      "description": "حقن الحديد وريدياً لعلاج فقر الدم الشديد",
+      "icon": "🩸",
+      "color": "blue",
+      "active": true,
+      "status": "active",
+      "clinicId": "Hj5b169m7675GoGceNJf",
+      "createdAt": "2026-05-20T00:58:17.580Z"
+    }
+  },
+  {
+    "id": "OWdwJoBc7Id9g4bgd9hc",
+    "data": {
+      "nameAr": "متابعة مرضى السكري",
+      "price": 1000,
+      "duration": 20,
+      "category": "رعاية كبار السن",
+      "description": "متابعة مستوى السكر وتعديل جرعات الأنسولين لكبار السن",
+      "icon": "🍬",
+      "color": "teal",
+      "active": true,
+      "status": "active",
+      "clinicId": "Hj5b169m7675GoGceNJf",
+      "createdAt": "2026-05-20T00:58:17.580Z"
+    }
+  },
+  {
+    "id": "OzQ4NnbC0GSRTZ2HoP3O",
+    "data": {
+      "nameAr": "متابعة الحروق",
+      "price": 700,
+      "duration": 15,
+      "category": "متابعة العلاج",
+      "description": "متابعة شفاء الحروق وتغيير الضمادات المتخصصة",
+      "icon": "🔥",
+      "color": "indigo",
+      "active": true,
+      "status": "active",
+      "clinicId": "Hj5b169m7675GoGceNJf",
+      "createdAt": "2026-05-20T00:58:17.581Z"
+    }
+  },
+  {
+    "id": "P5zTRkpTweW0abRjS2eh",
+    "data": {
+      "nameAr": "علاج ضعف الدورة الدموية",
+      "price": 1200,
+      "duration": 20,
+      "category": "رعاية كبار السن",
+      "description": "علاج مشاكل الدورة الدموية الطرفية لدى المسنين",
+      "icon": "🩸",
+      "color": "teal",
+      "active": true,
+      "status": "active",
+      "clinicId": "Hj5b169m7675GoGceNJf",
+      "createdAt": "2026-05-20T00:58:17.581Z"
+    }
+  },
+  {
+    "id": "PQY7Zg8EqEPkxtrcYy6b",
+    "data": {
+      "nameAr": "علاج إصابة الظهر",
+      "price": 1200,
+      "duration": 25,
+      "category": "الكسور والإصابات",
+      "description": "علاج آلام الظهر الخفيفة والإصابات العضلية",
+      "icon": "🔙",
+      "color": "amber",
+      "active": true,
+      "status": "active",
+      "clinicId": "Hj5b169m7675GoGceNJf",
+      "createdAt": "2026-05-20T00:58:17.580Z"
+    }
+  },
+  {
+    "id": "PoO9RTHg7Fx1Ao8vtjaF",
+    "data": {
+      "nameAr": "أموكسيسيلين (كبسولات)",
+      "price": 800,
+      "duration": 10,
+      "category": "المضادات الحيوية",
+      "description": "مضاد حيوي واسع الطيف لعلاج التهابات الجهاز التنفسي والمسالك البولية",
+      "icon": "💊",
+      "color": "fuchsia",
+      "active": true,
+      "status": "active",
+      "clinicId": "Hj5b169m7675GoGceNJf",
+      "createdAt": "2026-05-20T00:58:17.581Z"
+    }
+  },
+  {
+    "id": "Q3HBOhqyRCGGIBEtOiKV",
+    "data": {
+      "nameAr": "علاج طفح الحفاضات",
+      "price": 500,
+      "duration": 10,
+      "category": "رعاية الأطفال",
+      "description": "علاج التهاب وطفح الجلد الناتج عن الحفاضات",
+      "icon": "🧴",
+      "color": "sky",
+      "active": true,
+      "status": "active",
+      "clinicId": "Hj5b169m7675GoGceNJf",
+      "createdAt": "2026-05-20T00:58:17.580Z"
+    }
+  },
+  {
+    "id": "Qz7n5WzbbUtm9R8FH2aw",
+    "data": {
+      "nameAr": "أموكسيسيلين + كلافولانات",
+      "price": 1200,
+      "duration": 10,
+      "category": "المضادات الحيوية",
+      "description": "أوغمنتين - مضاد حيوي مركب للعدوى البكتيرية المقاومة",
+      "icon": "💊",
+      "color": "fuchsia",
+      "active": true,
+      "status": "active",
+      "clinicId": "Hj5b169m7675GoGceNJf",
+      "createdAt": "2026-05-20T00:58:17.581Z"
+    }
+  },
+  {
+    "id": "RI396hWL0g8a2urELqXD",
+    "data": {
+      "nameAr": "متابعة العلاج الطبيعي",
+      "price": 800,
+      "duration": 20,
+      "category": "متابعة العلاج",
+      "description": "متابعة جلسات العلاج الطبيعي وتقييم التحسن",
+      "icon": "💪",
+      "color": "indigo",
+      "active": true,
+      "status": "active",
+      "clinicId": "Hj5b169m7675GoGceNJf",
+      "createdAt": "2026-05-20T00:58:17.581Z"
+    }
+  },
+  {
+    "id": "Saj84tN8gqYjUuXiWKVh",
+    "data": {
+      "nameAr": "قياس النبض",
+      "price": 200,
+      "duration": 5,
+      "category": "العلامات الحيوية",
+      "description": "قياس معدل ضربات القلب وانتظام النبض",
+      "icon": "❤️",
+      "color": "pink",
+      "active": true,
+      "status": "active",
+      "clinicId": "Hj5b169m7675GoGceNJf",
+      "createdAt": "2026-05-20T00:58:17.580Z"
+    }
+  },
+  {
+    "id": "Scfou9rzPQgCvNHbV9aS",
+    "data": {
+      "nameAr": "فحص صحة كبار السن",
+      "price": 1000,
+      "duration": 25,
+      "category": "رعاية كبار السن",
+      "description": "فحص صحي شامل لكبار السن وتقييم الحالة العامة",
+      "icon": "🧓",
+      "color": "teal",
+      "active": true,
+      "status": "active",
+      "clinicId": "Hj5b169m7675GoGceNJf",
+      "createdAt": "2026-05-20T00:58:17.580Z"
+    }
+  },
+  {
+    "id": "SjbhRihDTSlPQqzGgWsX",
+    "data": {
+      "nameAr": "حقنة مسكنة للألم",
+      "price": 800,
+      "duration": 10,
+      "category": "الحقن والأدوية",
+      "description": "حقن مسكنة للألم الخفيف إلى المتوسط عضلية أو وريدية",
+      "icon": "💊",
+      "color": "blue",
+      "active": true,
+      "status": "active",
+      "clinicId": "Hj5b169m7675GoGceNJf",
+      "createdAt": "2026-05-20T00:58:17.580Z"
+    }
+  },
+  {
+    "id": "StTxWv9Cfh7AR53Du475",
+    "data": {
+      "nameAr": "دكستروز 5% (جلوكوز)",
+      "price": 1800,
+      "duration": 45,
+      "category": "المحاليل الوريدية",
+      "description": "محلول الجلوكوز 5% للتغذية الوريدية وعلاج انخفاض السكر",
+      "icon": "💧",
+      "color": "lime",
+      "active": true,
+      "status": "active",
+      "clinicId": "Hj5b169m7675GoGceNJf",
+      "createdAt": "2026-05-20T00:58:17.581Z"
+    }
+  },
+  {
+    "id": "T74eWHkCWI2xS8fr99dQ",
+    "data": {
+      "nameAr": "علاج ضيق التنفس",
+      "price": 1000,
+      "duration": 20,
+      "category": "التنفس والأكسجين",
+      "description": "تقييم وعلاج ضيق التنفس الحاد بالأدوية والأكسجين",
+      "icon": "😮‍💨",
+      "color": "cyan",
+      "active": true,
+      "status": "active",
+      "clinicId": "Hj5b169m7675GoGceNJf",
+      "createdAt": "2026-05-20T00:58:17.580Z"
+    }
+  },
+  {
+    "id": "T9sBAgUncExiQxNfnJaF",
+    "data": {
+      "nameAr": "إيقاف النزيف الحاد",
+      "price": 2000,
+      "duration": 25,
+      "category": "الطوارئ",
+      "description": "إيقاف النزيف الشديد بالضغط المباشر وربط الضمادات",
+      "icon": "🩸",
+      "color": "rose",
+      "active": true,
+      "status": "active",
+      "clinicId": "Hj5b169m7675GoGceNJf",
+      "createdAt": "2026-05-20T00:58:17.580Z"
+    }
+  },
+  {
+    "id": "UDsckNHtDBoBY5HQCjca",
+    "data": {
+      "nameAr": "علاج الالتواءات",
+      "price": 1000,
+      "duration": 20,
+      "category": "الكسور والإصابات",
+      "description": "علاج التواءات المفاصل بالضمادات والراحة الباردة",
+      "icon": "💪",
+      "color": "amber",
+      "active": true,
+      "status": "active",
+      "clinicId": "Hj5b169m7675GoGceNJf",
+      "createdAt": "2026-05-20T00:58:17.580Z"
+    }
+  },
+  {
+    "id": "Uc5nuYO1Jw0QGOwc5n43",
+    "data": {
+      "nameAr": "فحص الملاريا السريع",
+      "price": 800,
+      "duration": 15,
+      "category": "الفحوصات السريعة",
+      "description": "فحص سريع للكشف عن طفيل الملاريا في الدم",
+      "icon": "🦟",
+      "color": "violet",
+      "active": true,
+      "status": "active",
+      "clinicId": "Hj5b169m7675GoGceNJf",
+      "createdAt": "2026-05-20T00:58:17.580Z"
+    }
+  },
+  {
+    "id": "VKJ9EnFu33w1xhnQnj2V",
+    "data": {
+      "nameAr": "فيتامين ب المركب",
+      "price": 700,
+      "duration": 5,
+      "category": "الفيتامينات والمكملات",
+      "description": "مركب فيتامينات ب لتقوية الأعصاب والطاقة والدم",
+      "icon": "💊",
+      "color": "yellow",
+      "active": true,
+      "status": "active",
+      "clinicId": "Hj5b169m7675GoGceNJf",
+      "createdAt": "2026-05-20T00:58:17.581Z"
+    }
+  },
+  {
+    "id": "VczH4HwGAgXQcLzqOTpg",
+    "data": {
+      "nameAr": "محلول رنجر لاكتات دكستروز",
+      "price": 2200,
+      "duration": 50,
+      "category": "المحاليل الوريدية",
+      "description": "مزود رنجر لاكتات مع الجلوكوز للترطيب والتغذية المتزامنة",
+      "icon": "💧",
+      "color": "lime",
+      "active": true,
+      "status": "active",
+      "clinicId": "Hj5b169m7675GoGceNJf",
+      "createdAt": "2026-05-20T00:58:17.581Z"
+    }
+  },
+  {
+    "id": "W4rmo4ToW9cjqKcTKelx",
+    "data": {
+      "nameAr": "سيفراكسون (حقنة)",
+      "price": 2500,
+      "duration": 15,
+      "category": "المضادات الحيوية",
+      "description": "مضاد حيوي وريدي قوي للعدوى الشديدة والالتهابات الخطيرة",
+      "icon": "💉",
+      "color": "fuchsia",
+      "active": true,
+      "status": "active",
+      "clinicId": "Hj5b169m7675GoGceNJf",
+      "createdAt": "2026-05-20T00:58:17.581Z"
+    }
+  },
+  {
+    "id": "WDSJklOpUzOS0WnFADsK",
+    "data": {
+      "nameAr": "علاج طبيعي منزلي",
+      "price": 2000,
+      "duration": 45,
+      "category": "الخدمات المنزلية",
+      "description": "جلسة علاج طبيعي في المنزل لإعادة التأهيل",
+      "icon": "💪",
+      "color": "emerald",
+      "active": true,
+      "status": "active",
+      "clinicId": "Hj5b169m7675GoGceNJf",
+      "createdAt": "2026-05-20T00:58:17.580Z"
+    }
+  },
+  {
+    "id": "WSed9aF3LcrAdJ64y4kR",
+    "data": {
+      "nameAr": "إسعاف الغرق",
+      "price": 3000,
+      "duration": 35,
+      "category": "الطوارئ",
+      "description": "إسعاف حالات الغرق وإعادة التنفس والعناية بالرئتين",
+      "icon": "🌊",
+      "color": "rose",
+      "active": true,
+      "status": "active",
+      "clinicId": "Hj5b169m7675GoGceNJf",
+      "createdAt": "2026-05-20T00:58:17.580Z"
+    }
+  },
+  {
+    "id": "XGu01oToasSAug6zNw22",
+    "data": {
+      "nameAr": "نورمال سالين (محلول ملحي)",
+      "price": 1500,
+      "duration": 45,
+      "category": "المحاليل الوريدية",
+      "description": "محلول كلوريد الصوديوم 0.9% للترطيب الوريدي وإعادة السوائل",
+      "icon": "💉",
+      "color": "lime",
+      "active": true,
+      "status": "active",
+      "clinicId": "Hj5b169m7675GoGceNJf",
+      "createdAt": "2026-05-20T00:58:17.581Z"
+    }
+  },
+  {
+    "id": "Xlxc87q4Shiw5pmTHSbe",
+    "data": {
+      "nameAr": "باراسيتامول (أقراص)",
+      "price": 300,
+      "duration": 5,
+      "category": "المهدئات والألم",
+      "description": "مسكن للآلام الخفيفة والمتوسطة وخافض للحرارة",
+      "icon": "😴",
+      "color": "slate",
+      "active": true,
+      "status": "active",
+      "clinicId": "Hj5b169m7675GoGceNJf",
+      "createdAt": "2026-05-20T00:58:17.581Z"
+    }
+  },
+  {
+    "id": "XoA1XZGucNLmZEH5BvYH",
+    "data": {
+      "nameAr": "علاج الشد العضلي",
+      "price": 800,
+      "duration": 15,
+      "category": "الكسور والإصابات",
+      "description": "علاج شد العضلات بالكمادات والمسكنات الموضعية",
+      "icon": "🦵",
+      "color": "amber",
+      "active": true,
+      "status": "active",
+      "clinicId": "Hj5b169m7675GoGceNJf",
+      "createdAt": "2026-05-20T00:58:17.580Z"
+    }
+  },
+  {
+    "id": "YVsnbyq0ffwm8FK7RbCb",
+    "data": {
+      "nameAr": "علاج نوبة الصرع",
+      "price": 2000,
+      "duration": 25,
+      "category": "الطوارئ",
+      "description": "إسعاف نوبة الصرع وحماية المريض من الإصابة أثناء النوبة",
+      "icon": "⚡",
+      "color": "rose",
+      "active": true,
+      "status": "active",
+      "clinicId": "Hj5b169m7675GoGceNJf",
+      "createdAt": "2026-05-20T00:58:17.580Z"
+    }
+  },
+  {
+    "id": "YZiMN0F77vUdvB1hIAjj",
+    "data": {
+      "nameAr": "إزالة الغرز",
+      "price": 400,
+      "duration": 10,
+      "category": "الحروق والجروح",
+      "description": "إزالة الغرز الطبية بعد التئام الجرح",
+      "icon": "✂️",
+      "color": "orange",
+      "active": true,
+      "status": "active",
+      "clinicId": "Hj5b169m7675GoGceNJf",
+      "createdAt": "2026-05-20T00:58:17.580Z"
+    }
+  },
+  {
+    "id": "YgoK4MyVeudX4R8CB8s3",
+    "data": {
+      "nameAr": "كوتريموكسازول",
+      "price": 600,
+      "duration": 10,
+      "category": "المضادات الحيوية",
+      "description": "مضاد حيوي واسع الطيف للتهابات المسالك البولية والإسهال والتهاب الأذن",
+      "icon": "💊",
+      "color": "fuchsia",
+      "active": true,
+      "status": "active",
+      "clinicId": "Hj5b169m7675GoGceNJf",
+      "createdAt": "2026-05-20T00:58:17.581Z"
+    }
+  },
+  {
+    "id": "YxBHIcgUV5OpaE331ANo",
+    "data": {
+      "nameAr": "علاج الجروح المتقيحة",
+      "price": 1500,
+      "duration": 25,
+      "category": "الحروق والجروح",
+      "description": "تنظيف الجروح الملتهبة والمتقيحة وصرف المادة القيحية",
+      "icon": "🦠",
+      "color": "orange",
+      "active": true,
+      "status": "active",
+      "clinicId": "Hj5b169m7675GoGceNJf",
+      "createdAt": "2026-05-20T00:58:17.580Z"
+    }
+  },
+  {
+    "id": "ZDdxC1P69S9Jvcl6PQiG",
+    "data": {
+      "nameAr": "زيارة منزلية عامة",
+      "price": 3000,
+      "duration": 45,
+      "category": "الخدمات المنزلية",
+      "description": "زيارة طبيب إلى المنزل للفحص والتشخيص الأولي",
+      "icon": "🏠",
+      "color": "emerald",
+      "active": true,
+      "status": "active",
+      "clinicId": "Hj5b169m7675GoGceNJf",
+      "createdAt": "2026-05-20T00:58:17.580Z"
+    }
+  },
+  {
+    "id": "adtH3hpUYEH6HoQIIMi0",
+    "data": {
+      "nameAr": "علاج سعال الأطفال",
+      "price": 600,
+      "duration": 15,
+      "category": "رعاية الأطفال",
+      "description": "علاج السعال والزكام عند الأطفال بالأدوية الآمنة",
+      "icon": "🤧",
+      "color": "sky",
+      "active": true,
+      "status": "active",
+      "clinicId": "Hj5b169m7675GoGceNJf",
+      "createdAt": "2026-05-20T00:58:17.580Z"
+    }
+  },
+  {
+    "id": "bowviFqmV3FFWIqV9a9N",
+    "data": {
+      "nameAr": "علاج السعال الشديد",
+      "price": 600,
+      "duration": 15,
+      "category": "التنفس والأكسجين",
+      "description": "علاج السعال المستمر بالأدوية المناسبة والاستنشاق",
+      "icon": "🤧",
+      "color": "cyan",
+      "active": true,
+      "status": "active",
+      "clinicId": "Hj5b169m7675GoGceNJf",
+      "createdAt": "2026-05-20T00:58:17.580Z"
+    }
+  },
+  {
+    "id": "c5dpBGRvW5bmAU3Hfe1V",
+    "data": {
+      "nameAr": "جنتاميسين (حقنة)",
+      "price": 1800,
+      "duration": 15,
+      "category": "المضادات الحيوية",
+      "description": "مضاد حيوي أمينوغليكوزيد للعدوى البكتيرية الخطيرة",
+      "icon": "💉",
+      "color": "fuchsia",
+      "active": true,
+      "status": "active",
+      "clinicId": "Hj5b169m7675GoGceNJf",
+      "createdAt": "2026-05-20T00:58:17.581Z"
+    }
+  },
+  {
+    "id": "cO1zLQLrF0rEh5ZEJEIh",
+    "data": {
+      "nameAr": "سيبروفلوكساسين",
+      "price": 1000,
+      "duration": 10,
+      "category": "المضادات الحيوية",
+      "description": "مضاد حيوي للتهابات المسالك البولية والجهاز التنفسي والإسهال البكتيري",
+      "icon": "💊",
+      "color": "fuchsia",
+      "active": true,
+      "status": "active",
+      "clinicId": "Hj5b169m7675GoGceNJf",
+      "createdAt": "2026-05-20T00:58:17.581Z"
+    }
+  },
+  {
+    "id": "dIjxBMHi5L6lCXI0wmna",
+    "data": {
+      "nameAr": "إسعاف الصدمة العصبية",
+      "price": 1200,
+      "duration": 30,
+      "category": "الإسعافات الأولية",
+      "description": "تهدئة المريض وتقديم الإسعافات الأولية للصدمة العصبية",
+      "icon": "😰",
+      "color": "red",
+      "active": true,
+      "status": "active",
+      "clinicId": "Hj5b169m7675GoGceNJf",
+      "createdAt": "2026-05-20T00:58:17.580Z"
+    }
+  },
+  {
+    "id": "dQgcl3q5z59C9FPi3SHi",
+    "data": {
+      "nameAr": "تطعيم الأطفال",
+      "price": 1000,
+      "duration": 15,
+      "category": "رعاية الأطفال",
+      "description": "إعطاء التطعيمات الأساسية للأطفال حسب جدول التطعيمات",
+      "icon": "💉",
+      "color": "sky",
+      "active": true,
+      "status": "active",
+      "clinicId": "Hj5b169m7675GoGceNJf",
+      "createdAt": "2026-05-20T00:58:17.580Z"
+    }
+  },
+  {
+    "id": "dSXdKLYIoaMWIBqs9OZ7",
+    "data": {
+      "nameAr": "تغيير ضمادات منزلي",
+      "price": 1000,
+      "duration": 20,
+      "category": "الخدمات المنزلية",
+      "description": "ممرض لتغيير الضمادات والعناية بالجروح في المنزل",
+      "icon": "🩹",
+      "color": "emerald",
+      "active": true,
+      "status": "active",
+      "clinicId": "Hj5b169m7675GoGceNJf",
+      "createdAt": "2026-05-20T00:58:17.580Z"
+    }
+  },
+  {
+    "id": "dhjiGgJ1stLi7H5NauSR",
+    "data": {
+      "nameAr": "علاج آلام المفاصل",
+      "price": 1200,
+      "duration": 20,
+      "category": "رعاية كبار السن",
+      "description": "علاج آلام المفاصل والتهابات المفاصل المزمنة",
+      "icon": "🦴",
+      "color": "teal",
+      "active": true,
+      "status": "active",
+      "clinicId": "Hj5b169m7675GoGceNJf",
+      "createdAt": "2026-05-20T00:58:17.580Z"
+    }
+  },
+  {
+    "id": "dzWfkBIWaJmuWYdqmak0",
+    "data": {
+      "nameAr": "علاج الحروق الكيميائية الخفيفة",
+      "price": 1800,
+      "duration": 30,
+      "category": "الحروق والجروح",
+      "description": "غسل وتطهير الحروق الناتجة عن المواد الكيميائية",
+      "icon": "⚗️",
+      "color": "orange",
+      "active": true,
+      "status": "active",
+      "clinicId": "Hj5b169m7675GoGceNJf",
+      "createdAt": "2026-05-20T00:58:17.580Z"
+    }
+  },
+  {
+    "id": "eApUJiCTmGFZIhdwYslu",
+    "data": {
+      "nameAr": "إسعاف التسمم الحاد",
+      "price": 3000,
+      "duration": 40,
+      "category": "الطوارئ",
+      "description": "علاج التسمم الحاد بغسل المعدة وإعطاء الترياق المناسب",
+      "icon": "☠️",
+      "color": "rose",
+      "active": true,
+      "status": "active",
+      "clinicId": "Hj5b169m7675GoGceNJf",
+      "createdAt": "2026-05-20T00:58:17.580Z"
+    }
+  },
+  {
+    "id": "egnlGLK3xh8SSKCdfEUz",
+    "data": {
+      "nameAr": "متابعة الأمراض المعدية",
+      "price": 600,
+      "duration": 15,
+      "category": "متابعة العلاج",
+      "description": "متابعة حالة المريض بعد الإصابة بالأمراض المعدية",
+      "icon": "🦠",
+      "color": "indigo",
+      "active": true,
+      "status": "active",
+      "clinicId": "Hj5b169m7675GoGceNJf",
+      "createdAt": "2026-05-20T00:58:17.581Z"
+    }
+  },
+  {
+    "id": "f4dPMGOKkVWvHs7TmZ5M",
+    "data": {
+      "nameAr": "متابعة نتائج التحاليل",
+      "price": 400,
+      "duration": 10,
+      "category": "متابعة العلاج",
+      "description": "مراجعة نتائج التحاليل المخبرية وشرحها للمريض",
+      "icon": "📊",
+      "color": "indigo",
+      "active": true,
+      "status": "active",
+      "clinicId": "Hj5b169m7675GoGceNJf",
+      "createdAt": "2026-05-20T00:58:17.581Z"
+    }
+  },
+  {
+    "id": "fpnfK7tRjboX4PU4UuNE",
+    "data": {
+      "nameAr": "مراقبة أدوية كبار السن",
+      "price": 600,
+      "duration": 15,
+      "category": "رعاية كبار السن",
+      "description": "مراجعة أدوية كبار السن وتعديل الجرعات والتفاعلات",
+      "icon": "💊",
+      "color": "teal",
+      "active": true,
+      "status": "active",
+      "clinicId": "Hj5b169m7675GoGceNJf",
+      "createdAt": "2026-05-20T00:58:17.581Z"
+    }
+  },
+  {
+    "id": "g2T8lq44wNK2699lOY8q",
+    "data": {
+      "nameAr": "تثبيت خلع المفصل",
+      "price": 2500,
+      "duration": 30,
+      "category": "الكسور والإصابات",
+      "description": "إعادة المفصل الخلوع لموضعه الطبيعي وتثبيته",
+      "icon": "🦴",
+      "color": "amber",
+      "active": true,
+      "status": "active",
+      "clinicId": "Hj5b169m7675GoGceNJf",
+      "createdAt": "2026-05-20T00:58:17.580Z"
+    }
+  },
+  {
+    "id": "g68WliwxPg8A93YcFKJo",
+    "data": {
+      "nameAr": "متابعة الجروح بعد العلاج",
+      "price": 500,
+      "duration": 15,
+      "category": "متابعة العلاج",
+      "description": "فحص الجروح ومتابعة عملية الالتئام وتغيير الضمادات",
+      "icon": "🩹",
+      "color": "indigo",
+      "active": true,
+      "status": "active",
+      "clinicId": "Hj5b169m7675GoGceNJf",
+      "createdAt": "2026-05-20T00:58:17.581Z"
+    }
+  },
+  {
+    "id": "gHwlVtvji5j6CfADwDKg",
+    "data": {
+      "nameAr": "كالسيوم + فيتامين د",
+      "price": 900,
+      "duration": 5,
+      "category": "الفيتامينات والمكملات",
+      "description": "مكمل الكالسيوم مع فيتامين د لتقوية العظام والأسنان",
+      "icon": "🦴",
+      "color": "yellow",
+      "active": true,
+      "status": "active",
+      "clinicId": "Hj5b169m7675GoGceNJf",
+      "createdAt": "2026-05-20T00:58:17.581Z"
+    }
+  },
+  {
+    "id": "ghtWh5YMwb2G99x5thdl",
+    "data": {
+      "nameAr": "علاج عضة حيوان",
+      "price": 1000,
+      "duration": 25,
+      "category": "الإسعافات الأولية",
+      "description": "تنظيف عضة الحيوان وتطهيرها وإعطاء التطعيم اللازم",
+      "icon": "🐕",
+      "color": "red",
+      "active": true,
+      "status": "active",
+      "clinicId": "Hj5b169m7675GoGceNJf",
+      "createdAt": "2026-05-20T00:58:17.580Z"
+    }
+  },
+  {
+    "id": "iAwORxRWqrSuPQTlCTmx",
+    "data": {
+      "nameAr": "تجبير الكسور البسيطة",
+      "price": 2000,
+      "duration": 30,
+      "category": "الكسور والإصابات",
+      "description": "تثبيت الكسور البسيطة بجبيرة جبسية أو بلاستيكية",
+      "icon": "🦴",
+      "color": "amber",
+      "active": true,
+      "status": "active",
+      "clinicId": "Hj5b169m7675GoGceNJf",
+      "createdAt": "2026-05-20T00:58:17.580Z"
+    }
+  },
+  {
+    "id": "iRcb1xjTlTlEsWQpQhAQ",
+    "data": {
+      "nameAr": "حقنة فيتامين د",
+      "price": 2000,
+      "duration": 10,
+      "category": "الفيتامينات والمكملات",
+      "description": "حقنة فيتامين د عضلية للنقص الحاد - جرعة عالية سريعة الامتصاص",
+      "icon": "💉",
+      "color": "yellow",
+      "active": true,
+      "status": "active",
+      "clinicId": "Hj5b169m7675GoGceNJf",
+      "createdAt": "2026-05-20T00:58:17.581Z"
+    }
+  },
+  {
+    "id": "j9GHSCJahfy2gSmchNsG",
+    "data": {
+      "nameAr": "ترامادول",
+      "price": 1500,
+      "duration": 10,
+      "category": "المهدئات والألم",
+      "description": "مسكن أفيوني للآلام الشديدة - يتطلب وصفة طبية",
+      "icon": "😴",
+      "color": "slate",
+      "active": true,
+      "status": "active",
+      "clinicId": "Hj5b169m7675GoGceNJf",
+      "createdAt": "2026-05-20T00:58:17.581Z"
+    }
+  },
+  {
+    "id": "jTTKNleAUkkmBCmQloi4",
+    "data": {
+      "nameAr": "محلول هارتمان",
+      "price": 2200,
+      "duration": 45,
+      "category": "المحاليل الوريدية",
+      "description": "محلول هارتمان للتعويض السريع للسوائل في حالات الصدمة والجفاف",
+      "icon": "💧",
+      "color": "lime",
+      "active": true,
+      "status": "active",
+      "clinicId": "Hj5b169m7675GoGceNJf",
+      "createdAt": "2026-05-20T00:58:17.581Z"
+    }
+  },
+  {
+    "id": "jYPNP556FDCnH7PfioXL",
+    "data": {
+      "nameAr": "ميترونيدازول",
+      "price": 700,
+      "duration": 10,
+      "category": "المضادات الحيوية",
+      "description": "مضاد حيوي للعدوى الطفيلية والبكتيرية اللاهوائية والإسهال",
+      "icon": "💊",
+      "color": "fuchsia",
+      "active": true,
+      "status": "active",
+      "clinicId": "Hj5b169m7675GoGceNJf",
+      "createdAt": "2026-05-20T00:58:17.581Z"
+    }
+  },
+  {
+    "id": "jlkTAVCq0Atld2PnOSjn",
+    "data": {
+      "nameAr": "فحص التهاب الكبد",
+      "price": 1200,
+      "duration": 15,
+      "category": "الفحوصات السريعة",
+      "description": "فحص سريع للكشف عن التهاب الكبد الوبائي ب وأنواع أخرى",
+      "icon": "🫁",
+      "color": "violet",
+      "active": true,
+      "status": "active",
+      "clinicId": "Hj5b169m7675GoGceNJf",
+      "createdAt": "2026-05-20T00:58:17.580Z"
+    }
+  },
+  {
+    "id": "jrlLgeiaFxCgDDhazoXv",
+    "data": {
+      "nameAr": "رنجر لاكتات",
+      "price": 2000,
+      "duration": 45,
+      "category": "المحاليل الوريدية",
+      "description": "محلول رنجر لاكتات لعلاج الجفاف الشديد والحروق والصدمات",
+      "icon": "💉",
+      "color": "lime",
+      "active": true,
+      "status": "active",
+      "clinicId": "Hj5b169m7675GoGceNJf",
+      "createdAt": "2026-05-20T00:58:17.581Z"
+    }
+  },
+  {
+    "id": "kdHkHmEZPulcHXfVrYrm",
+    "data": {
+      "nameAr": "إعادة تقييم العلاج",
+      "price": 500,
+      "duration": 15,
+      "category": "متابعة العلاج",
+      "description": "إعادة تقييم خطة العلاج وتعديلها حسب استجابة المريض",
+      "icon": "📋",
+      "color": "indigo",
+      "active": true,
+      "status": "active",
+      "clinicId": "Hj5b169m7675GoGceNJf",
+      "createdAt": "2026-05-20T00:58:17.581Z"
+    }
+  },
+  {
+    "id": "khSIL8BWpD1qLx8Ip9OR",
+    "data": {
+      "nameAr": "علاج الانسداد الأنفي",
+      "price": 500,
+      "duration": 10,
+      "category": "التنفس والأكسجين",
+      "description": "علاج انسداد الأنف والتهاب الجيوب الأنفية بالأدوية الموضعية",
+      "icon": "👃",
+      "color": "cyan",
+      "active": true,
+      "status": "active",
+      "clinicId": "Hj5b169m7675GoGceNJf",
+      "createdAt": "2026-05-20T00:58:17.580Z"
+    }
+  },
+  {
+    "id": "kxu8rBzUQ4Ag6k2N4USd",
+    "data": {
+      "nameAr": "فحص السكر العشوائي",
+      "price": 400,
+      "duration": 5,
+      "category": "العلامات الحيوية",
+      "description": "قياس سكر الدم العشوائي بجهاز فحص سريع",
+      "icon": "🍬",
+      "color": "pink",
+      "active": true,
+      "status": "active",
+      "clinicId": "Hj5b169m7675GoGceNJf",
+      "createdAt": "2026-05-20T00:58:17.580Z"
+    }
+  },
+  {
+    "id": "l9OdZzhh4TYqAfifooHU",
+    "data": {
+      "nameAr": "العلاج بالأكسجين",
+      "price": 1500,
+      "duration": 30,
+      "category": "التنفس والأكسجين",
+      "description": "إعطاء الأكسجين عبر القناع أو الأنبوب الأنفي لتحسين التنفس",
+      "icon": "🫁",
+      "color": "cyan",
+      "active": true,
+      "status": "active",
+      "clinicId": "Hj5b169m7675GoGceNJf",
+      "createdAt": "2026-05-20T00:58:17.580Z"
+    }
+  },
+  {
+    "id": "mdJfDx7nZxkGtAIoDQT7",
+    "data": {
+      "nameAr": "أوميغا 3 (زيت السمك)",
+      "price": 1200,
+      "duration": 5,
+      "category": "الفيتامينات والمكملات",
+      "description": "كبسولات أوميغا 3 لصحة القلب والأوعية الدموية والدماغ",
+      "icon": "🐟",
+      "color": "yellow",
+      "active": true,
+      "status": "active",
+      "clinicId": "Hj5b169m7675GoGceNJf",
+      "createdAt": "2026-05-20T00:58:17.581Z"
+    }
+  },
+  {
+    "id": "muLW0WaQ1OpwDYrh6qs0",
+    "data": {
+      "nameAr": "علاج التهاب الأذن",
+      "price": 800,
+      "duration": 15,
+      "category": "رعاية الأطفال",
+      "description": "علاج التهاب الأذن الوسطى الشائع عند الأطفال",
+      "icon": "👂",
+      "color": "sky",
+      "active": true,
+      "status": "active",
+      "clinicId": "Hj5b169m7675GoGceNJf",
+      "createdAt": "2026-05-20T00:58:17.580Z"
+    }
+  },
+  {
+    "id": "nBsOWQwE4WdMbePMMB3r",
+    "data": {
+      "nameAr": "مكمل غذائي متكامل",
+      "price": 1500,
+      "duration": 5,
+      "category": "الفيتامينات والمكملات",
+      "description": "مكمل غذائي شامل بالفيتامينات والمعادن للصحة العامة",
+      "icon": "💊",
+      "color": "yellow",
+      "active": true,
+      "status": "active",
+      "clinicId": "Hj5b169m7675GoGceNJf",
+      "createdAt": "2026-05-20T00:58:17.581Z"
+    }
+  },
+  {
+    "id": "nlYcVLNhN5pn0KDBJg2z",
+    "data": {
+      "nameAr": "فيتامين د (كبسولات)",
+      "price": 800,
+      "duration": 5,
+      "category": "الفيتامينات والمكملات",
+      "description": "كبسولات فيتامين د3 لعلاج النقص وتقوية العظام",
+      "icon": "☀️",
+      "color": "yellow",
+      "active": true,
+      "status": "active",
+      "clinicId": "Hj5b169m7675GoGceNJf",
+      "createdAt": "2026-05-20T00:58:17.581Z"
+    }
+  },
+  {
+    "id": "oV1gMF7ua7CpYk8EaL2E",
+    "data": {
+      "nameAr": "فحص فقر الدم",
+      "price": 700,
+      "duration": 10,
+      "category": "الفحوصات السريعة",
+      "description": "قياس مستوى الهيموغلوبين للكشف عن فقر الدم",
+      "icon": "🩸",
+      "color": "violet",
+      "active": true,
+      "status": "active",
+      "clinicId": "Hj5b169m7675GoGceNJf",
+      "createdAt": "2026-05-20T00:58:17.580Z"
+    }
+  },
+  {
+    "id": "pmufBlj6Y6064WQ63KnI",
+    "data": {
+      "nameAr": "علاج نوبة القلب المشتبهة",
+      "price": 4000,
+      "duration": 30,
+      "category": "الطوارئ",
+      "description": "إسعاف أولي لنوبة قلبية مشتبهة وتنظيم النقل للمستشفى",
+      "icon": "🫀",
+      "color": "rose",
+      "active": true,
+      "status": "active",
+      "clinicId": "Hj5b169m7675GoGceNJf",
+      "createdAt": "2026-05-20T00:58:17.580Z"
+    }
+  },
+  {
+    "id": "pzxtcAOMCaxa9VITdGH6",
+    "data": {
+      "nameAr": "تنظيف وتطهير الجروح",
+      "price": 500,
+      "duration": 15,
+      "category": "الإسعافات الأولية",
+      "description": "تنظيف الجروح بمحلول معقم وتطهيرها لمنع العدوى",
+      "icon": "🩹",
+      "color": "red",
+      "active": true,
+      "status": "active",
+      "clinicId": "Hj5b169m7675GoGceNJf",
+      "createdAt": "2026-05-20T00:58:17.580Z"
+    }
+  },
+  {
+    "id": "qJ6sCZcxk2JtjgJMnVGS",
+    "data": {
+      "nameAr": "علاج الجروح المفتوحة",
+      "price": 1200,
+      "duration": 25,
+      "category": "الحروق والجروح",
+      "description": "تنظيف وتطهير الجروح المفتوحة ووضع ضمادات معقمة",
+      "icon": "🩹",
+      "color": "orange",
+      "active": true,
+      "status": "active",
+      "clinicId": "Hj5b169m7675GoGceNJf",
+      "createdAt": "2026-05-20T00:58:17.580Z"
+    }
+  },
+  {
+    "id": "qUMbawhuA4KG3GIa0LKi",
+    "data": {
+      "nameAr": "علاج الصدمة التحسسية",
+      "price": 2500,
+      "duration": 25,
+      "category": "الطوارئ",
+      "description": "إسعاف الحساسية المفرطة بحقنة الأدرينالين فوراً",
+      "icon": "⚠️",
+      "color": "rose",
+      "active": true,
+      "status": "active",
+      "clinicId": "Hj5b169m7675GoGceNJf",
+      "createdAt": "2026-05-20T00:58:17.580Z"
+    }
+  },
+  {
+    "id": "qjPqsvi7kIOh4HnJSnJo",
+    "data": {
+      "nameAr": "فيتامين سي",
+      "price": 500,
+      "duration": 5,
+      "category": "الفيتامينات والمكملات",
+      "description": "فيتامين سي لتعزيز المناعة ومقاومة العدوى وتسريع الشفاء",
+      "icon": "🍊",
+      "color": "yellow",
+      "active": true,
+      "status": "active",
+      "clinicId": "Hj5b169m7675GoGceNJf",
+      "createdAt": "2026-05-20T00:58:17.581Z"
+    }
+  },
+  {
+    "id": "qrSDWNN2C6tB0VlsyIie",
+    "data": {
+      "nameAr": "زنك + فيتامين سي",
+      "price": 700,
+      "duration": 5,
+      "category": "الفيتامينات والمكملات",
+      "description": "مكمل الزنك مع فيتامين سي لتعزيز المناعة وتسريع الشفاء",
+      "icon": "🌟",
+      "color": "yellow",
+      "active": true,
+      "status": "active",
+      "clinicId": "Hj5b169m7675GoGceNJf",
+      "createdAt": "2026-05-20T00:58:17.581Z"
+    }
+  },
+  {
+    "id": "rIpyms1zWjt48XIALLyp",
+    "data": {
+      "nameAr": "حقنة كورتيزون موضعية",
+      "price": 2200,
+      "duration": 15,
+      "category": "المهدئات والألم",
+      "description": "حقنة كورتيزون موضعية لآلام المفاصل والالتهابات الموضعية",
+      "icon": "💉",
+      "color": "slate",
+      "active": true,
+      "status": "active",
+      "clinicId": "Hj5b169m7675GoGceNJf",
+      "createdAt": "2026-05-20T00:58:17.581Z"
+    }
+  },
+  {
+    "id": "ry4FzPHtzaJXPz3OxGM1",
+    "data": {
+      "nameAr": "علاج الدوخة وضعف التوازن",
+      "price": 900,
+      "duration": 20,
+      "category": "رعاية كبار السن",
+      "description": "تقييم وعلاج الدوخة ومشاكل التوازن لدى كبار السن",
+      "icon": "😵‍💫",
+      "color": "teal",
+      "active": true,
+      "status": "active",
+      "clinicId": "Hj5b169m7675GoGceNJf",
+      "createdAt": "2026-05-20T00:58:17.580Z"
+    }
+  },
+  {
+    "id": "sZZqxCAwUQGGrAyybP1X",
+    "data": {
+      "nameAr": "إزالة جسم غريب",
+      "price": 800,
+      "duration": 20,
+      "category": "الإسعافات الأولية",
+      "description": "إزالة الأجسام الغريبة من الجلد أو الأنسجة السطحية بأمان",
+      "icon": "🔧",
+      "color": "red",
+      "clinicId": "Hj5b169m7675GoGceNJf",
+      "createdAt": "2026-05-20T00:58:17.580Z",
+      "active": true,
+      "status": "active"
+    }
+  },
+  {
+    "id": "szBBEXPe14DK92LtIivE",
+    "data": {
+      "nameAr": "قياس السكر التراكمي",
+      "price": 800,
+      "duration": 10,
+      "category": "العلامات الحيوية",
+      "description": "فحص مستوى السكر التراكمي في الدم لمتابعة مرضى السكري",
+      "icon": "🩸",
+      "color": "pink",
+      "active": true,
+      "status": "active",
+      "clinicId": "Hj5b169m7675GoGceNJf",
+      "createdAt": "2026-05-20T00:58:17.580Z"
+    }
+  },
+  {
+    "id": "thprMzpKB2apF2POwQzG",
+    "data": {
+      "nameAr": "فحص الطفل العام",
+      "price": 800,
+      "duration": 20,
+      "category": "رعاية الأطفال",
+      "description": "فحص صحي شامل للطفل وتقييم نموه وتطوره",
+      "icon": "👶",
+      "color": "sky",
+      "active": true,
+      "status": "active",
+      "clinicId": "Hj5b169m7675GoGceNJf",
+      "createdAt": "2026-05-20T00:58:17.580Z"
+    }
+  },
+  {
+    "id": "tufjlUuJhjHi5QzIibsb",
+    "data": {
+      "nameAr": "محلول وريدي منزلي",
+      "price": 2500,
+      "duration": 60,
+      "category": "الخدمات المنزلية",
+      "description": "تركيب محلول وريدي في المنزل لمرضى الجفاف",
+      "icon": "🩺",
+      "color": "emerald",
+      "active": true,
+      "status": "active",
+      "clinicId": "Hj5b169m7675GoGceNJf",
+      "createdAt": "2026-05-20T00:58:17.580Z"
+    }
+  },
+  {
+    "id": "u78Cs0OJapczunDreBrc",
+    "data": {
+      "nameAr": "استشارة طبية عن بُعد",
+      "price": 1000,
+      "duration": 20,
+      "category": "الخدمات المنزلية",
+      "description": "استشارة طبية عبر الهاتف أو الفيديو مع طبيب مختص",
+      "icon": "📱",
+      "color": "emerald",
+      "active": true,
+      "status": "active",
+      "clinicId": "Hj5b169m7675GoGceNJf",
+      "createdAt": "2026-05-20T00:58:17.580Z"
+    }
+  },
+  {
+    "id": "uDm1bxl67nQujFuaJyR1",
+    "data": {
+      "nameAr": "تنظيم نقل إسعافي",
+      "price": 5000,
+      "duration": 20,
+      "category": "الطوارئ",
+      "description": "تنظيم سيارة إسعاف لنقل المريض إلى المستشفى المناسب",
+      "icon": "🚑",
+      "color": "rose",
+      "active": true,
+      "status": "active",
+      "clinicId": "Hj5b169m7675GoGceNJf",
+      "createdAt": "2026-05-20T00:58:17.580Z"
+    }
+  },
+  {
+    "id": "vju2xWtklsce630uYwMp",
+    "data": {
+      "nameAr": "إسعاف حادث مروري",
+      "price": 3500,
+      "duration": 45,
+      "category": "الطوارئ",
+      "description": "إسعاف إصابات الحوادث المرورية وتثبيت الكسور والجروح",
+      "icon": "🚗",
+      "color": "rose",
+      "active": true,
+      "status": "active",
+      "clinicId": "Hj5b169m7675GoGceNJf",
+      "createdAt": "2026-05-20T00:58:17.580Z"
+    }
+  },
+  {
+    "id": "wIePYbbsxmWwPwYqLiXZ",
+    "data": {
+      "nameAr": "إسعاف التسمم الغذائي الخفيف",
+      "price": 900,
+      "duration": 30,
+      "category": "الإسعافات الأولية",
+      "description": "علاج أعراض التسمم الغذائي البسيطة وإعادة الترطيب",
+      "icon": "🤢",
+      "color": "red",
+      "active": true,
+      "status": "active",
+      "clinicId": "Hj5b169m7675GoGceNJf",
+      "createdAt": "2026-05-20T00:58:17.580Z"
+    }
+  },
+  {
+    "id": "wbEd6idRNPWyvgt6o6d7",
+    "data": {
+      "nameAr": "حديد + حمض الفوليك",
+      "price": 600,
+      "duration": 5,
+      "category": "الفيتامينات والمكملات",
+      "description": "مكمل الحديد وحمض الفوليك لعلاج فقر الدم الغذائي",
+      "icon": "🩸",
+      "color": "yellow",
+      "active": true,
+      "status": "active",
+      "clinicId": "Hj5b169m7675GoGceNJf",
+      "createdAt": "2026-05-20T00:58:17.581Z"
+    }
+  },
+  {
+    "id": "wooUOPmyw8mOyTjby543",
+    "data": {
+      "nameAr": "شفط الإفرازات",
+      "price": 800,
+      "duration": 15,
+      "category": "التنفس والأكسجين",
+      "description": "شفط الإفرازات والمخاط من المجاري التنفسية",
+      "icon": "🫁",
+      "color": "cyan",
+      "active": true,
+      "status": "active",
+      "clinicId": "Hj5b169m7675GoGceNJf",
+      "createdAt": "2026-05-20T00:58:17.580Z"
+    }
+  },
+  {
+    "id": "xnanrWMWoWDtIhaCwgOC",
+    "data": {
+      "nameAr": "محلول مغذي مركب",
+      "price": 3500,
+      "duration": 90,
+      "category": "المحاليل الوريدية",
+      "description": "تركيب محلول وريدي مركب يحتوي على أملاح وفيتامينات وجلوكوز",
+      "icon": "💧",
+      "color": "lime",
+      "active": true,
+      "status": "active",
+      "clinicId": "Hj5b169m7675GoGceNJf",
+      "createdAt": "2026-05-20T00:58:17.581Z"
+    }
+  },
+  {
+    "id": "xpsj6c9TuqjUgpBhxQtG",
+    "data": {
+      "nameAr": "محلول ملحي + دكستروز",
+      "price": 2000,
+      "duration": 45,
+      "category": "المحاليل الوريدية",
+      "description": "تركيب محلول ملحي مع الجلوكوز للمرضى الذين يحتاجون ترطيب وتغذية",
+      "icon": "💉",
+      "color": "lime",
+      "active": true,
+      "status": "active",
+      "clinicId": "Hj5b169m7675GoGceNJf",
+      "createdAt": "2026-05-20T00:58:17.581Z"
+    }
+  },
+  {
+    "id": "yqkDww2thF6vWP75mC4b",
+    "data": {
+      "nameAr": "محلول صوديوم بيكربونات",
+      "price": 2800,
+      "duration": 30,
+      "category": "المحاليل الوريدية",
+      "description": "محلول بيكربونات الصوديوم لعلاج الحماض الأيضي",
+      "icon": "💉",
+      "color": "lime",
+      "active": true,
+      "status": "active",
+      "clinicId": "Hj5b169m7675GoGceNJf",
+      "createdAt": "2026-05-20T00:58:17.581Z"
+    }
+  },
+  {
+    "id": "zCVTiddmVny6Pi8gvtVs",
+    "data": {
+      "nameAr": "محلول مغذي وريدي",
+      "price": 2000,
+      "duration": 45,
+      "category": "الحقن والأدوية",
+      "description": "محلول ملح أو جلوكوز وريدي لمعالجة الجفاف ونقص السوائل",
+      "icon": "🩺",
+      "color": "blue",
+      "active": true,
+      "status": "active",
+      "clinicId": "Hj5b169m7675GoGceNJf",
+      "createdAt": "2026-05-20T00:58:17.580Z"
+    }
+  },
+  {
+    "id": "zXN8ZCBNt5Rafll3ZXZ9",
+    "data": {
+      "nameAr": "محلول بوتاسيوم كلورايد",
+      "price": 2500,
+      "duration": 60,
+      "category": "المحاليل الوريدية",
+      "description": "إضافة البوتاسيوم للمحاليل الوريدية لعلاج نقص البوتاسيوم",
+      "icon": "💉",
+      "color": "lime",
+      "active": true,
+      "status": "active",
+      "clinicId": "Hj5b169m7675GoGceNJf",
+      "createdAt": "2026-05-20T00:58:17.581Z"
+    }
+  }
+]

@@ -1,0 +1,96 @@
+[
+  {
+    "id": "BpJQ1fVo9HyiXx4LdE3k",
+    "data": {
+      "nurseId": "mwwhI1mmGCf6ypefK7Id",
+      "nurseName": "عدي",
+      "clinicId": "Hj5b169m7675GoGceNJf",
+      "amount": 10000,
+      "description": "سحب نقدي",
+      "type": "cash",
+      "requestedBy": "nurse",
+      "createdBy": "mwwhI1mmGCf6ypefK7Id",
+      "createdAt": "2026-05-20T01:07:53.123Z",
+      "withdrawalMethod": "transfer",
+      "walletName": "جيب",
+      "walletPhone": "777890073",
+      "walletOwner": "عدي فؤاد شوقي ",
+      "reviewedAt": "2026-05-20T01:08:51.609Z",
+      "reviewedBy": "TBcdiW3th4hVK4vB9Q7a",
+      "status": "approved"
+    }
+  },
+  {
+    "id": "CDGVQkiiYOk0yJeBtgFL",
+    "data": {
+      "nurseId": "mwwhI1mmGCf6ypefK7Id",
+      "nurseName": "عدي",
+      "clinicId": "Hj5b169m7675GoGceNJf",
+      "amount": 1000,
+      "description": "مديونية فاتورة - محمد علي عبده شائع",
+      "type": "debt",
+      "status": "approved",
+      "requestedBy": "admin",
+      "createdBy": "TBcdiW3th4hVK4vB9Q7a",
+      "createdAt": "2026-05-20T01:03:14.419Z",
+      "isDebt": true,
+      "invoiceId": "ya67TJQHOWm3DXfX4bHu",
+      "patientName": "محمد علي عبده شائع"
+    }
+  },
+  {
+    "id": "Cu4U7iaJSnpibcRAeuiw",
+    "data": {
+      "nurseId": "TBcdiW3th4hVK4vB9Q7a",
+      "nurseName": "مازن المتراب",
+      "clinicId": "Hj5b169m7675GoGceNJf",
+      "amount": 3000,
+      "description": "مديونية فاتورة - محمد علي عبده شائع",
+      "type": "debt",
+      "status": "approved",
+      "requestedBy": "admin",
+      "createdBy": "TBcdiW3th4hVK4vB9Q7a",
+      "createdAt": "2026-05-20T03:10:26.416Z",
+      "isDebt": true,
+      "invoiceId": "AyoZVygcOlSn2jzHR6pQ",
+      "patientName": "محمد علي عبده شائع"
+    }
+  },
+  {
+    "id": "aYkT1KicNBFOTShW1LBM",
+    "data": {
+      "nurseId": "mwwhI1mmGCf6ypefK7Id",
+      "nurseName": "عدي",
+      "clinicId": "Hj5b169m7675GoGceNJf",
+      "amount": 100000,
+      "description": "سحب نقدي",
+      "type": "cash",
+      "requestedBy": "nurse",
+      "createdBy": "mwwhI1mmGCf6ypefK7Id",
+      "createdAt": "2026-05-20T01:04:00.757Z",
+      "withdrawalMethod": "cash",
+      "reviewedAt": "2026-05-20T01:04:55.037Z",
+      "rejectionReason": "الباقي من راتبك 59000",
+      "reviewedBy": "TBcdiW3th4hVK4vB9Q7a",
+      "status": "rejected"
+    }
+  },
+  {
+    "id": "j8sPSfzPeruMAclTrWHl",
+    "data": {
+      "nurseId": "mwwhI1mmGCf6ypefK7Id",
+      "nurseName": "عدي",
+      "clinicId": "Hj5b169m7675GoGceNJf",
+      "amount": 3300,
+      "description": "مديونية فاتورة - مازن",
+      "type": "debt",
+      "status": "approved",
+      "requestedBy": "admin",
+      "createdBy": "TBcdiW3th4hVK4vB9Q7a",
+      "createdAt": "2026-05-20T03:10:42.140Z",
+      "isDebt": true,
+      "invoiceId": "pp6SF8KlxLS5tonPL7Ej",
+      "patientName": "مازن"
+    }
+  }
+]

@@ -1,0 +1,74 @@
+{
+  "exportDate": "2026-05-20T04:17:54.962Z",
+  "projectId": "clinic-number-1",
+  "collections": {
+    "users": {
+      "documentCount": 3,
+      "hasSubCollections": false
+    },
+    "clinics": {
+      "documentCount": 1,
+      "hasSubCollections": false
+    },
+    "patients": {
+      "documentCount": 5,
+      "hasSubCollections": false
+    },
+    "visits": {
+      "documentCount": 8,
+      "hasSubCollections": false
+    },
+    "invoices": {
+      "documentCount": 8,
+      "hasSubCollections": false
+    },
+    "services": {
+      "documentCount": 146,
+      "hasSubCollections": false
+    },
+    "emergencies": {
+      "documentCount": 0,
+      "hasSubCollections": false
+    },
+    "salary_advances": {
+      "documentCount": 0,
+      "hasSubCollections": false
+    },
+    "salary_payments": {
+      "documentCount": 0,
+      "hasSubCollections": false
+    },
+    "financial_transactions": {
+      "documentCount": 0,
+      "hasSubCollections": false
+    },
+    "activity_logs": {
+      "documentCount": 0,
+      "hasSubCollections": false
+    },
+    "notifications": {
+      "documentCount": 4,
+      "hasSubCollections": false
+    },
+    "platform": {
+      "documentCount": 1,
+      "hasSubCollections": false
+    },
+    "audit_logs": {
+      "documentCount": 71,
+      "discovered": true
+    },
+    "clinic": {
+      "documentCount": 1,
+      "discovered": true
+    },
+    "dataResetRequests": {
+      "documentCount": 1,
+      "discovered": true
+    },
+    "salaryWithdrawals": {
+      "documentCount": 5,
+      "discovered": true
+    }
+  }
+}

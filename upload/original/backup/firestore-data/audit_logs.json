@@ -1,0 +1,783 @@
+[
+  {
+    "id": "0UL1Rqjso21cwQoOROOz",
+    "data": {
+      "clinicId": "Hj5b169m7675GoGceNJf",
+      "userId": "k65ItTEeD39Vv8krc4Dc",
+      "action": "suspend_clinic",
+      "details": "Suspended clinic: مازن",
+      "severity": "info",
+      "timestamp": "2026-05-20T01:44:03.010Z"
+    }
+  },
+  {
+    "id": "1lN36Coh54Kuf0gwQEfK",
+    "data": {
+      "clinicId": "Hj5b169m7675GoGceNJf",
+      "userId": "k65ItTEeD39Vv8krc4Dc",
+      "action": "extend_subscription",
+      "details": "Extended مازن subscription by 30 days",
+      "severity": "info",
+      "timestamp": "2026-05-20T02:01:14.448Z"
+    }
+  },
+  {
+    "id": "1sUFfoEOCSEvoFlrhUbA",
+    "data": {
+      "clinicId": "Hj5b169m7675GoGceNJf",
+      "userId": "k65ItTEeD39Vv8krc4Dc",
+      "action": "suspend_clinic",
+      "details": "Suspended clinic: مازن",
+      "severity": "info",
+      "timestamp": "2026-05-20T02:01:16.683Z"
+    }
+  },
+  {
+    "id": "2ahLj5RJTgYcZmPehiAU",
+    "data": {
+      "clinicId": "platform",
+      "userId": "k65ItTEeD39Vv8krc4Dc",
+      "action": "create_clinic",
+      "details": "Created clinic: مازن",
+      "severity": "info",
+      "timestamp": "2026-05-20T00:58:18.105Z"
+    }
+  },
+  {
+    "id": "3tNqZd83E2uYrtdoqkQ4",
+    "data": {
+      "clinicId": "platform",
+      "userId": "k65ItTEeD39Vv8krc4Dc",
+      "action": "login_success",
+      "details": "User المدير العام logged in",
+      "severity": "info",
+      "timestamp": "2026-05-20T03:18:20.792Z"
+    }
+  },
+  {
+    "id": "4FxfXykXeR9Cdd0NYmaB",
+    "data": {
+      "clinicId": "Hj5b169m7675GoGceNJf",
+      "userId": "TBcdiW3th4hVK4vB9Q7a",
+      "action": "login_success",
+      "details": "User مازن المتراب logged in",
+      "severity": "info",
+      "timestamp": "2026-05-20T02:13:33.317Z"
+    }
+  },
+  {
+    "id": "4krbiCaquL0HsfpYKbJi",
+    "data": {
+      "clinicId": "Hj5b169m7675GoGceNJf",
+      "userId": "mwwhI1mmGCf6ypefK7Id",
+      "action": "login_success",
+      "details": "User عدي logged in",
+      "severity": "info",
+      "timestamp": "2026-05-20T03:51:54.623Z"
+    }
+  },
+  {
+    "id": "4tDCIG2thC3el2WqVJb7",
+    "data": {
+      "clinicId": "platform",
+      "userId": "k65ItTEeD39Vv8krc4Dc",
+      "action": "login_success",
+      "details": "User المدير العام logged in",
+      "severity": "info",
+      "timestamp": "2026-05-20T02:05:21.262Z"
+    }
+  },
+  {
+    "id": "7602epDGLQZCiIz8cHln",
+    "data": {
+      "clinicId": "Hj5b169m7675GoGceNJf",
+      "userId": "k65ItTEeD39Vv8krc4Dc",
+      "action": "extend_subscription",
+      "details": "Extended مازن subscription by 30 days",
+      "severity": "info",
+      "timestamp": "2026-05-20T01:43:44.929Z"
+    }
+  },
+  {
+    "id": "77vKfd9afz8I6PM7hRBr",
+    "data": {
+      "clinicId": "Hj5b169m7675GoGceNJf",
+      "userId": "mwwhI1mmGCf6ypefK7Id",
+      "action": "login_success",
+      "details": "User عدي logged in",
+      "severity": "info",
+      "timestamp": "2026-05-20T01:28:35.213Z"
+    }
+  },
+  {
+    "id": "9X2s7yJAQk684hWU8Ss4",
+    "data": {
+      "clinicId": "Hj5b169m7675GoGceNJf",
+      "userId": "k65ItTEeD39Vv8krc4Dc",
+      "action": "extend_subscription",
+      "details": "Extended مازن subscription by 30 days",
+      "severity": "info",
+      "timestamp": "2026-05-20T02:54:57.542Z"
+    }
+  },
+  {
+    "id": "AV83Xa4gRwaUdpbW0sCs",
+    "data": {
+      "clinicId": "Hj5b169m7675GoGceNJf",
+      "userId": "mwwhI1mmGCf6ypefK7Id",
+      "action": "login_success",
+      "details": "User عدي logged in",
+      "severity": "info",
+      "timestamp": "2026-05-20T01:00:18.638Z"
+    }
+  },
+  {
+    "id": "B3iIjuApOCdpE09EiHLg",
+    "data": {
+      "clinicId": "Hj5b169m7675GoGceNJf",
+      "userId": "k65ItTEeD39Vv8krc4Dc",
+      "action": "extend_subscription",
+      "details": "Extended مازن subscription by 1 days",
+      "severity": "info",
+      "timestamp": "2026-05-20T02:01:46.102Z"
+    }
+  },
+  {
+    "id": "C0OgOUYpW0Klur0A4KkG",
+    "data": {
+      "clinicId": "Hj5b169m7675GoGceNJf",
+      "userId": "mwwhI1mmGCf6ypefK7Id",
+      "action": "login_success",
+      "details": "User عدي logged in",
+      "severity": "info",
+      "timestamp": "2026-05-20T01:29:11.613Z"
+    }
+  },
+  {
+    "id": "EYmI05iW9oqfmUqD08Oy",
+    "data": {
+      "clinicId": "Hj5b169m7675GoGceNJf",
+      "userId": "TBcdiW3th4hVK4vB9Q7a",
+      "action": "login_success",
+      "details": "User مازن المتراب logged in",
+      "severity": "info",
+      "timestamp": "2026-05-20T00:58:29.498Z"
+    }
+  },
+  {
+    "id": "Edf5IBBsVqQgKPqlqhbM",
+    "data": {
+      "clinicId": "Hj5b169m7675GoGceNJf",
+      "userId": "k65ItTEeD39Vv8krc4Dc",
+      "action": "extend_subscription",
+      "details": "Extended مازن subscription by 90 days",
+      "severity": "info",
+      "timestamp": "2026-05-20T01:27:31.385Z"
+    }
+  },
+  {
+    "id": "EvmpKeVVV1QeMYO8JBDy",
+    "data": {
+      "clinicId": "Hj5b169m7675GoGceNJf",
+      "userId": "k65ItTEeD39Vv8krc4Dc",
+      "action": "extend_subscription",
+      "details": "Extended مازن subscription by 1 days",
+      "severity": "info",
+      "timestamp": "2026-05-20T02:55:14.264Z"
+    }
+  },
+  {
+    "id": "FPzPIwB2BF0bdTUvBjTu",
+    "data": {
+      "clinicId": "Hj5b169m7675GoGceNJf",
+      "userId": "mwwhI1mmGCf6ypefK7Id",
+      "action": "login_success",
+      "details": "User عدي logged in",
+      "severity": "info",
+      "timestamp": "2026-05-20T03:08:24.257Z"
+    }
+  },
+  {
+    "id": "G8vaM9fjMqJKWUShugBa",
+    "data": {
+      "clinicId": "Hj5b169m7675GoGceNJf",
+      "userId": "mwwhI1mmGCf6ypefK7Id",
+      "action": "login_success",
+      "details": "User عدي logged in",
+      "severity": "info",
+      "timestamp": "2026-05-20T02:11:48.170Z"
+    }
+  },
+  {
+    "id": "Jc9fitKxmKDN30EpQJFi",
+    "data": {
+      "clinicId": "platform",
+      "userId": "k65ItTEeD39Vv8krc4Dc",
+      "action": "login_success",
+      "details": "User المدير العام logged in",
+      "severity": "info",
+      "timestamp": "2026-05-20T01:13:10.560Z"
+    }
+  },
+  {
+    "id": "JdPVoMu4FjyM40Cjt44y",
+    "data": {
+      "clinicId": "Hj5b169m7675GoGceNJf",
+      "userId": "k65ItTEeD39Vv8krc4Dc",
+      "action": "activate_clinic",
+      "details": "Activated clinic: مازن",
+      "severity": "info",
+      "timestamp": "2026-05-20T01:18:06.025Z"
+    }
+  },
+  {
+    "id": "KEt6CbkFLoVTYuInYJ6P",
+    "data": {
+      "clinicId": "Hj5b169m7675GoGceNJf",
+      "userId": "TBcdiW3th4hVK4vB9Q7a",
+      "action": "login_success",
+      "details": "User مازن المتراب logged in",
+      "severity": "info",
+      "timestamp": "2026-05-20T01:33:15.210Z"
+    }
+  },
+  {
+    "id": "Kie6pqriIBXWHQpMf4Tt",
+    "data": {
+      "clinicId": "Hj5b169m7675GoGceNJf",
+      "userId": "mwwhI1mmGCf6ypefK7Id",
+      "action": "login_success",
+      "details": "User عدي logged in",
+      "severity": "info",
+      "timestamp": "2026-05-20T03:58:00.384Z"
+    }
+  },
+  {
+    "id": "LFOLzaQVsVSbMofPtyhl",
+    "data": {
+      "clinicId": "platform",
+      "userId": "k65ItTEeD39Vv8krc4Dc",
+      "action": "login_success",
+      "details": "User المدير العام logged in",
+      "severity": "info",
+      "timestamp": "2026-05-20T01:11:40.673Z"
+    }
+  },
+  {
+    "id": "LiFgG4lvjI3XN4f50Fhz",
+    "data": {
+      "clinicId": "Hj5b169m7675GoGceNJf",
+      "userId": "k65ItTEeD39Vv8krc4Dc",
+      "action": "activate_clinic",
+      "details": "Reactivated clinic: مازن (preserved existing end date)",
+      "severity": "info",
+      "timestamp": "2026-05-20T02:01:24.286Z"
+    }
+  },
+  {
+    "id": "MSuaFr1yACS42vWQa2fg",
+    "data": {
+      "clinicId": "Hj5b169m7675GoGceNJf",
+      "userId": "k65ItTEeD39Vv8krc4Dc",
+      "action": "suspend_clinic",
+      "details": "Suspended clinic: مازن",
+      "severity": "info",
+      "timestamp": "2026-05-20T01:12:38.911Z"
+    }
+  },
+  {
+    "id": "O00YcavbMfzQo5hqli4Z",
+    "data": {
+      "clinicId": "Hj5b169m7675GoGceNJf",
+      "userId": "mwwhI1mmGCf6ypefK7Id",
+      "action": "login_success",
+      "details": "User عدي logged in",
+      "severity": "info",
+      "timestamp": "2026-05-20T03:11:56.247Z"
+    }
+  },
+  {
+    "id": "QOQt0r9UJwKdIpf4yXI2",
+    "data": {
+      "clinicId": "Hj5b169m7675GoGceNJf",
+      "userId": "TBcdiW3th4hVK4vB9Q7a",
+      "action": "login_success",
+      "details": "User مازن المتراب logged in",
+      "severity": "info",
+      "timestamp": "2026-05-20T03:52:35.084Z"
+    }
+  },
+  {
+    "id": "T0KTiggnz0D7xAP6WZAv",
+    "data": {
+      "clinicId": "Hj5b169m7675GoGceNJf",
+      "userId": "mwwhI1mmGCf6ypefK7Id",
+      "action": "login_success",
+      "details": "User عدي logged in",
+      "severity": "info",
+      "timestamp": "2026-05-20T01:05:36.479Z"
+    }
+  },
+  {
+    "id": "U9EyTdSi9lrSFHDZK4UT",
+    "data": {
+      "clinicId": "platform",
+      "userId": "k65ItTEeD39Vv8krc4Dc",
+      "action": "full_platform_reset",
+      "details": "Full platform reset executed. Deleted 0 clinics and all associated data.",
+      "severity": "critical",
+      "timestamp": "2026-05-20T00:57:37.849Z"
+    }
+  },
+  {
+    "id": "UyaG9RArVX4kVnU5mZ17",
+    "data": {
+      "clinicId": "Hj5b169m7675GoGceNJf",
+      "userId": "mwwhI1mmGCf6ypefK7Id",
+      "action": "login_success",
+      "details": "User عدي logged in",
+      "severity": "info",
+      "timestamp": "2026-05-20T02:03:02.131Z"
+    }
+  },
+  {
+    "id": "YIc3LwEYY1DbqT1wU82F",
+    "data": {
+      "clinicId": "Hj5b169m7675GoGceNJf",
+      "userId": "k65ItTEeD39Vv8krc4Dc",
+      "action": "suspend_clinic",
+      "details": "Suspended clinic: مازن",
+      "severity": "info",
+      "timestamp": "2026-05-20T01:18:02.967Z"
+    }
+  },
+  {
+    "id": "ZSLKuKBHV3CY3pgKjrqo",
+    "data": {
+      "clinicId": "Hj5b169m7675GoGceNJf",
+      "userId": "mwwhI1mmGCf6ypefK7Id",
+      "action": "login_success",
+      "details": "User عدي logged in",
+      "severity": "info",
+      "timestamp": "2026-05-20T01:09:10.559Z"
+    }
+  },
+  {
+    "id": "alRSz5QkHkjuFX2HtTRq",
+    "data": {
+      "clinicId": "platform",
+      "userId": "k65ItTEeD39Vv8krc4Dc",
+      "action": "login_success",
+      "details": "User المدير العام logged in",
+      "severity": "info",
+      "timestamp": "2026-05-20T01:14:03.265Z"
+    }
+  },
+  {
+    "id": "bfg3rrrCmoDeRLuXlsg8",
+    "data": {
+      "clinicId": "platform",
+      "userId": "k65ItTEeD39Vv8krc4Dc",
+      "action": "login_success",
+      "details": "User المدير العام logged in",
+      "severity": "info",
+      "timestamp": "2026-05-20T02:54:45.624Z"
+    }
+  },
+  {
+    "id": "c9sK7i5EEcN61oFk111z",
+    "data": {
+      "clinicId": "Hj5b169m7675GoGceNJf",
+      "userId": "k65ItTEeD39Vv8krc4Dc",
+      "action": "extend_subscription",
+      "details": "Extended مازن subscription by 7 days",
+      "severity": "info",
+      "timestamp": "2026-05-20T01:17:54.832Z"
+    }
+  },
+  {
+    "id": "cTZAlEgX5I6jlTzGDjfM",
+    "data": {
+      "clinicId": "Hj5b169m7675GoGceNJf",
+      "userId": "k65ItTEeD39Vv8krc4Dc",
+      "action": "extend_subscription",
+      "details": "Extended مازن subscription by 1 days",
+      "severity": "info",
+      "timestamp": "2026-05-20T02:55:26.119Z"
+    }
+  },
+  {
+    "id": "d51oH8ATpywayjq0WYun",
+    "data": {
+      "clinicId": "platform",
+      "userId": "k65ItTEeD39Vv8krc4Dc",
+      "action": "login_success",
+      "details": "User المدير العام logged in",
+      "severity": "info",
+      "timestamp": "2026-05-20T02:01:05.210Z"
+    }
+  },
+  {
+    "id": "dJUIA818XlQeEDn5K2ve",
+    "data": {
+      "clinicId": "Hj5b169m7675GoGceNJf",
+      "userId": "TBcdiW3th4hVK4vB9Q7a",
+      "action": "login_success",
+      "details": "User مازن المتراب logged in",
+      "severity": "info",
+      "timestamp": "2026-05-20T01:02:56.247Z"
+    }
+  },
+  {
+    "id": "e7P7z8Lg3bqZICBN8ZvV",
+    "data": {
+      "clinicId": "platform",
+      "userId": "k65ItTEeD39Vv8krc4Dc",
+      "action": "login_success",
+      "details": "User المدير العام logged in",
+      "severity": "info",
+      "timestamp": "2026-05-20T03:59:31.270Z"
+    }
+  },
+  {
+    "id": "eUZ1fW6FQTynvk0VxmGI",
+    "data": {
+      "clinicId": "Hj5b169m7675GoGceNJf",
+      "userId": "TBcdiW3th4hVK4vB9Q7a",
+      "action": "login_success",
+      "details": "User مازن المتراب logged in",
+      "severity": "info",
+      "timestamp": "2026-05-20T01:47:30.346Z"
+    }
+  },
+  {
+    "id": "fmoQZCTLO8jZjGXQYpea",
+    "data": {
+      "clinicId": "Hj5b169m7675GoGceNJf",
+      "userId": "TBcdiW3th4hVK4vB9Q7a",
+      "action": "login_success",
+      "details": "User مازن المتراب logged in",
+      "severity": "info",
+      "timestamp": "2026-05-20T03:09:51.113Z"
+    }
+  },
+  {
+    "id": "i0LAmzW2KDA0hu6eo7pX",
+    "data": {
+      "clinicId": "Hj5b169m7675GoGceNJf",
+      "userId": "k65ItTEeD39Vv8krc4Dc",
+      "action": "extend_subscription",
+      "details": "Extended مازن subscription by 30 days",
+      "severity": "info",
+      "timestamp": "2026-05-20T02:55:20.962Z"
+    }
+  },
+  {
+    "id": "iIkWeSOFMQrlAFbUpfbu",
+    "data": {
+      "clinicId": "Hj5b169m7675GoGceNJf",
+      "userId": "mwwhI1mmGCf6ypefK7Id",
+      "action": "login_success",
+      "details": "User عدي logged in",
+      "severity": "info",
+      "timestamp": "2026-05-20T01:03:43.791Z"
+    }
+  },
+  {
+    "id": "iSc12Z8Qug2Qea6FtN3u",
+    "data": {
+      "clinicId": "Hj5b169m7675GoGceNJf",
+      "userId": "mwwhI1mmGCf6ypefK7Id",
+      "action": "login_success",
+      "details": "User عدي logged in",
+      "severity": "info",
+      "timestamp": "2026-05-20T01:36:43.501Z"
+    }
+  },
+  {
+    "id": "iU0BmJJkgQ1ihmbcxyzm",
+    "data": {
+      "clinicId": "Hj5b169m7675GoGceNJf",
+      "userId": "TBcdiW3th4hVK4vB9Q7a",
+      "action": "login_success",
+      "details": "User مازن المتراب logged in",
+      "severity": "info",
+      "timestamp": "2026-05-20T02:14:52.351Z"
+    }
+  },
+  {
+    "id": "iwGhoNQCnZIkepuD5B4V",
+    "data": {
+      "clinicId": "Hj5b169m7675GoGceNJf",
+      "userId": "k65ItTEeD39Vv8krc4Dc",
+      "action": "extend_subscription",
+      "details": "Extended مازن subscription by 30 days",
+      "severity": "info",
+      "timestamp": "2026-05-20T01:44:34.649Z"
+    }
+  },
+  {
+    "id": "jEJx3EKghSBj9awwg1Iv",
+    "data": {
+      "clinicId": "Hj5b169m7675GoGceNJf",
+      "userId": "k65ItTEeD39Vv8krc4Dc",
+      "action": "extend_subscription",
+      "details": "Extended مازن subscription by 30 days",
+      "severity": "info",
+      "timestamp": "2026-05-20T01:44:16.181Z"
+    }
+  },
+  {
+    "id": "jTg8EKf4Bc0utdIrm6e9",
+    "data": {
+      "clinicId": "platform",
+      "userId": "k65ItTEeD39Vv8krc4Dc",
+      "action": "login_success",
+      "details": "User المدير العام logged in",
+      "severity": "info",
+      "timestamp": "2026-05-20T02:14:04.387Z"
+    }
+  },
+  {
+    "id": "jzX6PgvTa6nkSs7Cly9m",
+    "data": {
+      "clinicId": "Hj5b169m7675GoGceNJf",
+      "userId": "k65ItTEeD39Vv8krc4Dc",
+      "action": "extend_subscription",
+      "details": "Extended مازن subscription by 1 days",
+      "severity": "info",
+      "timestamp": "2026-05-20T01:43:51.444Z"
+    }
+  },
+  {
+    "id": "kiKtqG8V3fxBVlPtw7OQ",
+    "data": {
+      "clinicId": "Hj5b169m7675GoGceNJf",
+      "userId": "k65ItTEeD39Vv8krc4Dc",
+      "action": "suspend_clinic",
+      "details": "Suspended clinic: مازن",
+      "severity": "info",
+      "timestamp": "2026-05-20T01:17:14.641Z"
+    }
+  },
+  {
+    "id": "l4ITJrfuvqOt8buoE2wZ",
+    "data": {
+      "clinicId": "Hj5b169m7675GoGceNJf",
+      "userId": "TBcdiW3th4hVK4vB9Q7a",
+      "action": "login_success",
+      "details": "User مازن المتراب logged in",
+      "severity": "info",
+      "timestamp": "2026-05-20T02:07:10.836Z"
+    }
+  },
+  {
+    "id": "mA5sLML4RkgTbBr3yQ6i",
+    "data": {
+      "clinicId": "Hj5b169m7675GoGceNJf",
+      "userId": "mwwhI1mmGCf6ypefK7Id",
+      "action": "login_success",
+      "details": "User عدي logged in",
+      "severity": "info",
+      "timestamp": "2026-05-20T02:50:19.652Z"
+    }
+  },
+  {
+    "id": "msfE4CnZEm4GAAjOy19Y",
+    "data": {
+      "clinicId": "Hj5b169m7675GoGceNJf",
+      "userId": "mwwhI1mmGCf6ypefK7Id",
+      "action": "login_success",
+      "details": "User عدي logged in",
+      "severity": "info",
+      "timestamp": "2026-05-20T03:51:37.354Z"
+    }
+  },
+  {
+    "id": "n26Y7d11Fjq8pCe2lDgh",
+    "data": {
+      "clinicId": "platform",
+      "userId": "k65ItTEeD39Vv8krc4Dc",
+      "action": "login_success",
+      "details": "User المدير العام logged in",
+      "severity": "info",
+      "timestamp": "2026-05-20T02:12:55.843Z"
+    }
+  },
+  {
+    "id": "olxrRHy9bRVvEqFQkTZ5",
+    "data": {
+      "clinicId": "Hj5b169m7675GoGceNJf",
+      "userId": "k65ItTEeD39Vv8krc4Dc",
+      "action": "activate_clinic",
+      "details": "Activated clinic: مازن",
+      "severity": "info",
+      "timestamp": "2026-05-20T01:17:45.694Z"
+    }
+  },
+  {
+    "id": "pIpnZlGkGd1p0LXvsCSv",
+    "data": {
+      "clinicId": "Hj5b169m7675GoGceNJf",
+      "userId": "k65ItTEeD39Vv8krc4Dc",
+      "action": "activate_clinic",
+      "details": "Activated clinic: مازن with 30 days",
+      "severity": "info",
+      "timestamp": "2026-05-20T02:54:54.860Z"
+    }
+  },
+  {
+    "id": "pSS45n1S9sMnJ4G2pCO8",
+    "data": {
+      "clinicId": "platform",
+      "userId": "k65ItTEeD39Vv8krc4Dc",
+      "action": "login_success",
+      "details": "User المدير العام logged in",
+      "severity": "info",
+      "timestamp": "2026-05-20T01:17:37.901Z"
+    }
+  },
+  {
+    "id": "plkYZtEgrJDEiQZVnMQA",
+    "data": {
+      "clinicId": "platform",
+      "userId": "",
+      "action": "login_failed",
+      "details": "Invalid password attempt for phone: 777890073",
+      "severity": "warning",
+      "timestamp": "2026-05-20T01:29:05.619Z"
+    }
+  },
+  {
+    "id": "r4fLoF5NzPxoAVFHKzIH",
+    "data": {
+      "clinicId": "Hj5b169m7675GoGceNJf",
+      "userId": "TBcdiW3th4hVK4vB9Q7a",
+      "action": "login_success",
+      "details": "User مازن المتراب logged in",
+      "severity": "info",
+      "timestamp": "2026-05-20T01:08:08.218Z"
+    }
+  },
+  {
+    "id": "s9Hr7WPNnvfVsHrYlNCV",
+    "data": {
+      "clinicId": "Hj5b169m7675GoGceNJf",
+      "userId": "k65ItTEeD39Vv8krc4Dc",
+      "action": "extend_subscription",
+      "details": "Extended مازن subscription by 7 days",
+      "severity": "info",
+      "timestamp": "2026-05-20T01:17:59.258Z"
+    }
+  },
+  {
+    "id": "sRZWZOwsbb1vNdUsCBJt",
+    "data": {
+      "clinicId": "Hj5b169m7675GoGceNJf",
+      "userId": "mwwhI1mmGCf6ypefK7Id",
+      "action": "login_success",
+      "details": "User عدي logged in",
+      "severity": "info",
+      "timestamp": "2026-05-20T01:59:56.504Z"
+    }
+  },
+  {
+    "id": "t9XDFW890XJLALtU08x5",
+    "data": {
+      "clinicId": "Hj5b169m7675GoGceNJf",
+      "userId": "k65ItTEeD39Vv8krc4Dc",
+      "action": "extend_subscription",
+      "details": "Extended مازن subscription by 1 days",
+      "severity": "info",
+      "timestamp": "2026-05-20T01:44:23.186Z"
+    }
+  },
+  {
+    "id": "v9B77ZYz0AEoWJkZIqTl",
+    "data": {
+      "clinicId": "platform",
+      "userId": "k65ItTEeD39Vv8krc4Dc",
+      "action": "login_success",
+      "details": "User المدير العام logged in",
+      "severity": "info",
+      "timestamp": "2026-05-20T01:43:16.854Z"
+    }
+  },
+  {
+    "id": "vqyxpzViHZ5IKwr2u3EO",
+    "data": {
+      "clinicId": "Hj5b169m7675GoGceNJf",
+      "userId": "k65ItTEeD39Vv8krc4Dc",
+      "action": "extend_subscription",
+      "details": "Extended مازن subscription by 30 days",
+      "severity": "info",
+      "timestamp": "2026-05-20T02:01:38.713Z"
+    }
+  },
+  {
+    "id": "vwc77nA5fQjsHcFKGaQP",
+    "data": {
+      "clinicId": "Hj5b169m7675GoGceNJf",
+      "userId": "k65ItTEeD39Vv8krc4Dc",
+      "action": "extend_subscription",
+      "details": "Extended مازن subscription by 1 days",
+      "severity": "info",
+      "timestamp": "2026-05-20T01:44:38.066Z"
+    }
+  },
+  {
+    "id": "vymRfBOnZxnZe9TAfaHk",
+    "data": {
+      "clinicId": "Hj5b169m7675GoGceNJf",
+      "userId": "k65ItTEeD39Vv8krc4Dc",
+      "action": "activate_clinic",
+      "details": "Activated clinic: مازن",
+      "severity": "info",
+      "timestamp": "2026-05-20T01:14:07.228Z"
+    }
+  },
+  {
+    "id": "wiUkgmWyL8CHcogkQHsI",
+    "data": {
+      "clinicId": "Hj5b169m7675GoGceNJf",
+      "userId": "TBcdiW3th4hVK4vB9Q7a",
+      "action": "login_success",
+      "details": "User مازن المتراب logged in",
+      "severity": "info",
+      "timestamp": "2026-05-20T01:04:18.326Z"
+    }
+  },
+  {
+    "id": "x5ADZu7w1NhJWSDwidYr",
+    "data": {
+      "clinicId": "Hj5b169m7675GoGceNJf",
+      "userId": "k65ItTEeD39Vv8krc4Dc",
+      "action": "activate_clinic",
+      "details": "Reactivated clinic: مازن (preserved existing end date)",
+      "severity": "info",
+      "timestamp": "2026-05-20T01:44:05.200Z"
+    }
+  },
+  {
+    "id": "xwBBT6PoaG91X2JfgPiJ",
+    "data": {
+      "clinicId": "platform",
+      "userId": "k65ItTEeD39Vv8krc4Dc",
+      "action": "login_success",
+      "details": "User المدير العام logged in",
+      "severity": "info",
+      "timestamp": "2026-05-20T03:53:49.913Z"
+    }
+  },
+  {
+    "id": "zYD5Rire9P1grES7ujZC",
+    "data": {
+      "clinicId": "Hj5b169m7675GoGceNJf",
+      "userId": "k65ItTEeD39Vv8krc4Dc",
+      "action": "suspend_clinic",
+      "details": "Suspended clinic: مازن",
+      "severity": "info",
+      "timestamp": "2026-05-20T02:54:52.219Z"
+    }
+  }
+]

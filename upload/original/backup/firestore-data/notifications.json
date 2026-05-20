@@ -1,0 +1,60 @@
+[
+  {
+    "id": "LQGI8jwNlk1QYlC4wRmL",
+    "data": {
+      "clinicId": "Hj5b169m7675GoGceNJf",
+      "type": "salary_request",
+      "title": "طلب سحب من الراتب",
+      "message": "عدي طلب سحب ١٠٬٠٠٠ ر.ي (تحويل)",
+      "nurseId": "mwwhI1mmGCf6ypefK7Id",
+      "nurseName": "عدي",
+      "withdrawalId": "BpJQ1fVo9HyiXx4LdE3k",
+      "amount": 10000,
+      "withdrawalMethod": "transfer",
+      "read": false,
+      "createdAt": "2026-05-20T01:07:53.217Z"
+    }
+  },
+  {
+    "id": "NTm1xTL9WxypCFeFk86p",
+    "data": {
+      "clinicId": "Hj5b169m7675GoGceNJf",
+      "type": "salary_request",
+      "title": "طلب سحب من الراتب",
+      "message": "عدي طلب سحب ١٠٠٬٠٠٠ ر.ي (نقدي)",
+      "nurseId": "mwwhI1mmGCf6ypefK7Id",
+      "nurseName": "عدي",
+      "withdrawalId": "aYkT1KicNBFOTShW1LBM",
+      "amount": 100000,
+      "withdrawalMethod": "cash",
+      "read": false,
+      "createdAt": "2026-05-20T01:04:00.856Z"
+    }
+  },
+  {
+    "id": "NrGfxqlxArMqmTSWisMw",
+    "data": {
+      "clinicId": "Hj5b169m7675GoGceNJf",
+      "type": "salary_response",
+      "title": "طلب السحب موافق",
+      "message": "تمت الموافقة على طلب سحب ١٠٬٠٠٠ ر.ي",
+      "userId": "mwwhI1mmGCf6ypefK7Id",
+      "withdrawalId": "BpJQ1fVo9HyiXx4LdE3k",
+      "read": false,
+      "createdAt": "2026-05-20T01:08:51.708Z"
+    }
+  },
+  {
+    "id": "c0qlBBhMWd3CewnguE80",
+    "data": {
+      "clinicId": "Hj5b169m7675GoGceNJf",
+      "type": "salary_response",
+      "title": "طلب السحب مرفوض",
+      "message": "تم رفض طلب سحب ١٠٠٬٠٠٠ ر.ي - السبب: الباقي من راتبك 59000",
+      "userId": "mwwhI1mmGCf6ypefK7Id",
+      "withdrawalId": "aYkT1KicNBFOTShW1LBM",
+      "read": false,
+      "createdAt": "2026-05-20T01:04:55.117Z"
+    }
+  }
+]
