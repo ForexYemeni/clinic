@@ -5,7 +5,8 @@ import { motion, AnimatePresence } from 'framer-motion';
 import {
   ArrowRight, User, Phone, Droplets, Stethoscope, Check,
   Search, Plus, X, CreditCard, Banknote, Receipt,
-  Baby, UserCheck, Sparkles, Heart, AlertCircle, Loader2
+  Baby, UserCheck, Sparkles, Heart, AlertCircle, Loader2,
+  ChevronUp, Trash2, Wallet
 } from 'lucide-react';
 import { useAppStore } from '@/lib/store';
 import { BLOOD_TYPES, formatCurrency, type ServiceItem } from '@/lib/constants';
@@ -856,37 +857,69 @@ export function AddPatientForm() {
         )}
       </AnimatePresence>
 
-      {/* Sticky Bottom Bar - Shows on Step 3 when services are selected */}
+      {/* Professional Floating Bottom Bar - Shows on Step 3 when services are selected */}
       {currentStep === 3 && selectedServices.length > 0 && (
-        <div className="fixed bottom-0 left-0 right-0 z-50 bg-white/95 dark:bg-gray-900/95 backdrop-blur-lg border-t border-border shadow-[0_-4px_20px_rgba(0,0,0,0.1)] pb-safe">
-          <div className="max-w-lg mx-auto px-4 py-3 flex items-center justify-between">
-            <div className="flex items-center gap-3">
-              <button
-                type="button"
-                onClick={() => setCurrentStep(2)}
-                className="h-11 px-4 bg-gray-100 dark:bg-gray-800 font-bold rounded-xl text-sm active:scale-[0.97] transition-transform"
-              >
-                رجوع
-              </button>
-              <div>
-                <p className="text-xs text-muted-foreground">{selectedServices.length} خدمة محددة</p>
-                <p className="text-lg font-bold text-clinic-600 dark:text-clinic-400">{formatCurrency(totalAmount)}</p>
+        <motion.div
+          initial={{ y: 100, opacity: 0 }}
+          animate={{ y: 0, opacity: 1 }}
+          exit={{ y: 100, opacity: 0 }}
+          transition={{ type: 'spring', damping: 25, stiffness: 300 }}
+          className="fixed bottom-0 left-0 right-0 z-30"
+        >
+          <div className="max-w-lg mx-auto px-4 pb-4 pt-2">
+            <div className="bg-white dark:bg-gray-900 rounded-2xl shadow-[0_-4px_30px_rgba(0,0,0,0.15)] border border-gray-200 dark:border-gray-700 overflow-hidden">
+              {/* Mini services preview */}
+              <div className="px-3 pt-2.5 pb-1 flex items-center gap-1.5 overflow-x-auto scrollbar-hide">
+                {selectedServices.slice(0, 4).map(id => {
+                  const svc = services.find(s => s.id === id);
+                  return (
+                    <span key={id} className="flex-shrink-0 inline-flex items-center gap-1 px-2 py-0.5 bg-clinic-50 dark:bg-clinic-900/20 text-clinic-700 dark:text-clinic-300 rounded-lg text-[10px] font-medium">
+                      {svc?.nameAr || 'خدمة'}
+                    </span>
+                  );
+                })}
+                {selectedServices.length > 4 && (
+                  <span className="flex-shrink-0 text-[10px] text-muted-foreground font-medium">+{selectedServices.length - 4}</span>
+                )}
+              </div>
+
+              {/* Main bar */}
+              <div className="px-3 pb-2.5 pt-1 flex items-center justify-between">
+                <div className="flex-1 min-w-0">
+                  <div className="flex items-center gap-2 mb-0.5">
+                    <div className="w-5 h-5 rounded-full bg-gradient-to-br from-clinic-500 to-clinic-600 text-white text-[9px] font-bold flex items-center justify-center">{selectedServices.length}</div>
+                    <span className="text-[10px] text-muted-foreground font-medium">خدمة محددة</span>
+                  </div>
+                  <p className="text-xl font-bold text-clinic-600 dark:text-clinic-400">{formatCurrency(totalAmount)}</p>
+                </div>
+                <div className="flex items-center gap-2">
+                  <button
+                    type="button"
+                    onClick={() => setCurrentStep(2)}
+                    className="h-10 px-3 bg-gray-100 dark:bg-gray-800 font-bold rounded-xl text-xs active:scale-[0.97] transition-transform"
+                  >
+                    رجوع
+                  </button>
+                  <button
+                    type="button"
+                    onClick={handleSubmit}
+                    disabled={loading}
+                    className="h-11 px-5 bg-gradient-to-l from-clinic-500 to-clinic-600 text-white font-bold rounded-xl shadow-lg shadow-clinic-500/25 disabled:opacity-60 active:scale-[0.97] transition-transform flex items-center gap-2"
+                  >
+                    {loading ? (
+                      <Loader2 className="w-5 h-5 animate-spin" />
+                    ) : (
+                      <>
+                        <Wallet className="w-4 h-4" />
+                        تسجيل
+                      </>
+                    )}
+                  </button>
+                </div>
               </div>
             </div>
-            <button
-              type="button"
-              onClick={handleSubmit}
-              disabled={loading}
-              className="h-11 px-5 bg-gradient-to-l from-clinic-600 to-clinic-700 text-white font-bold rounded-xl shadow-lg disabled:opacity-60 active:scale-[0.97] transition-transform flex items-center gap-2"
-            >
-              {loading ? (
-                <Loader2 className="w-5 h-5 animate-spin" />
-              ) : (
-                'تسجيل المريض والخدمات'
-              )}
-            </button>
           </div>
-        </div>
+        </motion.div>
       )}
     </div>
   );

@@ -4,7 +4,8 @@ import React, { useEffect, useState, useCallback } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
 import {
   ArrowRight, Plus, Search, User as UserIcon, Stethoscope, Check, AlertCircle,
-  Heart, X, CreditCard, Banknote, Receipt, Loader2, Baby, UserCheck, Sparkles, Syringe
+  Heart, X, CreditCard, Banknote, Receipt, Loader2, Baby, UserCheck, Sparkles, Syringe,
+  ChevronUp, Trash2, Wallet
 } from 'lucide-react';
 import { useAppStore } from '@/lib/store';
 import { formatCurrency, type PatientItem, type ServiceItem, BLOOD_TYPES } from '@/lib/constants';
@@ -340,7 +341,7 @@ export function NurseAddVisit() {
   ] as const;
 
   return (
-    <div className="p-4 pb-24">
+    <div className="p-4 pb-28">
       {/* Success Card Overlay */}
       <SuccessCard
         visible={showSuccess}
@@ -710,7 +711,7 @@ export function NurseAddVisit() {
         </>
       )}
 
-      {/* Fixed Bottom Panel for Services Sub-Step */}
+      {/* ═══ Professional Floating Services & Payment Card ═══ */}
       {visitSubStep === 'services' && selectedServices.length > 0 && (
         <>
           {/* Backdrop overlay when expanded */}
@@ -720,127 +721,184 @@ export function NurseAddVisit() {
                 initial={{ opacity: 0 }}
                 animate={{ opacity: 1 }}
                 exit={{ opacity: 0 }}
-                className="fixed inset-0 z-40 bg-black/40 backdrop-blur-sm"
+                className="fixed inset-0 z-40 bg-black/50 backdrop-blur-sm"
                 onClick={() => setShowPaymentPanel(false)}
               />
             )}
           </AnimatePresence>
 
-          {/* Bottom Sheet Panel */}
+          {/* Professional Bottom Sheet */}
           <AnimatePresence>
             {showPaymentPanel && (
               <motion.div
                 initial={{ y: '100%' }}
                 animate={{ y: 0 }}
                 exit={{ y: '100%' }}
-                transition={{ type: 'spring', damping: 25, stiffness: 300 }}
-                className="fixed bottom-0 left-0 right-0 z-50 bg-white dark:bg-gray-900 rounded-t-3xl max-h-[75vh] overflow-y-auto shadow-2xl"
+                transition={{ type: 'spring', damping: 28, stiffness: 300 }}
+                className="fixed bottom-0 left-0 right-0 z-50 max-w-lg mx-auto"
               >
-                {/* Handle bar */}
-                <div className="flex justify-center pt-3 pb-2">
-                  <div className="w-10 h-1 bg-gray-300 dark:bg-gray-600 rounded-full" />
-                </div>
+                <div className="bg-white dark:bg-gray-900 rounded-t-3xl max-h-[80vh] overflow-hidden shadow-2xl border-t border-clinic-200 dark:border-clinic-800">
+                  {/* Handle bar */}
+                  <div className="flex justify-center pt-2.5 pb-1 cursor-pointer" onClick={() => setShowPaymentPanel(false)}>
+                    <div className="w-10 h-1.5 bg-gray-300 dark:bg-gray-600 rounded-full" />
+                  </div>
 
-                {/* Panel Header */}
-                <div className="px-4 pb-3 flex items-center justify-between border-b border-border">
-                  <h3 className="text-sm font-bold">الخدمات المختارة ({selectedServices.length})</h3>
-                  <button onClick={() => setSelectedServices([])} className="text-xs text-red-500 font-medium">مسح الكل</button>
-                </div>
-
-                {/* Selected services list */}
-                <div className="p-4 space-y-1.5 max-h-32 overflow-y-auto">
-                  {selectedServices.map(id => {
-                    const svc = services.find(s => s.id === id);
-                    return (
-                      <div key={id} className="flex items-center justify-between py-1.5 px-3 bg-gray-50 dark:bg-gray-700/50 rounded-xl">
-                        <span className="text-sm font-medium">{svc?.nameAr || 'خدمة'}</span>
-                        <div className="flex items-center gap-2">
-                          <span className="text-sm font-bold text-clinic-600">{formatCurrency(svc?.price || 0)}</span>
-                          <button onClick={() => toggleService(id)} className="text-red-400 hover:text-red-600">
-                            <X className="w-4 h-4" />
-                          </button>
-                        </div>
+                  {/* Sheet Header with gradient */}
+                  <div className="px-5 py-3 bg-gradient-to-l from-clinic-500 to-clinic-600 text-white flex items-center justify-between">
+                    <div className="flex items-center gap-2">
+                      <Wallet className="w-5 h-5" />
+                      <div>
+                        <h3 className="text-sm font-bold">ملخص الخدمات والسداد</h3>
+                        <p className="text-[10px] text-white/70">{selectedServices.length} خدمة محددة</p>
                       </div>
-                    );
-                  })}
-                </div>
-
-                {/* Total */}
-                <div className="mx-4 p-3 bg-clinic-50 dark:bg-clinic-900/20 rounded-xl flex items-center justify-between">
-                  <span className="text-sm font-bold">الإجمالي</span>
-                  <span className="text-xl font-bold text-clinic-600 dark:text-clinic-400">{formatCurrency(totalAmount)}</span>
-                </div>
-
-                {/* Payment section */}
-                <div className="p-4 space-y-3">
-                  <h4 className="text-xs font-bold flex items-center gap-1">
-                    <CreditCard className="w-3.5 h-3.5 text-clinic-600" /> التسديد
-                  </h4>
-                  <div className="grid grid-cols-3 gap-2">
-                    {PAYMENT_METHODS.map(m => {
-                      const Icon = m.icon;
-                      return (
-                        <button key={m.value} type="button" onClick={() => setPaymentMethod(m.value)}
-                          className={`p-2 rounded-xl flex flex-col items-center gap-1 border-2 transition-all ${paymentMethod === m.value ? 'border-clinic-500 bg-clinic-50 dark:bg-clinic-900/20' : 'border-transparent bg-gray-50 dark:bg-gray-700/50'}`}>
-                          <Icon className={`w-4 h-4 ${paymentMethod === m.value ? 'text-clinic-600' : 'text-muted-foreground'}`} />
-                          <span className={`text-[10px] font-bold ${paymentMethod === m.value ? 'text-clinic-600' : 'text-muted-foreground'}`}>{m.label}</span>
-                        </button>
-                      );
-                    })}
-                  </div>
-                  <input type="number" value={paidAmount} onChange={e => setPaidAmount(e.target.value)}
-                    placeholder="المبلغ المدفوع" max={totalAmount}
-                    className="w-full h-10 px-3 bg-white dark:bg-gray-800 border border-border rounded-xl text-sm focus:outline-none focus:ring-2 focus:ring-clinic-500" dir="ltr" inputMode="numeric" />
-                  <div className="flex gap-1.5">
-                    <button onClick={() => setPaidAmount(String(totalAmount))} className="flex-1 h-7 text-[10px] font-bold bg-green-50 dark:bg-green-900/20 text-green-700 rounded-lg">دفع الكل</button>
-                    <button onClick={() => setPaidAmount('0')} className="flex-1 h-7 text-[10px] font-bold bg-red-50 dark:bg-red-900/20 text-red-700 rounded-lg">بدون دفع</button>
-                  </div>
-                  {paidNum > 0 && remainingAmount > 0 && (
-                    <div className="p-2 rounded-lg bg-amber-50 dark:bg-amber-900/20 flex items-center justify-between">
-                      <span className="text-xs font-bold">المتبقي</span>
-                      <span className="text-sm font-bold text-amber-600">{formatCurrency(remainingAmount)}</span>
                     </div>
-                  )}
-                  {paidNum > 0 && remainingAmount <= 0 && (
-                    <div className="p-2 rounded-lg bg-green-50 dark:bg-green-900/20 text-center">
-                      <span className="text-xs font-bold text-green-600">تم الدفع بالكامل</span>
-                    </div>
-                  )}
-                </div>
+                    <button onClick={() => setSelectedServices([])} className="text-[10px] bg-white/20 hover:bg-white/30 px-2.5 py-1 rounded-lg flex items-center gap-1 transition-colors">
+                      <Trash2 className="w-3 h-3" /> مسح الكل
+                    </button>
+                  </div>
 
-                {/* Next button */}
-                <div className="p-4 pt-0">
-                  <button onClick={() => { setShowPaymentPanel(false); setVisitSubStep('medications'); }} disabled={selectedServices.length === 0}
-                    className="w-full h-11 bg-gradient-to-l from-clinic-500 to-clinic-600 text-white font-bold rounded-xl text-sm active:scale-[0.98] transition-transform flex items-center justify-center gap-1 disabled:opacity-60">
-                    التالي: الأدوية <ArrowRight className="w-3 h-3 rotate-180" />
-                  </button>
+                  {/* Scrollable content */}
+                  <div className="overflow-y-auto max-h-[55vh]">
+                    {/* Selected services list */}
+                    <div className="p-4 space-y-2">
+                      {selectedServices.map(id => {
+                        const svc = services.find(s => s.id === id);
+                        return (
+                          <div key={id} className="flex items-center justify-between py-2 px-3 bg-gray-50 dark:bg-gray-800 rounded-xl border border-gray-100 dark:border-gray-700">
+                            <div className="flex items-center gap-2">
+                              <div className="w-7 h-7 rounded-lg bg-clinic-100 dark:bg-clinic-900/30 flex items-center justify-center">
+                                <Check className="w-3.5 h-3.5 text-clinic-600" />
+                              </div>
+                              <span className="text-sm font-medium">{svc?.nameAr || 'خدمة'}</span>
+                            </div>
+                            <div className="flex items-center gap-2">
+                              <span className="text-sm font-bold text-clinic-600">{formatCurrency(svc?.price || 0)}</span>
+                              <button onClick={() => toggleService(id)} className="w-6 h-6 rounded-full flex items-center justify-center bg-red-50 dark:bg-red-900/20 text-red-500 active:scale-90 transition-transform">
+                                <X className="w-3 h-3" />
+                              </button>
+                            </div>
+                          </div>
+                        );
+                      })}
+                    </div>
+
+                    {/* Total section */}
+                    <div className="mx-4 mb-4 p-4 bg-gradient-to-l from-clinic-50 to-clinic-100 dark:from-clinic-900/30 dark:to-clinic-800/20 rounded-2xl border border-clinic-200 dark:border-clinic-700">
+                      <div className="flex items-center justify-between mb-1">
+                        <span className="text-sm text-clinic-700 dark:text-clinic-300">الإجمالي المطلوب</span>
+                        <span className="text-2xl font-bold text-clinic-600 dark:text-clinic-400">{formatCurrency(totalAmount)}</span>
+                      </div>
+                      {paidNum > 0 && (
+                        <div className="flex items-center justify-between mt-2 pt-2 border-t border-clinic-200 dark:border-clinic-700">
+                          <span className="text-xs text-clinic-600 dark:text-clinic-400">المدفوع</span>
+                          <span className="text-sm font-bold text-green-600">{formatCurrency(paidNum)}</span>
+                        </div>
+                      )}
+                      {paidNum > 0 && remainingAmount > 0 && (
+                        <div className="flex items-center justify-between mt-1">
+                          <span className="text-xs text-clinic-600 dark:text-clinic-400">المتبقي</span>
+                          <span className="text-sm font-bold text-amber-600">{formatCurrency(remainingAmount)}</span>
+                        </div>
+                      )}
+                      {paidNum > 0 && remainingAmount <= 0 && (
+                        <div className="mt-2 pt-2 border-t border-clinic-200 dark:border-clinic-700 text-center">
+                          <span className="text-xs font-bold text-green-600 bg-green-50 dark:bg-green-900/20 px-3 py-1 rounded-full">تم الدفع بالكامل</span>
+                        </div>
+                      )}
+                    </div>
+
+                    {/* Payment section */}
+                    <div className="px-4 pb-4 space-y-3">
+                      <div className="flex items-center gap-2 mb-1">
+                        <CreditCard className="w-4 h-4 text-clinic-600" />
+                        <h4 className="text-sm font-bold">طريقة الدفع</h4>
+                      </div>
+                      <div className="grid grid-cols-3 gap-2">
+                        {PAYMENT_METHODS.map(m => {
+                          const Icon = m.icon;
+                          const isActive = paymentMethod === m.value;
+                          return (
+                            <button key={m.value} type="button" onClick={() => setPaymentMethod(m.value)}
+                              className={`p-3 rounded-xl flex flex-col items-center gap-1.5 border-2 transition-all active:scale-95 ${
+                                isActive
+                                  ? 'border-clinic-500 bg-clinic-50 dark:bg-clinic-900/20 shadow-sm'
+                                  : 'border-gray-200 dark:border-gray-700 bg-gray-50 dark:bg-gray-800'
+                              }`}>
+                              <div className={`w-8 h-8 rounded-lg flex items-center justify-center ${isActive ? 'bg-clinic-500 text-white' : 'bg-gray-200 dark:bg-gray-700 text-muted-foreground'}`}>
+                                <Icon className="w-4 h-4" />
+                              </div>
+                              <span className={`text-[10px] font-bold ${isActive ? 'text-clinic-600' : 'text-muted-foreground'}`}>{m.label}</span>
+                            </button>
+                          );
+                        })}
+                      </div>
+                      <div className="space-y-1.5">
+                        <label className="text-xs font-bold text-muted-foreground">المبلغ المدفوع</label>
+                        <input type="number" value={paidAmount} onChange={e => setPaidAmount(e.target.value)}
+                          placeholder="0" max={totalAmount}
+                          className="w-full h-12 px-4 bg-white dark:bg-gray-800 border-2 border-gray-200 dark:border-gray-700 rounded-xl text-lg font-bold text-center focus:outline-none focus:ring-2 focus:ring-clinic-500 focus:border-clinic-500" dir="ltr" inputMode="numeric" />
+                      </div>
+                      <div className="flex gap-2">
+                        <button onClick={() => setPaidAmount(String(totalAmount))} className="flex-1 h-9 text-xs font-bold bg-green-50 dark:bg-green-900/20 text-green-700 rounded-xl border border-green-200 dark:border-green-800 active:scale-[0.97] transition-transform">دفع الكل</button>
+                        <button onClick={() => setPaidAmount('0')} className="flex-1 h-9 text-xs font-bold bg-red-50 dark:bg-red-900/20 text-red-700 rounded-xl border border-red-200 dark:border-red-800 active:scale-[0.97] transition-transform">بدون دفع</button>
+                      </div>
+                    </div>
+                  </div>
+
+                  {/* Action buttons */}
+                  <div className="p-4 pt-0 space-y-2">
+                    <button onClick={() => { setShowPaymentPanel(false); setVisitSubStep('medications'); }} disabled={selectedServices.length === 0}
+                      className="w-full h-12 bg-gradient-to-l from-clinic-500 to-clinic-600 text-white font-bold rounded-xl text-sm active:scale-[0.98] transition-transform flex items-center justify-center gap-2 disabled:opacity-60 shadow-lg shadow-clinic-500/20">
+                      التالي: الأدوية <ArrowRight className="w-4 h-4 rotate-180" />
+                    </button>
+                  </div>
                 </div>
               </motion.div>
             )}
           </AnimatePresence>
 
-          {/* Compact bottom bar (always visible when collapsed) */}
+          {/* Professional Floating Bottom Bar (always visible when collapsed) */}
           {!showPaymentPanel && (
             <motion.div
-              initial={{ y: 100 }}
-              animate={{ y: 0 }}
-              exit={{ y: 100 }}
+              initial={{ y: 100, opacity: 0 }}
+              animate={{ y: 0, opacity: 1 }}
+              exit={{ y: 100, opacity: 0 }}
+              transition={{ type: 'spring', damping: 25, stiffness: 300 }}
               className="fixed bottom-0 left-0 right-0 z-30"
             >
-              <div className="bg-white/95 dark:bg-gray-900/95 backdrop-blur-lg border-t border-clinic-200 dark:border-clinic-800 shadow-[0_-4px_20px_rgba(0,0,0,0.1)] pb-safe">
-                <div className="max-w-lg mx-auto px-4 py-3 flex items-center justify-between">
-                  <div className="flex-1">
-                    <div className="flex items-center gap-2">
-                      <div className="w-6 h-6 rounded-full bg-clinic-500 text-white text-[10px] font-bold flex items-center justify-center">{selectedServices.length}</div>
-                      <span className="text-xs text-muted-foreground">خدمة محددة</span>
-                    </div>
-                    <p className="text-lg font-bold text-clinic-600 mr-8">{formatCurrency(totalAmount)}</p>
+              <div className="max-w-lg mx-auto px-4 pb-4 pt-2">
+                <div className="bg-white dark:bg-gray-900 rounded-2xl shadow-[0_-4px_30px_rgba(0,0,0,0.15)] border border-gray-200 dark:border-gray-700 overflow-hidden">
+                  {/* Mini services preview */}
+                  <div className="px-3 pt-2.5 pb-1 flex items-center gap-1.5 overflow-x-auto scrollbar-hide">
+                    {selectedServices.slice(0, 4).map(id => {
+                      const svc = services.find(s => s.id === id);
+                      return (
+                        <span key={id} className="flex-shrink-0 inline-flex items-center gap-1 px-2 py-0.5 bg-clinic-50 dark:bg-clinic-900/20 text-clinic-700 dark:text-clinic-300 rounded-lg text-[10px] font-medium">
+                          {svc?.nameAr || 'خدمة'}
+                        </span>
+                      );
+                    })}
+                    {selectedServices.length > 4 && (
+                      <span className="flex-shrink-0 text-[10px] text-muted-foreground font-medium">+{selectedServices.length - 4}</span>
+                    )}
                   </div>
-                  <button onClick={() => setShowPaymentPanel(true)}
-                    className="h-11 px-5 bg-gradient-to-l from-clinic-500 to-clinic-600 text-white font-bold rounded-xl shadow-lg active:scale-[0.97] transition-transform flex items-center gap-2">
-                    <CreditCard className="w-4 h-4" />
-                    عرض وتسديد
-                  </button>
+
+                  {/* Main bar */}
+                  <div className="px-3 pb-2.5 pt-1 flex items-center justify-between">
+                    <div className="flex-1 min-w-0">
+                      <div className="flex items-center gap-2 mb-0.5">
+                        <div className="w-5 h-5 rounded-full bg-gradient-to-br from-clinic-500 to-clinic-600 text-white text-[9px] font-bold flex items-center justify-center">{selectedServices.length}</div>
+                        <span className="text-[10px] text-muted-foreground font-medium">خدمة محددة</span>
+                      </div>
+                      <p className="text-xl font-bold text-clinic-600 dark:text-clinic-400">{formatCurrency(totalAmount)}</p>
+                    </div>
+                    <button onClick={() => setShowPaymentPanel(true)}
+                      className="h-12 px-5 bg-gradient-to-l from-clinic-500 to-clinic-600 text-white font-bold rounded-xl shadow-lg shadow-clinic-500/25 active:scale-[0.97] transition-transform flex items-center gap-2">
+                      <Wallet className="w-4 h-4" />
+                      <span className="text-sm">عرض وتسديد</span>
+                      <ChevronUp className="w-4 h-4" />
+                    </button>
+                  </div>
                 </div>
               </div>
             </motion.div>

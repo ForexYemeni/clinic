@@ -216,7 +216,8 @@ function ClinicApp() {
   }
 
   const isSuperAdmin = user.role === 'super_admin';
-  const needsShell = !['splash', 'login', 'admin-setup', 'super-admin-setup', 'subscription-expired'].includes(currentScreen) && !isSuperAdmin;
+  const hideBottomNavScreens = ['splash', 'login', 'admin-setup', 'super-admin-setup', 'subscription-expired', 'nurse-add-visit', 'admin-add-patient'];
+  const needsShell = !hideBottomNavScreens.includes(currentScreen) && !isSuperAdmin;
 
   // Super Admin screens
   if (isSuperAdmin) {
