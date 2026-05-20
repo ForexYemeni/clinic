@@ -1,5 +1,6 @@
 import { adminDb } from '@/lib/firebase-admin';
 import { NextRequest, NextResponse } from 'next/server';
+import { notifyClinicUsers } from '@/lib/notifications';
 
 // GET: List all patients (with search by name)
 export async function GET(request: NextRequest) {
@@ -61,6 +62,25 @@ export async function POST(request: NextRequest) {
     };
 
     const docRef = await adminDb.collection('patients').add(patientData);
+
+    // Send notification to clinic users about new patient
+    const clinicId = body.clinicId || '';
+    const createdBy = body.createdBy || '';
+    if (clinicId) {
+      try {
+        await notifyClinicUsers({
+          clinicId,
+          excludeUserId: createdBy,
+          type: 'patient',
+          title: 'مريض جديد',
+          message: `تم تسجيل المريض ${name} بنجاح`,
+          priority: 'normal',
+          relatedId: docRef.id,
+        });
+      } catch (notifError) {
+        console.error('Failed to send patient notification:', notifError);
+      }
+    }
 
     return NextResponse.json(
       { id: docRef.id, ...patientData },

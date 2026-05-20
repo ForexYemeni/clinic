@@ -5,6 +5,7 @@ import { motion } from 'framer-motion';
 import { Users, AlertTriangle, Activity, DollarSign, TrendingUp, Clock, Stethoscope, ChevronLeft } from 'lucide-react';
 import { useAppStore } from '@/lib/store';
 import { formatCurrency, formatRelativeTime, severityLabels, severityColors, type DashboardData, type EmergencyItem } from '@/lib/constants';
+import { NotificationBell } from '@/components/shared/NotificationBell';
 
 export function AdminDashboard() {
   const { setScreen } = useAppStore();
@@ -47,6 +48,15 @@ export function AdminDashboard() {
 
   return (
     <div className="p-4 space-y-5 pb-24">
+      {/* Dashboard Header with Notification Bell */}
+      <div className="flex items-center justify-between">
+        <div>
+          <h2 className="text-lg font-bold">لوحة التحكم</h2>
+          <p className="text-xs text-muted-foreground">{new Date().toLocaleDateString('ar-SA', { weekday: 'long', day: 'numeric', month: 'long' })}</p>
+        </div>
+        <NotificationBell />
+      </div>
+
       {/* Quick Stats */}
       <div className="grid grid-cols-2 gap-3">
         {stats.map((stat, i) => (

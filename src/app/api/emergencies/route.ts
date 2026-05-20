@@ -1,5 +1,6 @@
 import { adminDb } from '@/lib/firebase-admin';
 import { NextRequest, NextResponse } from 'next/server';
+import { notifyClinicUsers } from '@/lib/notifications';
 
 // GET: List emergencies (?status=active)
 export async function GET(request: NextRequest) {
@@ -123,6 +124,25 @@ export async function POST(request: NextRequest) {
     };
 
     const docRef = await adminDb.collection('emergencies').add(emergencyData);
+
+    // Send urgent notification about new emergency
+    const clinicId = body.clinicId || '';
+    if (clinicId) {
+      try {
+        const severityLabel = severity === 'critical' ? 'حرجة' : severity === 'severe' ? 'شديدة' : 'متوسطة';
+        await notifyClinicUsers({
+          clinicId,
+          excludeUserId: nurseId,
+          type: 'emergency',
+          title: '🚨 حالة طوارئ جديدة',
+          message: `حالة طوارئ ${severityLabel} - المريض: ${patientName}`,
+          priority: severity === 'critical' ? 'urgent' : 'high',
+          relatedId: docRef.id,
+        });
+      } catch (notifError) {
+        console.error('Failed to send emergency notification:', notifError);
+      }
+    }
 
     return NextResponse.json(
       { id: docRef.id, ...emergencyData },

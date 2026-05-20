@@ -1,5 +1,6 @@
 import { adminDb } from '@/lib/firebase-admin';
 import { NextRequest, NextResponse } from 'next/server';
+import { checkSubscriptionExpiry } from '@/lib/notifications';
 
 // GET: Dashboard stats based on role
 // ?role=admin - total stats
@@ -161,6 +162,9 @@ export async function GET(request: NextRequest) {
       topServices,
       recentEmergencies,
     });
+
+    // Background: check subscription expiry (non-blocking)
+    checkSubscriptionExpiry().catch(() => {});
   } catch (error) {
     console.error('Dashboard error:', error);
     return NextResponse.json(
