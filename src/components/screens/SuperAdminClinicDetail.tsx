@@ -82,6 +82,14 @@ export function SuperAdminClinicDetail() {
   // Nurse action card state
   const [showNurseCard, setShowNurseCard] = useState<{type: 'toggle' | 'delete', nurse: {id: string, name: string, active: boolean}} | null>(null);
 
+  // Clinic action confirmation card state
+  const [showClinicActionCard, setShowClinicActionCard] = useState<{
+    type: 'suspend' | 'activate' | 'extend';
+    days?: number;
+    subType?: string;
+  } | null>(null);
+  const [clinicActionProcessing, setClinicActionProcessing] = useState(false);
+
   // Subscription manager state
   const [newSubType, setNewSubType] = useState('monthly');
   const [newSubDays, setNewSubDays] = useState('30');
@@ -104,37 +112,49 @@ export function SuperAdminClinicDetail() {
 
   const handleSuspend = async () => {
     if (!selectedClinicId) return;
+    setClinicActionProcessing(true);
     try {
       await apiPut(`/api/super-admin/clinics/${selectedClinicId}`, { action: 'suspend' });
       toast.success('تم إيقاف العيادة');
+      setShowClinicActionCard(null);
       loadClinic();
     } catch (err: any) {
       toast.error(err.message || 'خطأ');
+    } finally {
+      setClinicActionProcessing(false);
     }
   };
 
   const handleActivate = async (subType: string, days?: number) => {
     if (!selectedClinicId) return;
+    setClinicActionProcessing(true);
     try {
       const body: any = { action: 'activate', subscriptionType: subType };
       if (days) body.days = days;
       await apiPut(`/api/super-admin/clinics/${selectedClinicId}`, body);
       toast.success('تم تفعيل العيادة');
+      setShowClinicActionCard(null);
       loadClinic();
     } catch (err: any) {
       toast.error(err.message || 'خطأ');
+    } finally {
+      setClinicActionProcessing(false);
     }
   };
 
   const handleExtend = async () => {
     if (!selectedClinicId) return;
+    setClinicActionProcessing(true);
     try {
       await apiPut(`/api/super-admin/clinics/${selectedClinicId}`, { action: 'extend_subscription', days: extendDays, subscriptionType: newSubType });
       toast.success(`تم التمديد ${extendDays} يوم`);
       setShowExtend(false);
+      setShowClinicActionCard(null);
       loadClinic();
     } catch (err: any) {
       toast.error(err.message || 'خطأ');
+    } finally {
+      setClinicActionProcessing(false);
     }
   };
 
@@ -419,7 +439,7 @@ export function SuperAdminClinicDetail() {
             {/* Apply subscription button */}
             <div className="flex gap-2">
               <button
-                onClick={handleExtend}
+                onClick={() => setShowClinicActionCard({ type: 'extend', days: extendDays, subType: newSubType })}
                 disabled={newSubType !== 'lifetime' && (!newSubDays || parseInt(newSubDays) <= 0)}
                 className={`flex-1 h-10 text-xs font-bold rounded-lg flex items-center justify-center gap-1.5 transition-all ${
                   newSubType === 'lifetime' || (newSubDays && parseInt(newSubDays) > 0)
@@ -436,7 +456,7 @@ export function SuperAdminClinicDetail() {
             <div className="flex gap-2 pt-1">
               {(subStatus === 'active' || subStatus === 'trial') && (
                 <button
-                  onClick={handleSuspend}
+                  onClick={() => setShowClinicActionCard({ type: 'suspend' })}
                   className="flex-1 h-10 text-xs font-bold bg-yellow-50 dark:bg-yellow-900/20 text-yellow-700 dark:text-yellow-300 rounded-lg flex items-center justify-center gap-1.5 active:scale-[0.98] transition-all border border-yellow-200 dark:border-yellow-800"
                 >
                   <Pause className="w-3.5 h-3.5" /> إيقاف
@@ -444,7 +464,7 @@ export function SuperAdminClinicDetail() {
               )}
               {(subStatus === 'expired' || subStatus === 'suspended') && (
                 <button
-                  onClick={() => handleActivate(newSubType)}
+                  onClick={() => setShowClinicActionCard({ type: 'activate', subType: newSubType })}
                   className="flex-1 h-10 text-xs font-bold bg-green-50 dark:bg-green-900/20 text-green-700 dark:text-green-300 rounded-lg flex items-center justify-center gap-1.5 active:scale-[0.98] transition-all border border-green-200 dark:border-green-800"
                 >
                   <Play className="w-3.5 h-3.5" /> تفعيل (بدون إضافة أيام)
@@ -458,18 +478,167 @@ export function SuperAdminClinicDetail() {
               <Settings className="w-3 h-3" /> إدارة الاشتراك
             </button>
             {(subStatus === 'active' || subStatus === 'trial') && (
-              <button onClick={handleSuspend} className="text-xs px-3 py-1.5 bg-yellow-50 dark:bg-yellow-900/20 text-yellow-700 dark:text-yellow-300 rounded-lg font-bold touch-feedback flex items-center gap-1">
+              <button onClick={() => setShowClinicActionCard({ type: 'suspend' })} className="text-xs px-3 py-1.5 bg-yellow-50 dark:bg-yellow-900/20 text-yellow-700 dark:text-yellow-300 rounded-lg font-bold touch-feedback flex items-center gap-1">
                 <Pause className="w-3 h-3" /> إيقاف
               </button>
             )}
             {(subStatus === 'expired' || subStatus === 'suspended') && (
-              <button onClick={() => handleActivate(clinic.subscription?.type || 'monthly')} className="text-xs px-3 py-1.5 bg-green-50 dark:bg-green-900/20 text-green-700 dark:text-green-300 rounded-lg font-bold touch-feedback flex items-center gap-1">
+              <button onClick={() => setShowClinicActionCard({ type: 'activate', subType: clinic.subscription?.type || 'monthly' })} className="text-xs px-3 py-1.5 bg-green-50 dark:bg-green-900/20 text-green-700 dark:text-green-300 rounded-lg font-bold touch-feedback flex items-center gap-1">
                 <Play className="w-3 h-3" /> تفعيل
               </button>
             )}
           </div>
         )}
       </div>
+
+      {/* Clinic Action Confirmation Card */}
+      <AnimatePresence>
+        {showClinicActionCard && clinic && (
+          <motion.div
+            initial={{ opacity: 0, scale: 0.95 }}
+            animate={{ opacity: 1, scale: 1 }}
+            exit={{ opacity: 0, scale: 0.95 }}
+            className={`rounded-2xl p-4 shadow-lg relative overflow-hidden ${
+              showClinicActionCard.type === 'suspend'
+                ? 'bg-gradient-to-br from-yellow-500 to-amber-600 shadow-yellow-500/20'
+                : showClinicActionCard.type === 'activate'
+                ? 'bg-gradient-to-br from-green-500 to-emerald-600 shadow-green-500/20'
+                : 'bg-gradient-to-br from-purple-500 to-indigo-600 shadow-purple-500/20'
+            }`}
+          >
+            {/* Decorative */}
+            <div className="absolute -top-6 -left-6 w-20 h-20 bg-white/5 rounded-full" />
+            <div className="absolute -bottom-4 -right-4 w-16 h-16 bg-white/5 rounded-full" />
+
+            {/* Close button */}
+            <button
+              onClick={() => setShowClinicActionCard(null)}
+              className="absolute top-3 left-3 w-7 h-7 rounded-full bg-white/20 flex items-center justify-center z-10"
+            >
+              <X className="w-3.5 h-3.5 text-white" />
+            </button>
+
+            <div className="relative">
+              <div className="flex items-center gap-3 mb-4">
+                <div className="w-10 h-10 bg-white/20 rounded-xl flex items-center justify-center backdrop-blur-sm">
+                  {showClinicActionCard.type === 'suspend' ? (
+                    <Pause className="w-5 h-5 text-white" />
+                  ) : showClinicActionCard.type === 'activate' ? (
+                    <Play className="w-5 h-5 text-white" />
+                  ) : (
+                    <PlusCircle className="w-5 h-5 text-white" />
+                  )}
+                </div>
+                <div>
+                  <p className="text-sm font-bold text-white">
+                    {showClinicActionCard.type === 'suspend' ? 'إيقاف العيادة' 
+                      : showClinicActionCard.type === 'activate' ? 'تفعيل العيادة' 
+                      : 'تمديد الاشتراك'}
+                  </p>
+                  <p className="text-[10px] text-white/70">{clinic.name}</p>
+                </div>
+              </div>
+
+              {/* Action details */}
+              <div className="bg-white/10 rounded-xl p-3 mb-3 backdrop-blur-sm space-y-1.5">
+                <div className="flex justify-between text-xs">
+                  <span className="text-white/70">اسم العيادة</span>
+                  <span className="font-bold text-white">{clinic.name}</span>
+                </div>
+                <div className="flex justify-between text-xs">
+                  <span className="text-white/70">الحالة الحالية</span>
+                  <span className="font-medium text-white">{statusLabelMap[subStatus]}</span>
+                </div>
+                {showClinicActionCard.type === 'activate' && (
+                  <div className="flex justify-between text-xs">
+                    <span className="text-white/70">نوع الاشتراك</span>
+                    <span className="font-medium text-white">{subTypeLabel[showClinicActionCard.subType || 'monthly']}</span>
+                  </div>
+                )}
+                {showClinicActionCard.type === 'extend' && showClinicActionCard.days && (
+                  <div className="flex justify-between text-xs">
+                    <span className="text-white/70">مدة التمديد</span>
+                    <span className="font-bold text-white">{showClinicActionCard.days} يوم</span>
+                  </div>
+                )}
+                {daysRemaining > 0 && (subStatus === 'active' || subStatus === 'trial') && (
+                  <div className="flex justify-between text-xs">
+                    <span className="text-white/70">الأيام المتبقية</span>
+                    <span className="font-bold text-white">{daysRemaining} يوم</span>
+                  </div>
+                )}
+              </div>
+
+              {/* Warning message */}
+              {showClinicActionCard.type === 'suspend' && (
+                <div className="bg-white/10 rounded-xl p-3 mb-3 backdrop-blur-sm">
+                  <div className="flex items-start gap-2">
+                    <AlertTriangle className="w-4 h-4 text-yellow-200 mt-0.5 flex-shrink-0" />
+                    <div>
+                      <p className="text-xs font-bold text-yellow-100">تحذير</p>
+                      <p className="text-[10px] text-white/80">سيتم إيقاف العيادة فوراً ولن يتمكن مدير العيادة أو الممرضون من الدخول للنظام حتى يتم تفعيلها مرة أخرى</p>
+                    </div>
+                  </div>
+                </div>
+              )}
+              {showClinicActionCard.type === 'activate' && (
+                <div className="bg-white/10 rounded-xl p-3 mb-3 backdrop-blur-sm">
+                  <div className="flex items-start gap-2">
+                    <CheckCircle className="w-4 h-4 text-green-200 mt-0.5 flex-shrink-0" />
+                    <div>
+                      <p className="text-xs font-bold text-green-100">تفعيل العيادة</p>
+                      <p className="text-[10px] text-white/80">سيتم تفعيل العيادة وتمكين مدير العيادة والممرضون من الدخول للنظام مرة أخرى بدون إضافة أيام إضافية للاشتراك</p>
+                    </div>
+                  </div>
+                </div>
+              )}
+
+              {/* Action buttons */}
+              <div className="flex gap-2">
+                <button
+                  onClick={() => {
+                    if (showClinicActionCard.type === 'suspend') {
+                      handleSuspend();
+                    } else if (showClinicActionCard.type === 'activate') {
+                      handleActivate(showClinicActionCard.subType || 'monthly');
+                    } else {
+                      handleExtend();
+                    }
+                  }}
+                  disabled={clinicActionProcessing}
+                  className={`flex-1 h-10 rounded-xl text-sm font-bold active:scale-[0.97] transition-transform shadow-sm disabled:opacity-50 flex items-center justify-center gap-1.5 ${
+                    showClinicActionCard.type === 'suspend'
+                      ? 'bg-white text-yellow-700'
+                      : showClinicActionCard.type === 'activate'
+                      ? 'bg-white text-green-700'
+                      : 'bg-white text-purple-700'
+                  }`}
+                >
+                  {clinicActionProcessing ? (
+                    <Loader2 className="w-4 h-4 animate-spin" />
+                  ) : (
+                    <>
+                      {showClinicActionCard.type === 'suspend' ? <Pause className="w-4 h-4" />
+                        : showClinicActionCard.type === 'activate' ? <Play className="w-4 h-4" />
+                        : <PlusCircle className="w-4 h-4" />}
+                    </>
+                  )}
+                  {showClinicActionCard.type === 'suspend' ? 'نعم، إيقاف العيادة'
+                    : showClinicActionCard.type === 'activate' ? 'نعم، تفعيل العيادة'
+                    : 'نعم، تمديد الاشتراك'}
+                </button>
+                <button
+                  onClick={() => setShowClinicActionCard(null)}
+                  disabled={clinicActionProcessing}
+                  className="flex-1 h-10 bg-white/20 text-white rounded-xl text-sm font-medium backdrop-blur-sm active:scale-[0.97] transition-transform disabled:opacity-50"
+                >
+                  إلغاء
+                </button>
+              </div>
+            </div>
+          </motion.div>
+        )}
+      </AnimatePresence>
 
       {/* Stats Card */}
       <div className="bg-white dark:bg-gray-800 rounded-2xl border border-border p-4 space-y-3">

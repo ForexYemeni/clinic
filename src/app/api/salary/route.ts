@@ -66,6 +66,7 @@ export async function GET(request: NextRequest) {
             phone: nd.phone || '',
             salary: nd.salary || 0,
             active: nd.active !== false,
+            createdAt: nd.createdAt || '',
           };
         }
       } catch {}

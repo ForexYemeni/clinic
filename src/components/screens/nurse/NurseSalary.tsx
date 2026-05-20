@@ -6,7 +6,7 @@ import {
   DollarSign, Wallet, TrendingUp, TrendingDown, ArrowRight, RefreshCw,
   Clock, Banknote, Plus, X, Send, Phone, User as UserIcon,
   FileText, AlertCircle, CheckCircle2, XCircle, ChevronDown,
-  CreditCard, ArrowDownLeft
+  CreditCard, ArrowDownLeft, Calendar
 } from 'lucide-react';
 import { useAppStore } from '@/lib/store';
 import { formatCurrency, formatDate } from '@/lib/constants';
@@ -14,7 +14,7 @@ import { apiGet } from '@/lib/api';
 import { toast } from 'sonner';
 
 interface SalaryData {
-  nurse: { name: string; phone: string; salary: number; active: boolean };
+  nurse: { name: string; phone: string; salary: number; active: boolean; createdAt?: string };
   salary: number;
   totalWithdrawals: number;
   totalDebts: number;
@@ -192,7 +192,18 @@ export function NurseSalary() {
             <span className="text-sm opacity-80">الراتب الشهري</span>
           </div>
 
-          <p className="text-3xl font-bold mb-4">{formatCurrency(salary)}</p>
+          <p className="text-3xl font-bold mb-2">{formatCurrency(salary)}</p>
+
+          {/* Employment Start Date */}
+          {data?.nurse?.createdAt && (
+            <div className="flex items-center gap-2 mb-4 bg-white/10 rounded-xl p-2.5 backdrop-blur-sm">
+              <Calendar className="w-4 h-4 text-white/70" />
+              <div>
+                <p className="text-[9px] text-white/60">تاريخ بداية التوظيف</p>
+                <p className="text-xs font-bold text-white/90">{formatDate(data.nurse.createdAt)}</p>
+              </div>
+            </div>
+          )}
 
           <div className="grid grid-cols-3 gap-2">
             <div className="bg-white/10 rounded-xl p-2.5 backdrop-blur-sm">

@@ -650,7 +650,7 @@ export function AddPatientForm() {
               />
             </div>
 
-            {/* Services Loading */}
+            {/* Scrollable Services List */}
             {servicesLoading ? (
               <div className="space-y-2">{[1, 2, 3, 4, 5].map(i => <div key={i} className="h-14 bg-gray-100 dark:bg-gray-800 rounded-xl animate-pulse" />)}</div>
             ) : services.length === 0 ? (
@@ -660,7 +660,7 @@ export function AddPatientForm() {
                 <p className="text-xs text-muted-foreground mt-1">يجب إضافة خدمات أولاً</p>
               </div>
             ) : (
-              <div className="space-y-3">
+              <div className="max-h-[45vh] overflow-y-auto overscroll-contain space-y-3 pr-1 scrollbar-thin">
                 {serviceCategories.map(category => (
                   <div key={category}>
                     <p className="text-xs font-bold text-muted-foreground mb-1.5 flex items-center gap-1.5">
@@ -704,9 +704,10 @@ export function AddPatientForm() {
               </div>
             )}
 
-            {/* Selected Services Summary & Payment */}
+            {/* Selected Services Summary & Payment - Outside scrollable area */}
             {selectedServices.length > 0 && (
               <motion.div
+                id="payment-section"
                 initial={{ opacity: 0, y: 10 }}
                 animate={{ opacity: 1, y: 0 }}
                 className="bg-white dark:bg-gray-800 rounded-2xl border-2 border-clinic-200 dark:border-clinic-800 overflow-hidden shadow-lg"
@@ -827,35 +828,66 @@ export function AddPatientForm() {
               </motion.div>
             )}
 
-            {/* Navigation */}
-            <div className="flex gap-2 pt-2">
-              <button
-                type="button"
-                onClick={() => setCurrentStep(2)}
-                className="h-12 px-5 bg-gray-100 dark:bg-gray-800 font-bold rounded-xl text-sm"
-              >
-                رجوع
-              </button>
-              <button
-                type="button"
-                onClick={handleSubmit}
-                disabled={loading}
-                className="flex-1 h-12 bg-gradient-to-l from-clinic-500 to-clinic-600 text-white font-bold rounded-xl shadow-lg disabled:opacity-60 active:scale-[0.98] transition-transform flex items-center justify-center gap-2"
-              >
-                {loading ? (
-                  <Loader2 className="w-5 h-5 animate-spin" />
-                ) : selectedServices.length > 0 ? (
-                  <>
-                    تسجيل المريض والخدمات - {formatCurrency(totalAmount)}
-                  </>
-                ) : (
-                  'تسجيل المريض بدون خدمات'
-                )}
-              </button>
-            </div>
+            {/* Navigation - shown when NO services selected */}
+            {selectedServices.length === 0 && (
+              <div className="flex gap-2 pt-2">
+                <button
+                  type="button"
+                  onClick={() => setCurrentStep(2)}
+                  className="h-12 px-5 bg-gray-100 dark:bg-gray-800 font-bold rounded-xl text-sm"
+                >
+                  رجوع
+                </button>
+                <button
+                  type="button"
+                  onClick={handleSubmit}
+                  disabled={loading}
+                  className="flex-1 h-12 bg-gradient-to-l from-clinic-500 to-clinic-600 text-white font-bold rounded-xl shadow-lg disabled:opacity-60 active:scale-[0.98] transition-transform flex items-center justify-center gap-2"
+                >
+                  {loading ? (
+                    <Loader2 className="w-5 h-5 animate-spin" />
+                  ) : (
+                    'تسجيل المريض بدون خدمات'
+                  )}
+                </button>
+              </div>
+            )}
           </motion.div>
         )}
       </AnimatePresence>
+
+      {/* Sticky Bottom Bar - Shows on Step 3 when services are selected */}
+      {currentStep === 3 && selectedServices.length > 0 && (
+        <div className="fixed bottom-0 left-0 right-0 z-50 bg-white/95 dark:bg-gray-900/95 backdrop-blur-lg border-t border-border shadow-[0_-4px_20px_rgba(0,0,0,0.1)] pb-safe">
+          <div className="max-w-lg mx-auto px-4 py-3 flex items-center justify-between">
+            <div className="flex items-center gap-3">
+              <button
+                type="button"
+                onClick={() => setCurrentStep(2)}
+                className="h-11 px-4 bg-gray-100 dark:bg-gray-800 font-bold rounded-xl text-sm active:scale-[0.97] transition-transform"
+              >
+                رجوع
+              </button>
+              <div>
+                <p className="text-xs text-muted-foreground">{selectedServices.length} خدمة محددة</p>
+                <p className="text-lg font-bold text-clinic-600 dark:text-clinic-400">{formatCurrency(totalAmount)}</p>
+              </div>
+            </div>
+            <button
+              type="button"
+              onClick={handleSubmit}
+              disabled={loading}
+              className="h-11 px-5 bg-gradient-to-l from-clinic-600 to-clinic-700 text-white font-bold rounded-xl shadow-lg disabled:opacity-60 active:scale-[0.97] transition-transform flex items-center gap-2"
+            >
+              {loading ? (
+                <Loader2 className="w-5 h-5 animate-spin" />
+              ) : (
+                'تسجيل المريض والخدمات'
+              )}
+            </button>
+          </div>
+        </div>
+      )}
     </div>
   );
 }

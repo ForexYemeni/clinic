@@ -5,7 +5,7 @@ import { motion, AnimatePresence } from 'framer-motion';
 import {
   DollarSign, Wallet, TrendingUp, TrendingDown, ArrowRight, RefreshCw, Clock, Banknote,
   Plus, X, Trash2, AlertTriangle, User, CheckCircle2, XCircle, FileText, Send,
-  ArrowDownLeft, Phone, MessageSquare, Copy, Check
+  ArrowDownLeft, Phone, MessageSquare, Copy, Check, Calendar
 } from 'lucide-react';
 import { useAppStore } from '@/lib/store';
 import { type NurseItem, formatCurrency, formatDate } from '@/lib/constants';
@@ -31,7 +31,7 @@ interface WithdrawalItem {
 }
 
 interface SalaryData {
-  nurse: { name: string; phone: string; salary: number; active: boolean };
+  nurse: { name: string; phone: string; salary: number; active: boolean; createdAt?: string };
   salary: number;
   totalWithdrawals: number;
   totalDebts: number;
@@ -418,7 +418,18 @@ export function AdminNurseSalary() {
                 </button>
               </div>
 
-              <p className="text-3xl font-bold mb-4">{formatCurrency(salary)}</p>
+              <p className="text-3xl font-bold mb-2">{formatCurrency(salary)}</p>
+
+              {/* Employment Start Date */}
+              {salaryData?.nurse?.createdAt && (
+                <div className="flex items-center gap-2 mb-4 bg-white/10 rounded-xl p-2.5 backdrop-blur-sm">
+                  <Calendar className="w-4 h-4 text-white/70" />
+                  <div>
+                    <p className="text-[9px] text-white/60">تاريخ بداية التوظيف</p>
+                    <p className="text-xs font-bold text-white/90">{formatDate(salaryData.nurse.createdAt)}</p>
+                  </div>
+                </div>
+              )}
 
               <div className="grid grid-cols-3 gap-2">
                 <div className="bg-white/10 rounded-xl p-2.5 backdrop-blur-sm">
