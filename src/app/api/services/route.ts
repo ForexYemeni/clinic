@@ -1,23 +1,28 @@
 import dbConnect from '@/lib/mongodb';
-import Service from '@/models/Service';
-import { toClient } from '@/lib/mongoose-helpers';
 import { NextRequest, NextResponse } from 'next/server';
+import { extractAuthAndClinicId } from '@/lib/auth';
+import Service from '@/models/Service';
+import { toClient, toClientList } from '@/lib/mongoose-helpers';
 
-// GET: List all active services (status != 'deleted', filtered by clinicId)
+// GET: List all active services (filtered by clinicId)
 export async function GET(request: NextRequest) {
   try {
     await dbConnect();
+    const { auth, effectiveClinicId } = extractAuthAndClinicId(request);
 
-    const { searchParams } = new URL(request.url);
-    const clinicId = searchParams.get('clinicId') || '';
+    if (!effectiveClinicId) {
+      return NextResponse.json([]);
+    }
 
-    let query = Service.find({ status: { $ne: 'deleted' } });
-    if (clinicId) query = query.where('clinicId', clinicId);
+    let results;
+    try {
+      results = await Service.find({ clinicId: effectiveClinicId }).lean();
+    } catch {
+      results = await Service.find({ clinicId: effectiveClinicId }).lean();
+    }
 
-    const services = await query.lean();
-
-    const result = services
-      .map((doc) => toClient(doc))
+    const services = toClientList(results)
+      .filter((service: any) => service.status !== 'deleted')
       .sort((a: any, b: any) => {
         const catA = a.category || '';
         const catB = b.category || '';
@@ -25,7 +30,7 @@ export async function GET(request: NextRequest) {
         return (a.nameAr || '').localeCompare(b.nameAr || '', 'ar');
       });
 
-    return NextResponse.json(result);
+    return NextResponse.json(services);
   } catch (error) {
     console.error('Services list error:', error);
     return NextResponse.json({ error: 'خطأ في جلب الخدمات' }, { status: 500 });
@@ -36,12 +41,16 @@ export async function GET(request: NextRequest) {
 export async function POST(request: NextRequest) {
   try {
     await dbConnect();
-
+    const { auth, effectiveClinicId } = extractAuthAndClinicId(request);
     const body = await request.json();
-    const { nameAr, price, duration, category, description, clinicId } = body;
+    const { nameAr, price, duration, category, description, icon, color } = body;
 
     if (!nameAr || price === undefined) {
       return NextResponse.json({ error: 'يرجى إدخال اسم الخدمة والسعر' }, { status: 400 });
+    }
+
+    if (!effectiveClinicId) {
+      return NextResponse.json({ error: 'لم يتم تحديد العيادة' }, { status: 400 });
     }
 
     const serviceData = {
@@ -50,15 +59,16 @@ export async function POST(request: NextRequest) {
       duration: duration || 15,
       category: category || 'أخرى',
       description: description || '',
+      icon: icon || '💊',
+      color: color || 'emerald',
       active: true,
       status: 'active',
-      clinicId: clinicId || '',
-      createdAt: new Date(),
+      clinicId: effectiveClinicId,
     };
 
-    const doc = await Service.create(serviceData);
+    const created = await Service.create(serviceData);
 
-    return NextResponse.json(toClient(doc.toObject()), { status: 201 });
+    return NextResponse.json({ id: created._id.toString(), ...toClient(created.toObject()) }, { status: 201 });
   } catch (error) {
     console.error('Create service error:', error);
     return NextResponse.json({ error: 'خطأ في إضافة الخدمة' }, { status: 500 });

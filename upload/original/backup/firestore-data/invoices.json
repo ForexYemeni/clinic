@@ -1,0 +1,312 @@
+[
+  {
+    "id": "AyoZVygcOlSn2jzHR6pQ",
+    "data": {
+      "patientId": "t8UWBAxq78yPaDq1dPak",
+      "visitId": "8rBeaPaxuXMy9floL9nN",
+      "clinicId": "Hj5b169m7675GoGceNJf",
+      "items": [
+        {
+          "serviceId": "4tKODat7JRrhFV0Fzzus",
+          "serviceName": "علاج الحروق من الدرجة الثانية",
+          "price": 1500,
+          "quantity": 1,
+          "nurseName": "مازن المتراب"
+        },
+        {
+          "serviceId": "61vaIszCbkFNe8pK7KF4",
+          "serviceName": "علاج الحروق من الدرجة الأولى",
+          "price": 800,
+          "quantity": 1,
+          "nurseName": "مازن المتراب"
+        },
+        {
+          "serviceId": "YxBHIcgUV5OpaE331ANo",
+          "serviceName": "علاج الجروح المتقيحة",
+          "price": 1500,
+          "quantity": 1,
+          "nurseName": "مازن المتراب"
+        },
+        {
+          "serviceId": "8x4dFiy5UViBYtqVU7RW",
+          "serviceName": "ضماد الحروق المتخصص",
+          "price": 1000,
+          "quantity": 1,
+          "nurseName": "مازن المتراب"
+        },
+        {
+          "serviceId": "EJLWd9heBqHoEP2TZ6Bo",
+          "serviceName": "تغيير الضمادات",
+          "price": 300,
+          "quantity": 1,
+          "nurseName": "مازن المتراب"
+        },
+        {
+          "serviceId": "YZiMN0F77vUdvB1hIAjj",
+          "serviceName": "إزالة الغرز",
+          "price": 400,
+          "quantity": 1,
+          "nurseName": "مازن المتراب"
+        }
+      ],
+      "total": 5500,
+      "paymentMethod": "card",
+      "createdAt": "2026-05-20T01:51:12.910Z",
+      "paid": 5500,
+      "remaining": 0,
+      "status": "paid"
+    }
+  },
+  {
+    "id": "DNNdZBD7vYwVKTHb5Q1d",
+    "data": {
+      "patientId": "zdxEPzSZWDFtIuH7GDrQ",
+      "visitId": "eKgm9xMHDCryzglRaVMy",
+      "clinicId": "Hj5b169m7675GoGceNJf",
+      "items": [
+        {
+          "serviceId": "sZZqxCAwUQGGrAyybP1X",
+          "serviceName": "إزالة جسم غريب",
+          "price": 800,
+          "quantity": 1,
+          "nurseName": "عدي"
+        },
+        {
+          "serviceId": "wIePYbbsxmWwPwYqLiXZ",
+          "serviceName": "إسعاف التسمم الغذائي الخفيف",
+          "price": 900,
+          "quantity": 1,
+          "nurseName": "عدي"
+        },
+        {
+          "serviceId": "A6Gbc8eg9mHPF2Zb1JhF",
+          "serviceName": "إسعاف الحساسية الموسمية",
+          "price": 600,
+          "quantity": 1,
+          "nurseName": "عدي"
+        },
+        {
+          "serviceId": "JXBfNrSuZKjHjSq9A6iB",
+          "serviceName": "إيقاف النزيف الخفيف",
+          "price": 600,
+          "quantity": 1,
+          "nurseName": "عدي"
+        }
+      ],
+      "total": 2900,
+      "paymentMethod": "cash",
+      "createdAt": "2026-05-20T02:00:18.678Z",
+      "paid": 2900,
+      "remaining": 0,
+      "status": "paid"
+    }
+  },
+  {
+    "id": "eihiSbbamIFMo0kpBxin",
+    "data": {
+      "patientId": "Nw6RyQeWwz3DGwgCxWNb",
+      "visitId": "1Pgs8bE7z81QnF1PbS1I",
+      "clinicId": "Hj5b169m7675GoGceNJf",
+      "items": [
+        {
+          "serviceId": "sZZqxCAwUQGGrAyybP1X",
+          "serviceName": "إزالة جسم غريب",
+          "price": 800,
+          "quantity": 1,
+          "nurseName": "عدي"
+        },
+        {
+          "serviceId": "wIePYbbsxmWwPwYqLiXZ",
+          "serviceName": "إسعاف التسمم الغذائي الخفيف",
+          "price": 900,
+          "quantity": 1,
+          "nurseName": "عدي"
+        }
+      ],
+      "total": 1700,
+      "paymentMethod": "card",
+      "createdAt": "2026-05-20T02:12:29.547Z",
+      "paid": 1700,
+      "remaining": 0,
+      "status": "paid"
+    }
+  },
+  {
+    "id": "n1KVA8p7UNyxuyj4Ia5b",
+    "data": {
+      "patientId": "ZxB2bLLk5Wo8F0CU3KDR",
+      "visitId": "pYTyvXo5CvlYTRGqHD8v",
+      "clinicId": "Hj5b169m7675GoGceNJf",
+      "items": [
+        {
+          "serviceId": "wIePYbbsxmWwPwYqLiXZ",
+          "serviceName": "إسعاف التسمم الغذائي الخفيف",
+          "price": 900,
+          "quantity": 1,
+          "nurseName": "عدي"
+        },
+        {
+          "serviceId": "dIjxBMHi5L6lCXI0wmna",
+          "serviceName": "إسعاف الصدمة العصبية",
+          "price": 1200,
+          "quantity": 1,
+          "nurseName": "عدي"
+        }
+      ],
+      "total": 2100,
+      "paid": 2100,
+      "remaining": 0,
+      "status": "paid",
+      "paymentMethod": "cash",
+      "createdAt": "2026-05-20T03:09:16.593Z"
+    }
+  },
+  {
+    "id": "pp6SF8KlxLS5tonPL7Ej",
+    "data": {
+      "patientId": "zdxEPzSZWDFtIuH7GDrQ",
+      "visitId": "r12qrDgLNDb2QLC5fG1n",
+      "clinicId": "Hj5b169m7675GoGceNJf",
+      "items": [
+        {
+          "serviceId": "A6Gbc8eg9mHPF2Zb1JhF",
+          "serviceName": "إسعاف الحساسية الموسمية",
+          "price": 600,
+          "quantity": 1,
+          "nurseName": "عدي"
+        },
+        {
+          "serviceId": "dIjxBMHi5L6lCXI0wmna",
+          "serviceName": "إسعاف الصدمة العصبية",
+          "price": 1200,
+          "quantity": 1,
+          "nurseName": "عدي"
+        },
+        {
+          "serviceId": "OzQ4NnbC0GSRTZ2HoP3O",
+          "serviceName": "متابعة الحروق",
+          "price": 700,
+          "quantity": 1,
+          "nurseName": "عدي"
+        },
+        {
+          "serviceId": "RI396hWL0g8a2urELqXD",
+          "serviceName": "متابعة العلاج الطبيعي",
+          "price": 800,
+          "quantity": 1,
+          "nurseName": "عدي"
+        }
+      ],
+      "total": 3300,
+      "paymentMethod": "cash",
+      "createdAt": "2026-05-20T02:52:26.623Z",
+      "paid": 3300,
+      "remaining": 0,
+      "status": "paid"
+    }
+  },
+  {
+    "id": "rlPMbB7ixS4304WLib13",
+    "data": {
+      "patientId": "t8UWBAxq78yPaDq1dPak",
+      "visitId": "kVy4Z5N6afgM1DhB1c5x",
+      "clinicId": "Hj5b169m7675GoGceNJf",
+      "items": [
+        {
+          "serviceId": "JXBfNrSuZKjHjSq9A6iB",
+          "serviceName": "إيقاف النزيف الخفيف",
+          "price": 600,
+          "quantity": 1,
+          "nurseName": "عدي"
+        },
+        {
+          "serviceId": "pzxtcAOMCaxa9VITdGH6",
+          "serviceName": "تنظيف وتطهير الجروح",
+          "price": 500,
+          "quantity": 1,
+          "nurseName": "عدي"
+        }
+      ],
+      "total": 1100,
+      "paymentMethod": "cash",
+      "createdAt": "2026-05-20T01:11:15.866Z",
+      "paid": 1100,
+      "remaining": 0,
+      "status": "paid"
+    }
+  },
+  {
+    "id": "usiV7HNS9jWgOGl0s0B2",
+    "data": {
+      "patientId": "XuE0jYu1ZETAPzsTiims",
+      "visitId": "zaXpRP0VX8U2aiXo6xdz",
+      "clinicId": "Hj5b169m7675GoGceNJf",
+      "items": [
+        {
+          "serviceId": "sZZqxCAwUQGGrAyybP1X",
+          "serviceName": "إزالة جسم غريب",
+          "price": 800,
+          "quantity": 1,
+          "nurseName": "عدي"
+        },
+        {
+          "serviceId": "wIePYbbsxmWwPwYqLiXZ",
+          "serviceName": "إسعاف التسمم الغذائي الخفيف",
+          "price": 900,
+          "quantity": 1,
+          "nurseName": "عدي"
+        },
+        {
+          "serviceId": "A6Gbc8eg9mHPF2Zb1JhF",
+          "serviceName": "إسعاف الحساسية الموسمية",
+          "price": 600,
+          "quantity": 1,
+          "nurseName": "عدي"
+        }
+      ],
+      "total": 2300,
+      "paid": 2300,
+      "remaining": 0,
+      "status": "paid",
+      "paymentMethod": "card",
+      "createdAt": "2026-05-20T02:04:52.802Z"
+    }
+  },
+  {
+    "id": "ya67TJQHOWm3DXfX4bHu",
+    "data": {
+      "patientId": "t8UWBAxq78yPaDq1dPak",
+      "visitId": "nmbIwTIB0Xb7iDRnCGb9",
+      "clinicId": "Hj5b169m7675GoGceNJf",
+      "items": [
+        {
+          "serviceId": "sZZqxCAwUQGGrAyybP1X",
+          "serviceName": "إزالة جسم غريب",
+          "price": 800,
+          "quantity": 1,
+          "nurseName": "عدي"
+        },
+        {
+          "serviceId": "wIePYbbsxmWwPwYqLiXZ",
+          "serviceName": "إسعاف التسمم الغذائي الخفيف",
+          "price": 900,
+          "quantity": 1,
+          "nurseName": "عدي"
+        },
+        {
+          "serviceId": "A6Gbc8eg9mHPF2Zb1JhF",
+          "serviceName": "إسعاف الحساسية الموسمية",
+          "price": 600,
+          "quantity": 1,
+          "nurseName": "عدي"
+        }
+      ],
+      "total": 2300,
+      "paymentMethod": "cash",
+      "createdAt": "2026-05-20T01:02:18.290Z",
+      "paid": 2300,
+      "remaining": 0,
+      "status": "paid"
+    }
+  }
+]

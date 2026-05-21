@@ -1,27 +1,41 @@
 import dbConnect from '@/lib/mongodb';
-import Patient from '@/models/Patient';
-import { toClient } from '@/lib/mongoose-helpers';
-import { notifyClinicUsers } from '@/lib/notifications';
 import { NextRequest, NextResponse } from 'next/server';
+import { extractAuthAndClinicId } from '@/lib/auth';
+import Patient from '@/models/Patient';
+import { toClientList } from '@/lib/mongoose-helpers';
 
 // GET: List all patients (with search by name, filtered by clinicId)
 export async function GET(request: NextRequest) {
   try {
     await dbConnect();
-
+    const { auth, effectiveClinicId } = extractAuthAndClinicId(request);
     const { searchParams } = new URL(request.url);
     const search = searchParams.get('search') || '';
-    const clinicId = searchParams.get('clinicId') || '';
 
-    let query = Patient.find();
-    if (clinicId) query = query.where('clinicId', clinicId);
-    if (search) query = query.where('name').regex(new RegExp(search, 'i'));
-    query = query.sort({ createdAt: -1 });
+    if (!effectiveClinicId) {
+      return NextResponse.json([]);
+    }
 
-    const patients = await query.lean();
-    const result = patients.map((doc) => toClient(doc));
+    let results;
+    try {
+      results = await Patient.find({ clinicId: effectiveClinicId })
+        .sort({ createdAt: -1 })
+        .lean();
+    } catch {
+      results = await Patient.find({ clinicId: effectiveClinicId }).lean();
+    }
 
-    return NextResponse.json(result);
+    let patients = toClientList(results);
+
+    // Filter by name if search query provided
+    if (search) {
+      const searchLower = search.toLowerCase();
+      patients = patients.filter((patient: any) =>
+        (patient.name || '').toLowerCase().includes(searchLower)
+      );
+    }
+
+    return NextResponse.json(patients);
   } catch (error) {
     console.error('Patients list error:', error);
     return NextResponse.json({ error: 'خطأ في جلب المرضى' }, { status: 500 });
@@ -32,17 +46,22 @@ export async function GET(request: NextRequest) {
 export async function POST(request: NextRequest) {
   try {
     await dbConnect();
-
+    const { auth, effectiveClinicId } = extractAuthAndClinicId(request);
     const body = await request.json();
-    const { name, age, gender, phone, emergencyPhone, address, bloodType, chronicDiseases, allergies, medicalHistory, notes, clinicId } = body;
+    const { name, age, ageCategory, gender, phone, emergencyPhone, address, bloodType, chronicDiseases, allergies, medicalHistory, notes, complaints } = body;
 
     if (!name) {
       return NextResponse.json({ error: 'يرجى إدخال اسم المريض' }, { status: 400 });
     }
 
+    if (!effectiveClinicId) {
+      return NextResponse.json({ error: 'لم يتم تحديد العيادة' }, { status: 400 });
+    }
+
     const patientData = {
       name,
       age: age || null,
+      ageCategory: ageCategory || 'adult',
       gender: gender || '',
       phone: phone || '',
       emergencyPhone: emergencyPhone || '',
@@ -52,33 +71,13 @@ export async function POST(request: NextRequest) {
       allergies: allergies || '',
       medicalHistory: medicalHistory || '',
       notes: notes || '',
-      clinicId: clinicId || '',
-      createdAt: new Date(),
+      complaints: complaints || [],
+      clinicId: effectiveClinicId,
     };
 
-    const doc = await Patient.create(patientData);
-    const result = toClient(doc.toObject());
+    const created = await Patient.create(patientData);
 
-    // Send notification to clinic users about new patient
-    const cid = clinicId || '';
-    const createdBy = body.createdBy || '';
-    if (cid) {
-      try {
-        await notifyClinicUsers({
-          clinicId: cid,
-          excludeUserId: createdBy,
-          type: 'patient',
-          title: 'مريض جديد',
-          message: `تم تسجيل المريض ${name} بنجاح`,
-          priority: 'normal',
-          relatedId: doc._id.toString(),
-        });
-      } catch (notifError) {
-        console.error('Failed to send patient notification:', notifError);
-      }
-    }
-
-    return NextResponse.json(result, { status: 201 });
+    return NextResponse.json({ id: created._id.toString(), ...toClient(created.toObject()) }, { status: 201 });
   } catch (error) {
     console.error('Create patient error:', error);
     return NextResponse.json({ error: 'خطأ في إضافة المريض' }, { status: 500 });

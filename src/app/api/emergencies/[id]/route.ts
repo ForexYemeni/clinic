@@ -1,7 +1,8 @@
 import dbConnect from '@/lib/mongodb';
-import Emergency from '@/models/Emergency';
 import User from '@/models/User';
+import Emergency from '@/models/Emergency';
 import { NextRequest, NextResponse } from 'next/server';
+import { extractAuthAndClinicId } from '@/lib/auth';
 
 // PUT: Update emergency (change status, add actions/procedures)
 export async function PUT(
@@ -10,7 +11,7 @@ export async function PUT(
 ) {
   try {
     await dbConnect();
-
+    const { auth, effectiveClinicId } = extractAuthAndClinicId(request);
     const { id } = await params;
     const body = await request.json();
 
@@ -21,6 +22,12 @@ export async function PUT(
         { error: 'الحالة الطارئة غير موجودة' },
         { status: 404 }
       );
+    }
+
+    // Verify clinic ownership (strict)
+    const emergencyClinicId = emergencyDoc.clinicId;
+    if (!effectiveClinicId || (emergencyClinicId && emergencyClinicId !== effectiveClinicId)) {
+      return NextResponse.json({ error: 'غير مصرح' }, { status: 403 });
     }
 
     const updateData: Record<string, unknown> = {};
@@ -40,7 +47,7 @@ export async function PUT(
       }
     }
 
-    await Emergency.findByIdAndUpdate(id, updateData);
+    await Emergency.findByIdAndUpdate(id, { $set: updateData });
 
     return NextResponse.json({ id, ...updateData });
   } catch (error) {

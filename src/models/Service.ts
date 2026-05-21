@@ -6,26 +6,38 @@ export interface IService extends Document {
   duration: number;
   category: string;
   description: string;
+  icon: string;
+  color: string;
   active: boolean;
-  status: string;
+  status: 'active' | 'paused' | 'deleted';
   clinicId: string;
   createdAt: Date;
+  updatedAt: Date;
 }
 
-const ServiceSchema = new Schema<IService>({
-  nameAr: { type: String, required: true },
-  price: { type: Number, required: true },
-  duration: { type: Number, default: 15 },
-  category: { type: String, default: 'أخرى' },
-  description: { type: String, default: '' },
-  active: { type: Boolean, default: true },
-  status: { type: String, default: 'active' },
-  clinicId: { type: String, default: '' },
-  createdAt: { type: Date, default: Date.now },
-}, {
-  toJSON: { virtuals: true },
-  toObject: { virtuals: true },
-});
+const ServiceSchema = new Schema<IService>(
+  {
+    nameAr: { type: String, required: true },
+    price: { type: Number, required: true },
+    duration: { type: Number, required: true },
+    category: { type: String, required: true },
+    description: { type: String, default: '' },
+    icon: { type: String, default: '' },
+    color: { type: String, default: '' },
+    active: { type: Boolean, default: true },
+    status: {
+      type: String,
+      enum: ['active', 'paused', 'deleted'],
+      default: 'active',
+    },
+    clinicId: { type: String, required: true },
+  },
+  {
+    timestamps: true,
+    toJSON: { virtuals: true },
+    toObject: { virtuals: true },
+  }
+);
 
 ServiceSchema.virtual('id').get(function () {
   return this._id.toString();

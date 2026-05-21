@@ -1,123 +1,160 @@
 import dbConnect from '@/lib/mongodb';
+import User from '@/models/User';
+import Clinic from '@/models/Clinic';
 import Patient from '@/models/Patient';
 import Visit from '@/models/Visit';
 import Emergency from '@/models/Emergency';
 import Service from '@/models/Service';
-import User from '@/models/User';
 import Invoice from '@/models/Invoice';
-import Clinic from '@/models/Clinic';
-import { toClient } from '@/lib/mongoose-helpers';
 import { NextRequest, NextResponse } from 'next/server';
+import { extractAuthAndClinicId } from '@/lib/auth';
+import { toClient } from '@/lib/mongoose-helpers';
 
-// GET: Dashboard stats based on role
+// GET: Dashboard stats based on role (filtered by clinicId)
 export async function GET(request: NextRequest) {
   try {
     await dbConnect();
-
+    const { auth, effectiveClinicId } = extractAuthAndClinicId(request);
     const { searchParams } = new URL(request.url);
     const role = searchParams.get('role') || 'admin';
     const nurseId = searchParams.get('nurseId');
-    const clinicId = searchParams.get('clinicId');
 
-    const today = new Date();
-    today.setHours(0, 0, 0, 0);
-
-    // Super admin: platform-wide stats
-    if (role === 'super_admin') {
-      const [totalClinics, activeClinics, totalPatients, totalNurses, totalAdmins] = await Promise.all([
-        Clinic.countDocuments(),
-        Clinic.countDocuments({ active: true }),
-        Patient.countDocuments(clinicId ? { clinicId } : {}),
-        User.countDocuments({ role: 'nurse', ...(clinicId ? { clinicId } : {}), active: true }),
-        User.countDocuments({ role: 'admin', ...(clinicId ? { clinicId } : {}) }),
-      ]);
-
-      // Get clinics with basic stats
-      const clinics = await Clinic.find().sort({ createdAt: -1 }).lean();
-      const clinicsWithData = [];
-      for (const c of clinics) {
-        const cid = c._id.toString();
-        const [pCount, nCount, eCount] = await Promise.all([
-          Patient.countDocuments({ clinicId: cid }),
-          User.countDocuments({ clinicId: cid, role: 'nurse' }),
-          Emergency.countDocuments({ clinicId: cid, status: 'active' }),
-        ]);
-        clinicsWithData.push({
-          id: cid,
-          name: c.name,
-          city: c.city,
-          active: c.active !== false,
-          patients: pCount,
-          nurses: nCount,
-          activeEmergencies: eCount,
-        });
-      }
-
+    if (!effectiveClinicId) {
       return NextResponse.json({
-        role: 'super_admin',
-        totalClinics,
-        activeClinics,
-        totalPatients,
-        totalNurses,
-        totalAdmins,
-        clinics: clinicsWithData,
+        role,
+        totalPatients: 0, totalVisits: 0, totalEmergencies: 0,
+        activeEmergencies: 0, activeServices: 0, activeNurses: 0,
+        totalRevenue: 0, todayRevenue: 0, todayPatients: 0, todayVisits: 0,
+        pendingInvoices: 0, unpaidAmount: 0,
+        servicesByCategory: [], topServices: [], recentEmergencies: [],
+        subscription: null,
+        subscriptionCheck: { valid: false, status: 'expired', endDate: '', daysRemaining: 0 },
       });
     }
 
-    // Nurse dashboard
+    const today = new Date();
+    today.setHours(0, 0, 0, 0);
+    const todayStr = today.toISOString();
+
     if (role === 'nurse' && nurseId) {
-      const [todayVisits, activeEmergencies] = await Promise.all([
-        Visit.find({ nurseId, ...(clinicId ? { clinicId } : {}), visitDate: { $gte: today } }).lean(),
-        Emergency.find({ nurseId, ...(clinicId ? { clinicId } : {}), status: 'active' }).lean(),
+      const [todayVisits, activeEmergencies, allEmergencies, allVisits] = await Promise.all([
+        Visit.find({ clinicId: effectiveClinicId, nurseId, visitDate: { $gte: todayStr } }).lean()
+          .catch(() => Visit.find({ clinicId: effectiveClinicId, nurseId }).lean()),
+        Emergency.find({ clinicId: effectiveClinicId, nurseId, status: 'active' }).lean(),
+        Emergency.find({ clinicId: effectiveClinicId, nurseId }).lean(),
+        Visit.find({ clinicId: effectiveClinicId, nurseId }).lean(),
       ]);
 
       const patientIds = new Set<string>();
       todayVisits.forEach((doc) => {
-        if (doc.patientId) patientIds.add(doc.patientId);
+        const pid = doc.patientId;
+        if (pid) patientIds.add(pid);
       });
+
+      // Count today's services from visits
+      let todayServices = 0;
+      todayVisits.forEach((doc) => {
+        const sids: string[] = doc.serviceIds || [];
+        todayServices += sids.length;
+      });
+
+      // Recent emergencies for nurse
+      const recentEmergencies = [];
+      const activeEmergencyDocs = activeEmergencies.slice(0, 5);
+      for (const doc of activeEmergencyDocs) {
+        const data = toClient(doc) as any;
+        if (data.patientId) {
+          const patientDoc = await Patient.findById(data.patientId).lean();
+          if (patientDoc) data.patient = { id: patientDoc._id.toString(), name: patientDoc.name };
+        }
+        recentEmergencies.push(data);
+      }
+
+      // Subscription info for nurse
+      const clinicDoc = await Clinic.findById(effectiveClinicId).lean();
+      let subscription: null | { status: string; type: string; endDate: string; trialDays?: number } = null;
+      let subscriptionCheck: { valid: boolean; status: string; endDate: string; daysRemaining: number } = { valid: false, status: 'expired', endDate: '', daysRemaining: 0 };
+      if (clinicDoc) {
+        const sub = (clinicDoc as any).subscription;
+        if (sub) {
+          subscription = {
+            status: sub.status || 'inactive',
+            type: sub.type || 'free',
+            endDate: sub.endDate || '',
+            ...(sub.trialDays !== undefined ? { trialDays: sub.trialDays } : {}),
+          };
+          const endMs = sub.endDate ? new Date(sub.endDate).getTime() : 0;
+          const nowMs = Date.now();
+          const daysRemaining = endMs > nowMs ? Math.ceil((endMs - nowMs) / (1000 * 60 * 60 * 24)) : 0;
+          subscriptionCheck = {
+            valid: sub.status === 'active' && daysRemaining > 0,
+            status: sub.status || 'expired',
+            endDate: sub.endDate || '',
+            daysRemaining,
+          };
+        }
+      }
 
       return NextResponse.json({
         role: 'nurse',
         todayPatients: patientIds.size,
         todayVisits: todayVisits.length,
+        todayServices,
         activeEmergencies: activeEmergencies.length,
+        totalEmergencies: allEmergencies.length,
+        totalVisits: allVisits.length,
+        totalPatients: patientIds.size,
+        totalRevenue: 0,
+        totalServices: 0,
+        totalNurses: 0,
+        todayRevenue: 0,
+        pendingInvoices: 0,
+        monthlyRevenue: 0,
+        monthlyPatients: 0,
+        unpaidAmount: 0,
+        servicesByCategory: [],
+        topServices: [],
+        recentEmergencies,
+        recentPayments: [],
+        dailyRevenue: [],
         pendingTasks: activeEmergencies.length,
+        subscription,
+        subscriptionCheck,
       });
     }
 
-    // Admin dashboard (clinic-scoped)
-    const clinicFilter = clinicId ? { clinicId } : {};
+    // Admin dashboard - all queries scoped to effectiveClinicId
     const [
-      patientsSnap, visitsSnap, emergenciesSnap, servicesSnap,
-      nursesSnap, invoicesSnap, todayVisitsSnap, todayEmergenciesSnap,
+      patients, visits, emergencies, services, nurses, invoices,
     ] = await Promise.all([
-      Patient.find(clinicFilter).lean(),
-      Visit.find(clinicFilter).lean(),
-      Emergency.find(clinicFilter).lean(),
-      Service.find({ ...clinicFilter, status: 'active' }).lean(),
-      User.find({ ...clinicFilter, role: 'nurse', active: true }).lean(),
-      Invoice.find({ ...clinicFilter, status: { $in: ['unpaid', 'partial'] } }).lean(),
-      Visit.find({ ...clinicFilter, visitDate: { $gte: today } }).lean(),
-      Emergency.find({ ...clinicFilter, status: 'active' }).lean(),
+      Patient.find({ clinicId: effectiveClinicId }).lean(),
+      Visit.find({ clinicId: effectiveClinicId }).lean(),
+      Emergency.find({ clinicId: effectiveClinicId }).lean(),
+      Service.find({ clinicId: effectiveClinicId, status: 'active' }).lean(),
+      User.find({ role: 'nurse', clinicId: effectiveClinicId, active: true }).lean(),
+      Invoice.find({ clinicId: effectiveClinicId, status: { $in: ['unpaid', 'partial'] } }).lean(),
     ]);
 
-    const totalPatients = patientsSnap.length;
-    const activeEmergencies = todayEmergenciesSnap.length;
-    const activeServices = servicesSnap.length;
-    const activeNurses = nursesSnap.length;
-    const pendingInvoices = invoicesSnap.length;
+    // Today stats
+    const todayVisitsDocs = await Visit.find({ clinicId: effectiveClinicId, visitDate: { $gte: todayStr } }).lean();
+    const todayEmergenciesDocs = await Emergency.find({ clinicId: effectiveClinicId, status: 'active' }).lean();
 
-    const totalRevenue = visitsSnap.reduce((sum, doc) => sum + (doc.totalPrice || 0), 0);
-    const todayRevenue = todayVisitsSnap.reduce((sum, doc) => sum + (doc.totalPrice || 0), 0);
-    const todayPatients = new Set(todayVisitsSnap.map((doc) => doc.patientId).filter(Boolean)).size;
+    const totalPatients = patients.length;
+    const activeEmergencies = todayEmergenciesDocs.length;
+    const activeServices = services.length;
+    const activeNurses = nurses.length;
 
-    const unpaidAmount = invoicesSnap.reduce(
-      (sum, doc) => sum + ((doc.remaining) ?? (doc.total - (doc.paid || 0))), 0
-    );
+    // Filter invoices for pending only
+    const pendingInvoices = invoices.filter(d => ['unpaid', 'partial'].includes(d.status)).length;
+
+    const totalRevenue = visits.reduce((sum, doc) => sum + (doc.totalPrice || 0), 0);
+    const todayRevenue = todayVisitsDocs.reduce((sum, doc) => sum + (doc.totalPrice || 0), 0);
+    const todayPatients = new Set(todayVisitsDocs.map((doc) => doc.patientId).filter(Boolean)).size;
+    const unpaidAmount = invoices.filter(d => ['unpaid', 'partial'].includes(d.status)).reduce((sum, doc) => sum + ((doc.remaining) ?? (doc.total - (doc.paid || 0))), 0);
 
     // Services by category
     const categoryMap: Record<string, number> = {};
-    servicesSnap.forEach((doc) => {
+    services.forEach((doc) => {
       const cat = doc.category || 'أخرى';
       categoryMap[cat] = (categoryMap[cat] || 0) + 1;
     });
@@ -126,7 +163,7 @@ export async function GET(request: NextRequest) {
     // Top services
     const serviceCountMap: Record<string, number> = {};
     const serviceNameMap: Record<string, string> = {};
-    for (const visitDoc of visitsSnap) {
+    for (const visitDoc of visits) {
       const sids: string[] = visitDoc.serviceIds || [];
       for (const sid of sids) {
         serviceCountMap[sid] = (serviceCountMap[sid] || 0) + 1;
@@ -136,14 +173,37 @@ export async function GET(request: NextRequest) {
         }
       }
     }
-    const topServices = Object.entries(serviceCountMap)
-      .map(([id, count]) => ({ name: serviceNameMap[id] || '', count }))
-      .sort((a, b) => b.count - a.count)
-      .slice(0, 5);
+    const topServices = Object.entries(serviceCountMap).map(([id, count]) => ({ name: serviceNameMap[id] || '', count })).sort((a, b) => b.count - a.count).slice(0, 5);
+
+    // Subscription info
+    const clinicDoc = await Clinic.findById(effectiveClinicId).lean();
+    let subscription: null | { status: string; type: string; endDate: string; trialDays?: number } = null;
+    let subscriptionCheck: { valid: boolean; status: string; endDate: string; daysRemaining: number } = { valid: false, status: 'expired', endDate: '', daysRemaining: 0 };
+
+    if (clinicDoc) {
+      const sub = (clinicDoc as any).subscription;
+      if (sub) {
+        subscription = {
+          status: sub.status || 'inactive',
+          type: sub.type || 'free',
+          endDate: sub.endDate || '',
+          ...(sub.trialDays !== undefined ? { trialDays: sub.trialDays } : {}),
+        };
+        const endMs = sub.endDate ? new Date(sub.endDate).getTime() : 0;
+        const nowMs = Date.now();
+        const daysRemaining = endMs > nowMs ? Math.ceil((endMs - nowMs) / (1000 * 60 * 60 * 24)) : 0;
+        subscriptionCheck = {
+          valid: sub.status === 'active' && daysRemaining > 0,
+          status: sub.status || 'expired',
+          endDate: sub.endDate || '',
+          daysRemaining,
+        };
+      }
+    }
 
     // Recent emergencies
     const recentEmergencies = [];
-    const activeEmergencyDocs = emergenciesSnap.filter((d) => d.status === 'active').slice(0, 5);
+    const activeEmergencyDocs = emergencies.filter((d) => d.status === 'active').slice(0, 5);
     for (const doc of activeEmergencyDocs) {
       const data = toClient(doc) as any;
       if (data.patientId) {
@@ -157,32 +217,13 @@ export async function GET(request: NextRequest) {
       recentEmergencies.push(data);
     }
 
-    // Monthly stats
-    const monthAgo = new Date();
-    monthAgo.setMonth(monthAgo.getMonth() - 1);
-    const monthlyVisits = await Visit.find({ ...clinicFilter, visitDate: { $gte: monthAgo } }).lean();
-    const monthlyPatients = new Set(monthlyVisits.map(v => v.patientId).filter(Boolean)).size;
-    const monthlyRevenue = monthlyVisits.reduce((sum, doc) => sum + (doc.totalPrice || 0), 0);
-
     return NextResponse.json({
       role: 'admin',
-      totalPatients,
-      totalVisits: visitsSnap.length,
-      totalEmergencies: emergenciesSnap.length,
-      activeEmergencies,
-      activeServices,
-      activeNurses,
-      totalRevenue,
-      todayRevenue,
-      todayPatients,
-      todayVisits: todayVisitsSnap.length,
-      pendingInvoices,
-      unpaidAmount,
-      servicesByCategory,
-      topServices,
-      recentEmergencies,
-      monthlyRevenue,
-      monthlyPatients,
+      totalPatients, totalVisits: visits.length, totalEmergencies: emergencies.length,
+      activeEmergencies, activeServices, activeNurses,
+      totalRevenue, todayRevenue, todayPatients, todayVisits: todayVisitsDocs.length,
+      pendingInvoices, unpaidAmount, servicesByCategory, topServices, recentEmergencies,
+      subscription, subscriptionCheck,
     });
   } catch (error) {
     console.error('Dashboard error:', error);

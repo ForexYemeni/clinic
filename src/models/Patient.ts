@@ -12,28 +12,34 @@ export interface IPatient extends Document {
   allergies: string;
   medicalHistory: string;
   notes: string;
+  registeredBy: string;
   clinicId: string;
   createdAt: Date;
+  updatedAt: Date;
 }
 
-const PatientSchema = new Schema<IPatient>({
-  name: { type: String, required: true },
-  age: { type: Number, default: null },
-  gender: { type: String, default: '' },
-  phone: { type: String, default: '' },
-  emergencyPhone: { type: String, default: '' },
-  address: { type: String, default: '' },
-  bloodType: { type: String, default: '' },
-  chronicDiseases: { type: String, default: '' },
-  allergies: { type: String, default: '' },
-  medicalHistory: { type: String, default: '' },
-  notes: { type: String, default: '' },
-  clinicId: { type: String, default: '' },
-  createdAt: { type: Date, default: Date.now },
-}, {
-  toJSON: { virtuals: true },
-  toObject: { virtuals: true },
-});
+const PatientSchema = new Schema<IPatient>(
+  {
+    name: { type: String, required: true },
+    age: { type: Number, default: null },
+    gender: { type: String, default: '' },
+    phone: { type: String, default: '' },
+    emergencyPhone: { type: String, default: '' },
+    address: { type: String, default: '' },
+    bloodType: { type: String, default: '' },
+    chronicDiseases: { type: String, default: '' },
+    allergies: { type: String, default: '' },
+    medicalHistory: { type: String, default: '' },
+    notes: { type: String, default: '' },
+    registeredBy: { type: String, default: '' },
+    clinicId: { type: String, required: true },
+  },
+  {
+    timestamps: true,
+    toJSON: { virtuals: true },
+    toObject: { virtuals: true },
+  }
+);
 
 PatientSchema.virtual('id').get(function () {
   return this._id.toString();

@@ -1,6 +1,8 @@
 import dbConnect from '@/lib/mongodb';
-import Service from '@/models/Service';
 import { NextRequest, NextResponse } from 'next/server';
+import { extractAuthAndClinicId } from '@/lib/auth';
+import Service from '@/models/Service';
+import { toClient } from '@/lib/mongoose-helpers';
 
 // PUT: Update service (change price, name, pause, activate)
 export async function PUT(
@@ -9,17 +11,23 @@ export async function PUT(
 ) {
   try {
     await dbConnect();
-
+    const { auth, effectiveClinicId } = extractAuthAndClinicId(request);
     const { id } = await params;
     const body = await request.json();
 
     // Check if service exists
     const serviceDoc = await Service.findById(id).lean();
-    if (!serviceDoc) {
+    if (serviceDoc === null) {
       return NextResponse.json(
         { error: 'الخدمة غير موجودة' },
         { status: 404 }
       );
+    }
+
+    // Verify clinic ownership (strict)
+    const serviceClinicId = serviceDoc.clinicId;
+    if (!effectiveClinicId || (serviceClinicId && serviceClinicId !== effectiveClinicId)) {
+      return NextResponse.json({ error: 'غير مصرح' }, { status: 403 });
     }
 
     const updateData: Record<string, unknown> = {};
@@ -29,6 +37,8 @@ export async function PUT(
     if (body.duration !== undefined) updateData.duration = Number(body.duration);
     if (body.category !== undefined) updateData.category = body.category;
     if (body.description !== undefined) updateData.description = body.description;
+    if (body.icon !== undefined) updateData.icon = body.icon;
+    if (body.color !== undefined) updateData.color = body.color;
 
     // Handle pause/activate
     if (body.status === 'paused') {
@@ -46,7 +56,7 @@ export async function PUT(
       }
     }
 
-    await Service.findByIdAndUpdate(id, updateData);
+    await Service.findByIdAndUpdate(id, { $set: updateData });
 
     return NextResponse.json({
       id,
@@ -68,22 +78,30 @@ export async function DELETE(
 ) {
   try {
     await dbConnect();
-
+    const { auth, effectiveClinicId } = extractAuthAndClinicId(request);
     const { id } = await params;
 
     // Check if service exists
     const serviceDoc = await Service.findById(id).lean();
-    if (!serviceDoc) {
+    if (serviceDoc === null) {
       return NextResponse.json(
         { error: 'الخدمة غير موجودة' },
         { status: 404 }
       );
     }
 
+    // Verify clinic ownership (strict)
+    const serviceClinicId = serviceDoc.clinicId;
+    if (!effectiveClinicId || (serviceClinicId && serviceClinicId !== effectiveClinicId)) {
+      return NextResponse.json({ error: 'غير مصرح' }, { status: 403 });
+    }
+
     // Soft delete - set status to 'deleted'
     await Service.findByIdAndUpdate(id, {
-      status: 'deleted',
-      active: false,
+      $set: {
+        status: 'deleted',
+        active: false,
+      },
     });
 
     return NextResponse.json({ success: true, id });

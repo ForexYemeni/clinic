@@ -1,0 +1,25 @@
+[
+  {
+    "id": "Hj5b169m7675GoGceNJf",
+    "data": {
+      "description": "",
+      "phone": "777534316",
+      "address": "",
+      "logo": "",
+      "primaryColor": "emerald",
+      "ownerPhone": "777534316",
+      "createdAt": "2026-05-20T00:58:17.028Z",
+      "setupComplete": true,
+      "active": true,
+      "subscription": {
+        "status": "trial",
+        "type": "trial",
+        "startDate": "2026-05-20T00:58:17.028Z",
+        "endDate": "2026-05-21T02:55:25.929Z",
+        "trialDays": 1
+      },
+      "name": "عيادة العافية",
+      "updatedAt": "2026-05-20T03:11:34.311Z"
+    }
+  }
+]

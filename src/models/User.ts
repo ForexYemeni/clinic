@@ -7,21 +7,32 @@ export interface IUser extends Document {
   role: 'super_admin' | 'admin' | 'nurse';
   active: boolean;
   clinicId: string;
+  recoveryCode?: string;
   createdAt: Date;
+  updatedAt: Date;
 }
 
-const UserSchema = new Schema<IUser>({
-  name: { type: String, required: true },
-  phone: { type: String, required: true, unique: true },
-  password: { type: String, required: true },
-  role: { type: String, enum: ['super_admin', 'admin', 'nurse'], default: 'nurse' },
-  active: { type: Boolean, default: true },
-  clinicId: { type: String, default: '' },
-  createdAt: { type: Date, default: Date.now },
-}, {
-  toJSON: { virtuals: true },
-  toObject: { virtuals: true },
-});
+const UserSchema = new Schema<IUser>(
+  {
+    name: { type: String, required: true },
+    phone: { type: String, required: true, unique: true },
+    password: { type: String, required: true },
+    role: {
+      type: String,
+      enum: ['super_admin', 'admin', 'nurse'],
+      default: 'nurse',
+    },
+    active: { type: Boolean, default: true },
+    clinicId: { type: String, default: '' },
+    salary: { type: Number, default: 0 },
+    recoveryCode: { type: String },
+  },
+  {
+    timestamps: true,
+    toJSON: { virtuals: true },
+    toObject: { virtuals: true },
+  }
+);
 
 UserSchema.virtual('id').get(function () {
   return this._id.toString();

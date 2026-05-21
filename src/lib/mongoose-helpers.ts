@@ -1,12 +1,14 @@
-// Helper to convert Mongoose lean document to API response format
-// Mongoose lean returns: { _id: ObjectId, ...fields }
-// This function maps _id to id for API response compatibility
-
-export function toClient<T extends { _id: any }>(doc: T): Omit<T, '_id'> & { id: string } {
-  const { _id, ...rest } = doc;
-  return { id: _id.toString(), ...rest } as Omit<T, '_id'> & { id: string };
+export function toClient(doc: any): any {
+  if (!doc) return null;
+  const obj = doc.toObject ? doc.toObject() : doc;
+  if (obj._id) {
+    obj.id = obj._id.toString();
+    delete obj._id;
+  }
+  if (obj.__v !== undefined) delete obj.__v;
+  return obj;
 }
 
-export function toClientList<T extends { _id: any }>(docs: T[]): (Omit<T, '_id'> & { id: string })[] {
+export function toClientList(docs: any[]): any[] {
   return docs.map(toClient);
 }
