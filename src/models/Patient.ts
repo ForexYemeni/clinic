@@ -3,6 +3,7 @@ import mongoose, { Schema, Document } from 'mongoose';
 export interface IPatient extends Document {
   name: string;
   age: number | null;
+  ageCategory: string;
   gender: string;
   phone: string;
   emergencyPhone: string;
@@ -12,6 +13,7 @@ export interface IPatient extends Document {
   allergies: string;
   medicalHistory: string;
   notes: string;
+  complaints: string[];
   registeredBy: string;
   clinicId: string;
   createdAt: Date;
@@ -22,6 +24,7 @@ const PatientSchema = new Schema<IPatient>(
   {
     name: { type: String, required: true },
     age: { type: Number, default: null },
+    ageCategory: { type: String, default: 'adult' },
     gender: { type: String, default: '' },
     phone: { type: String, default: '' },
     emergencyPhone: { type: String, default: '' },
@@ -31,6 +34,7 @@ const PatientSchema = new Schema<IPatient>(
     allergies: { type: String, default: '' },
     medicalHistory: { type: String, default: '' },
     notes: { type: String, default: '' },
+    complaints: { type: [String], default: [] },
     registeredBy: { type: String, default: '' },
     clinicId: { type: String, required: true },
   },

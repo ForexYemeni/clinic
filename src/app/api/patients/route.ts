@@ -2,7 +2,7 @@ import dbConnect from '@/lib/mongodb';
 import { NextRequest, NextResponse } from 'next/server';
 import { extractAuthAndClinicId } from '@/lib/auth';
 import Patient from '@/models/Patient';
-import { toClientList } from '@/lib/mongoose-helpers';
+import { toClient, toClientList } from '@/lib/mongoose-helpers';
 
 // GET: List all patients (with search by name, filtered by clinicId)
 export async function GET(request: NextRequest) {
