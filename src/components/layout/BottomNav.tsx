@@ -24,6 +24,7 @@ const BottomNav = React.memo(function BottomNav() {
   ], []);
 
   const nurseTabs = useMemo(() => [
+    { id: 'nurse-dashboard', label: 'الرئيسية', icon: Users, matchPrefix: 'nurse-dashboard' },
     { id: 'nurse-patients', label: 'المرضى', icon: Users, matchPrefix: 'nurse-patient' },
     { id: 'nurse-emergencies', label: 'الطوارئ', icon: AlertTriangle, matchPrefix: 'nurse-emergenc' },
     { id: 'nurse-reports', label: 'التقارير', icon: FileText, matchPrefix: 'nurse-report' },

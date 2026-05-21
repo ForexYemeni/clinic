@@ -130,7 +130,7 @@ export function NotificationsScreen() {
             onClick={() => setActiveFilter(tab.key)}
             className={`flex-shrink-0 px-3 py-1.5 rounded-lg text-xs font-bold transition-all ${
               activeFilter === tab.key
-                ? 'bg-clinic-500 text-white shadow-sm'
+                ? 'bg-emerald-500 text-white shadow-sm'
                 : 'bg-gray-100 dark:bg-gray-800 text-muted-foreground hover:bg-gray-200 dark:hover:bg-gray-700'
             }`}
           >

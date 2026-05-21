@@ -278,7 +278,7 @@ export function NotificationBell() {
             <div className="p-2 border-t border-border bg-gray-50 dark:bg-gray-800/50">
               <button
                 onClick={() => { setShowPanel(false); setScreen('admin-notifications'); }}
-                className="w-full py-2 text-xs font-bold text-clinic-600 hover:bg-clinic-50 dark:hover:bg-clinic-900/20 rounded-xl transition-colors"
+                className="w-full py-2 text-xs font-bold text-emerald-600 hover:bg-emerald-50 dark:hover:bg-emerald-900/20 rounded-xl transition-colors"
               >
                 عرض جميع الإشعارات
               </button>

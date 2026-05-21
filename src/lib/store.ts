@@ -10,7 +10,7 @@ export type ScreenType =
   | 'admin-patient-detail' | 'admin-add-patient' | 'admin-add-nurse' | 'admin-add-emergency'
   | 'admin-add-payment' | 'admin-add-service'
   // Nurse screens
-  | 'nurse-patients' | 'nurse-emergencies' | 'nurse-reports' | 'nurse-more' | 'nurse-finance'
+  | 'nurse-dashboard' | 'nurse-patients' | 'nurse-emergencies' | 'nurse-reports' | 'nurse-more' | 'nurse-finance'
   | 'nurse-patient-detail' | 'nurse-add-emergency' | 'nurse-add-visit' | 'nurse-change-password';
 
 export interface User {

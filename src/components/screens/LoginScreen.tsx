@@ -73,7 +73,7 @@ export function LoginScreen() {
         setScreen('admin-dashboard');
       } else {
         useAppStore.getState().setClinicName(data.clinic?.name || 'عيادة');
-        setScreen('nurse-patients');
+        setScreen('nurse-dashboard');
       }
 
       toast.success(`مرحباً ${data.user.name}`);

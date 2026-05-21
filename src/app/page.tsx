@@ -30,6 +30,7 @@ const AdminMoreMenu = dynamic(() => import('@/components/screens/admin/AdminMore
 const AdminReports = dynamic(() => import('@/components/screens/admin/AdminReports').then(m => ({ default: m.AdminReports })), { ssr: false });
 
 // Lazy-loaded nurse screens
+const NurseDashboard = dynamic(() => import('@/components/screens/nurse/NurseDashboard').then(m => ({ default: m.NurseDashboard })), { ssr: false });
 const NurseAddVisit = dynamic(() => import('@/components/screens/nurse/NurseAddVisit').then(m => ({ default: m.NurseAddVisit })), { ssr: false });
 const NurseEmergencies = dynamic(() => import('@/components/screens/nurse/NurseEmergencies').then(m => ({ default: m.NurseEmergencies })), { ssr: false });
 const NurseReports = dynamic(() => import('@/components/screens/nurse/NurseReports').then(m => ({ default: m.NurseReports })), { ssr: false });
@@ -95,6 +96,7 @@ export default function ClinicApp() {
       case 'admin-reports': return <AdminReports />;
 
       // Nurse screens
+      case 'nurse-dashboard': return <NurseDashboard />;
       case 'nurse-patients': return <PatientList role="nurse" />;
       case 'nurse-patient-detail': return <PatientDetail role="nurse" />;
       case 'nurse-add-visit': return <NurseAddVisit />;
