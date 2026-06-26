@@ -1,40 +1,24 @@
-import mongoose from 'mongoose';
+// ═══════════════════════════════════════════════════════════
+// 🗄️ Database Connection Shim (Prisma → MongoDB-compatible API)
+//
+// This file preserves the old `dbConnect()` API used across all routes
+// but underneath it just returns the Prisma singleton. Real DB access
+// happens via the `prisma` export from `@/lib/db`.
+//
+// Migration path: API routes can keep `await dbConnect();` at the top
+// while switching their queries from Mongoose models to `prisma.*`.
+// ═══════════════════════════════════════════════════════════
 
-let cached = (global as any).mongoose;
+import prisma from './db';
 
-if (!cached) {
-  cached = (global as any).mongoose = { conn: null, promise: null, memoryServer: null };
-}
-
+/**
+ * No-op kept for backward compatibility with API routes that
+ * still call `await dbConnect()` at the top of their handlers.
+ * Prisma connects lazily on first query, so this is a safe no-op.
+ */
 async function dbConnect() {
-  if (cached.conn) return cached.conn;
-
-  if (!cached.promise) {
-    const MONGODB_URI = process.env.MONGODB_URI;
-
-    if (MONGODB_URI) {
-      // Use the configured MongoDB URI
-      cached.promise = mongoose.connect(MONGODB_URI).then((m) => m);
-    } else {
-      // Fallback to mongodb-memory-server
-      console.log('[MongoDB] No MONGODB_URI found, starting in-memory MongoDB server...');
-      const { MongoMemoryServer } = await import('mongodb-memory-server');
-      const memoryServer = await MongoMemoryServer.create();
-      cached.memoryServer = memoryServer;
-      const uri = memoryServer.getUri();
-      console.log('[MongoDB] In-memory server started at:', uri);
-      cached.promise = mongoose.connect(uri).then((m) => m);
-    }
-  }
-
-  try {
-    cached.conn = await cached.promise;
-    console.log('[MongoDB] Connected successfully');
-    return cached.conn;
-  } catch (error) {
-    cached.promise = null;
-    throw error;
-  }
+  return prisma;
 }
 
 export default dbConnect;
+export { prisma };

@@ -1,12 +1,9 @@
 // ═══════════════════════════════════════════════════════════
-// 🏗️ Clinic Setup API
+// 🏗️ Clinic Setup API (Prisma + PostgreSQL)
 // First-time clinic admin setup (creates clinic in new multi-tenant system)
 // ═══════════════════════════════════════════════════════════
 
-import dbConnect from '@/lib/mongodb';
-import User from '@/models/User';
-import Clinic from '@/models/Clinic';
-import Service from '@/models/Service';
+import prisma from '@/lib/db';
 import { NextRequest, NextResponse } from 'next/server';
 import { hashPassword, generateToken, generateRecoveryCode } from '@/lib/auth';
 import { createClinic, setPlatformConfig, getPlatformConfig } from '@/lib/multi-tenant';
@@ -15,7 +12,6 @@ import { DEFAULT_SERVICES } from '@/lib/services-data';
 // POST: First-time clinic admin setup
 export async function POST(request: NextRequest) {
   try {
-    await dbConnect();
     const body = await request.json();
     const { adminName, adminPhone, clinicName, password } = body;
 
@@ -42,11 +38,20 @@ export async function POST(request: NextRequest) {
       );
     }
 
+    // Check phone is not already taken
+    const existingUser = await prisma.user.findUnique({ where: { phone: adminPhone } });
+    if (existingUser) {
+      return NextResponse.json(
+        { error: 'رقم الهاتف مستخدم بالفعل' },
+        { status: 409 }
+      );
+    }
+
     // Hash password
     const hashedPassword = await hashPassword(password);
     const recoveryCode = generateRecoveryCode();
 
-    // Create clinic using multi-tenant system
+    // Create clinic
     const result = await createClinic({
       name: clinicName,
       phone: adminPhone,
@@ -58,30 +63,40 @@ export async function POST(request: NextRequest) {
     const clinicId = result.clinicId;
 
     // Create admin user linked to the clinic
-    const adminDoc = await User.create({
-      name: adminName,
-      phone: adminPhone,
-      password: hashedPassword,
-      role: 'admin',
-      clinicId,
-      active: true,
-      recoveryCode,
+    const adminDoc = await prisma.user.create({
+      data: {
+        name: adminName,
+        phone: adminPhone,
+        password: hashedPassword,
+        role: 'admin',
+        clinicId,
+        active: true,
+        recoveryCode,
+      },
     });
-    const adminId = adminDoc._id.toString();
+    const adminId = adminDoc.id;
 
     // Mark clinic as setup complete
-    await Clinic.findByIdAndUpdate(clinicId, {
-      $set: { setupComplete: true },
+    await prisma.clinic.update({
+      where: { id: clinicId },
+      data: { setupComplete: true, adminId, adminPhone },
     });
 
     // Seed default services for the clinic
-    const servicesWithClinicId = DEFAULT_SERVICES.map(s => ({
-      ...s,
-      clinicId,
-      active: true,
-      status: 'active',
-    }));
-    await Service.create(servicesWithClinicId);
+    await prisma.service.createMany({
+      data: DEFAULT_SERVICES.map((s) => ({
+        nameAr: s.nameAr,
+        price: s.price,
+        duration: s.duration,
+        category: s.category,
+        description: s.description || '',
+        icon: s.icon || '',
+        color: s.color || '',
+        active: true,
+        status: 'active',
+        clinicId,
+      })),
+    });
 
     // Ensure platform config is set up
     const platformConfig = await getPlatformConfig();

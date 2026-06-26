@@ -4,7 +4,7 @@ import React, { useEffect, Suspense, Component, ReactNode } from 'react';
 import dynamic from 'next/dynamic';
 import { motion, AnimatePresence } from 'framer-motion';
 import { Shield, Building2, ScrollText, Settings, LogOut, RefreshCw, AlertTriangle } from 'lucide-react';
-import { useAppStore } from '@/lib/store';
+import { useAppStore, ScreenType } from '@/lib/store';
 import { installGlobalApiFetch } from '@/lib/api';
 import '@/lib/pwa-install'; // Initialize PWA install prompt listener early
 import { TopHeader } from '@/components/layout/TopHeader';

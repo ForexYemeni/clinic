@@ -282,7 +282,7 @@ export function SuperAdminDashboard({ initialTab = 'dashboard' }: Props) {
     }
     setAddingClinic(true);
     try {
-      await apiPost('/api/super-admin/clinics', {
+      await apiPost<any>('/api/super-admin/clinics', {
         name: newClinicName,
         phone: newClinicPhone || newAdminPhone,
         ownerPhone: newAdminPhone,

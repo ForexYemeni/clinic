@@ -1,13 +1,8 @@
 // ═══════════════════════════════════════════════════════════
-// 👑 Super Admin - Clinics Management API
-// CRUD operations for clinics (super admin only)
+// 👑 Super Admin - Clinics Management API (Prisma + PostgreSQL)
 // ═══════════════════════════════════════════════════════════
 
-import dbConnect from '@/lib/mongodb';
-import User from '@/models/User';
-import Patient from '@/models/Patient';
-import Service from '@/models/Service';
-import Clinic from '@/models/Clinic';
+import prisma from '@/lib/db';
 import { NextRequest, NextResponse } from 'next/server';
 import { extractAuthFromRequest, hashPassword, generateRecoveryCode } from '@/lib/auth';
 import { createClinic, getAllClinics, setClinicSubscription, createAuditLog } from '@/lib/multi-tenant';
@@ -16,7 +11,6 @@ import { DEFAULT_SERVICES } from '@/lib/services-data';
 // GET: List all clinics with stats
 export async function GET(request: NextRequest) {
   try {
-    await dbConnect();
     const auth = extractAuthFromRequest(request);
     if (!auth || auth.role !== 'super_admin') {
       return NextResponse.json({ error: 'غير مصرح' }, { status: 403 });
@@ -24,20 +18,13 @@ export async function GET(request: NextRequest) {
 
     const clinics = await getAllClinics();
 
-    // Enrich with stats
     const enrichedClinics = await Promise.all(clinics.map(async (clinic) => {
       try {
-        // Count users for this clinic
-        const userCount = await User.countDocuments({ clinicId: clinic.id });
-
-        // Count patients
-        const patientCount = await Patient.countDocuments({ clinicId: clinic.id });
-
-        return {
-          ...clinic,
-          userCount,
-          patientCount,
-        };
+        const [userCount, patientCount] = await Promise.all([
+          prisma.user.count({ where: { clinicId: clinic.id } }),
+          prisma.patient.count({ where: { clinicId: clinic.id } }),
+        ]);
+        return { ...clinic, userCount, patientCount };
       } catch {
         return { ...clinic, userCount: 0, patientCount: 0 };
       }
@@ -50,10 +37,9 @@ export async function GET(request: NextRequest) {
   }
 }
 
-// POST: Create a new clinic
+// POST: Create a new clinic (with subscription + admin + default services)
 export async function POST(request: NextRequest) {
   try {
-    await dbConnect();
     const auth = extractAuthFromRequest(request);
     if (!auth || auth.role !== 'super_admin') {
       return NextResponse.json({ error: 'غير مصرح' }, { status: 403 });
@@ -62,14 +48,13 @@ export async function POST(request: NextRequest) {
     const body = await request.json();
     const {
       name, phone, ownerPhone, description, address,
-      subscriptionType, trialDays, adminName, adminPassword
+      subscriptionType, trialDays, adminName, adminPassword,
     } = body;
 
     if (!name || !phone) {
       return NextResponse.json({ error: 'يرجى إدخال اسم العيادة ورقم الهاتف' }, { status: 400 });
     }
 
-    // Create clinic
     const result = await createClinic({
       name,
       phone,
@@ -81,34 +66,47 @@ export async function POST(request: NextRequest) {
     });
 
     // Create clinic admin user if credentials provided
+    let adminUser: any = null;
     if (adminName && adminPassword) {
       const hashedPassword = await hashPassword(adminPassword);
-      await User.create({
-        name: adminName,
-        phone: ownerPhone || phone,
-        password: hashedPassword,
-        role: 'admin',
-        clinicId: result.clinicId,
-        active: true,
-        recoveryCode: generateRecoveryCode(),
+      adminUser = await prisma.user.create({
+        data: {
+          name: adminName,
+          phone: ownerPhone || phone,
+          password: hashedPassword,
+          role: 'admin',
+          clinicId: result.clinicId,
+          active: true,
+          recoveryCode: generateRecoveryCode(),
+        },
       });
     }
 
-    // Seed default services for the new clinic
-    const servicesWithClinicId = DEFAULT_SERVICES.map(s => ({
-      ...s,
-      clinicId: result.clinicId,
-      active: true,
-      status: 'active',
-    }));
-    await Service.create(servicesWithClinicId);
-
-    // Update clinic as setup complete
-    await Clinic.findByIdAndUpdate(result.clinicId, {
-      $set: { setupComplete: true },
+    // Seed default services
+    await prisma.service.createMany({
+      data: DEFAULT_SERVICES.map((s) => ({
+        nameAr: s.nameAr,
+        price: s.price,
+        duration: s.duration,
+        category: s.category,
+        description: s.description || '',
+        icon: s.icon || '',
+        color: s.color || '',
+        active: true,
+        status: 'active',
+        clinicId: result.clinicId,
+      })),
     });
 
-    // Audit log
+    // Mark clinic as setup complete + set adminId
+    await prisma.clinic.update({
+      where: { id: result.clinicId },
+      data: {
+        setupComplete: true,
+        ...(adminUser ? { adminId: adminUser.id, adminPhone: adminUser.phone } : {}),
+      },
+    });
+
     await createAuditLog({
       clinicId: null,
       userId: auth.userId,

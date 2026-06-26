@@ -1,19 +1,15 @@
-import dbConnect from '@/lib/mongodb';
-import User from '@/models/User';
-import Clinic from '@/models/Clinic';
-import Patient from '@/models/Patient';
-import Visit from '@/models/Visit';
-import Emergency from '@/models/Emergency';
-import Service from '@/models/Service';
-import Invoice from '@/models/Invoice';
+// ═══════════════════════════════════════════════════════════
+// 📊 Dashboard API (Prisma + PostgreSQL)
+// Returns stats based on role, filtered by clinicId
+// ═══════════════════════════════════════════════════════════
+
+import prisma from '@/lib/db';
 import { NextRequest, NextResponse } from 'next/server';
 import { extractAuthAndClinicId } from '@/lib/auth';
-import { toClient } from '@/lib/mongoose-helpers';
 
 // GET: Dashboard stats based on role (filtered by clinicId)
 export async function GET(request: NextRequest) {
   try {
-    await dbConnect();
     const { auth, effectiveClinicId } = extractAuthAndClinicId(request);
     const { searchParams } = new URL(request.url);
     const role = searchParams.get('role') || 'admin';
@@ -34,65 +30,53 @@ export async function GET(request: NextRequest) {
 
     const today = new Date();
     today.setHours(0, 0, 0, 0);
-    const todayStr = today.toISOString();
 
+    // ─── Nurse dashboard ───
     if (role === 'nurse' && nurseId) {
       const [todayVisits, activeEmergencies, allEmergencies, allVisits] = await Promise.all([
-        Visit.find({ clinicId: effectiveClinicId, nurseId, visitDate: { $gte: todayStr } }).lean()
-          .catch(() => Visit.find({ clinicId: effectiveClinicId, nurseId }).lean()),
-        Emergency.find({ clinicId: effectiveClinicId, nurseId, status: 'active' }).lean(),
-        Emergency.find({ clinicId: effectiveClinicId, nurseId }).lean(),
-        Visit.find({ clinicId: effectiveClinicId, nurseId }).lean(),
+        prisma.visit.findMany({ where: { clinicId: effectiveClinicId, nurseId, visitDate: { gte: today } } }),
+        prisma.emergency.findMany({ where: { clinicId: effectiveClinicId, nurseId, status: 'active' } }),
+        prisma.emergency.findMany({ where: { clinicId: effectiveClinicId, nurseId } }),
+        prisma.visit.findMany({ where: { clinicId: effectiveClinicId, nurseId } }),
       ]);
 
       const patientIds = new Set<string>();
-      todayVisits.forEach((doc) => {
-        const pid = doc.patientId;
-        if (pid) patientIds.add(pid);
-      });
+      todayVisits.forEach((v) => { if (v.patientId) patientIds.add(v.patientId); });
 
-      // Count today's services from visits
       let todayServices = 0;
-      todayVisits.forEach((doc) => {
-        const sids: string[] = doc.serviceIds || [];
-        todayServices += sids.length;
-      });
+      todayVisits.forEach((v) => { todayServices += (v.serviceIds || []).length; });
 
-      // Recent emergencies for nurse
-      const recentEmergencies = [];
-      const activeEmergencyDocs = activeEmergencies.slice(0, 5);
-      for (const doc of activeEmergencyDocs) {
-        const data = toClient(doc) as any;
+      // Recent emergencies
+      const recentEmergencies: any[] = [];
+      for (const doc of activeEmergencies.slice(0, 5)) {
+        const data: any = { ...doc };
         if (data.patientId) {
-          const patientDoc = await Patient.findById(data.patientId).lean();
-          if (patientDoc) data.patient = { id: patientDoc._id.toString(), name: patientDoc.name };
+          const p = await prisma.patient.findUnique({ where: { id: data.patientId }, select: { id: true, name: true } });
+          if (p) data.patient = p;
         }
         recentEmergencies.push(data);
       }
 
-      // Subscription info for nurse
-      const clinicDoc = await Clinic.findById(effectiveClinicId).lean();
-      let subscription: null | { status: string; type: string; endDate: string; trialDays?: number } = null;
-      let subscriptionCheck: { valid: boolean; status: string; endDate: string; daysRemaining: number } = { valid: false, status: 'expired', endDate: '', daysRemaining: 0 };
-      if (clinicDoc) {
-        const sub = (clinicDoc as any).subscription;
-        if (sub) {
-          subscription = {
-            status: sub.status || 'inactive',
-            type: sub.type || 'free',
-            endDate: sub.endDate || '',
-            ...(sub.trialDays !== undefined ? { trialDays: sub.trialDays } : {}),
-          };
-          const endMs = sub.endDate ? new Date(sub.endDate).getTime() : 0;
-          const nowMs = Date.now();
-          const daysRemaining = endMs > nowMs ? Math.ceil((endMs - nowMs) / (1000 * 60 * 60 * 24)) : 0;
-          subscriptionCheck = {
-            valid: sub.status === 'active' && daysRemaining > 0,
-            status: sub.status || 'expired',
-            endDate: sub.endDate || '',
-            daysRemaining,
-          };
-        }
+      // Subscription
+      const clinic = await prisma.clinic.findUnique({ where: { id: effectiveClinicId } });
+      const sub = clinic && clinic.subEndDate
+        ? {
+            status: clinic.subStatus || 'active',
+            type: clinic.subType || 'free',
+            endDate: clinic.subEndDate.toISOString(),
+            trialDays: clinic.subTrialDays,
+          }
+        : null;
+
+      let subscriptionCheck: any = { valid: false, status: 'expired', endDate: '', daysRemaining: 0 };
+      if (clinic && clinic.subEndDate) {
+        const daysRemaining = Math.ceil((clinic.subEndDate.getTime() - Date.now()) / (1000 * 60 * 60 * 24));
+        subscriptionCheck = {
+          valid: clinic.subStatus === 'active' && daysRemaining > 0,
+          status: clinic.subStatus || 'expired',
+          endDate: clinic.subEndDate.toISOString(),
+          daysRemaining,
+        };
       }
 
       return NextResponse.json({
@@ -118,44 +102,42 @@ export async function GET(request: NextRequest) {
         recentPayments: [],
         dailyRevenue: [],
         pendingTasks: activeEmergencies.length,
-        subscription,
+        subscription: sub,
         subscriptionCheck,
       });
     }
 
-    // Admin dashboard - all queries scoped to effectiveClinicId
-    const [
-      patients, visits, emergencies, services, nurses, invoices,
-    ] = await Promise.all([
-      Patient.find({ clinicId: effectiveClinicId }).lean(),
-      Visit.find({ clinicId: effectiveClinicId }).lean(),
-      Emergency.find({ clinicId: effectiveClinicId }).lean(),
-      Service.find({ clinicId: effectiveClinicId, status: 'active' }).lean(),
-      User.find({ role: 'nurse', clinicId: effectiveClinicId, active: true }).lean(),
-      Invoice.find({ clinicId: effectiveClinicId, status: { $in: ['unpaid', 'partial'] } }).lean(),
+    // ─── Admin dashboard ───
+    const [patients, visits, emergencies, services, nurses, invoices] = await Promise.all([
+      prisma.patient.findMany({ where: { clinicId: effectiveClinicId } }),
+      prisma.visit.findMany({ where: { clinicId: effectiveClinicId } }),
+      prisma.emergency.findMany({ where: { clinicId: effectiveClinicId } }),
+      prisma.service.findMany({ where: { clinicId: effectiveClinicId, status: 'active' } }),
+      prisma.user.findMany({ where: { role: 'nurse', clinicId: effectiveClinicId, active: true } }),
+      prisma.invoice.findMany({ where: { clinicId: effectiveClinicId, status: { in: ['unpaid', 'partial'] } } }),
     ]);
 
-    // Today stats
-    const todayVisitsDocs = await Visit.find({ clinicId: effectiveClinicId, visitDate: { $gte: todayStr } }).lean();
-    const todayEmergenciesDocs = await Emergency.find({ clinicId: effectiveClinicId, status: 'active' }).lean();
+    const todayVisitsDocs = await prisma.visit.findMany({
+      where: { clinicId: effectiveClinicId, visitDate: { gte: today } },
+    });
 
     const totalPatients = patients.length;
-    const activeEmergencies = todayEmergenciesDocs.length;
+    const activeEmergencies = emergencies.filter((e) => e.status === 'active').length;
     const activeServices = services.length;
     const activeNurses = nurses.length;
+    const pendingInvoices = invoices.filter((d) => ['unpaid', 'partial'].includes(d.status)).length;
 
-    // Filter invoices for pending only
-    const pendingInvoices = invoices.filter(d => ['unpaid', 'partial'].includes(d.status)).length;
-
-    const totalRevenue = visits.reduce((sum, doc) => sum + (doc.totalPrice || 0), 0);
-    const todayRevenue = todayVisitsDocs.reduce((sum, doc) => sum + (doc.totalPrice || 0), 0);
-    const todayPatients = new Set(todayVisitsDocs.map((doc) => doc.patientId).filter(Boolean)).size;
-    const unpaidAmount = invoices.filter(d => ['unpaid', 'partial'].includes(d.status)).reduce((sum, doc) => sum + ((doc.remaining) ?? (doc.total - (doc.paid || 0))), 0);
+    const totalRevenue = visits.reduce((sum, v) => sum + (v.totalPrice || 0), 0);
+    const todayRevenue = todayVisitsDocs.reduce((sum, v) => sum + (v.totalPrice || 0), 0);
+    const todayPatients = new Set(todayVisitsDocs.map((v) => v.patientId).filter(Boolean)).size;
+    const unpaidAmount = invoices
+      .filter((d) => ['unpaid', 'partial'].includes(d.status))
+      .reduce((sum, d) => sum + (d.remaining ?? (d.total - (d.paid || 0))), 0);
 
     // Services by category
     const categoryMap: Record<string, number> = {};
-    services.forEach((doc) => {
-      const cat = doc.category || 'أخرى';
+    services.forEach((s) => {
+      const cat = s.category || 'أخرى';
       categoryMap[cat] = (categoryMap[cat] || 0) + 1;
     });
     const servicesByCategory = Object.entries(categoryMap).map(([category, count]) => ({ category, count }));
@@ -163,67 +145,77 @@ export async function GET(request: NextRequest) {
     // Top services
     const serviceCountMap: Record<string, number> = {};
     const serviceNameMap: Record<string, string> = {};
-    for (const visitDoc of visits) {
-      const sids: string[] = visitDoc.serviceIds || [];
-      for (const sid of sids) {
+    const servicePriceMap: Record<string, number> = {};
+    services.forEach((s) => {
+      serviceNameMap[s.id] = s.nameAr || '';
+      servicePriceMap[s.id] = s.price || 0;
+    });
+    for (const v of visits) {
+      for (const sid of (v.serviceIds || [])) {
         serviceCountMap[sid] = (serviceCountMap[sid] || 0) + 1;
-        if (!serviceNameMap[sid]) {
-          const sDoc = await Service.findById(sid).lean();
-          if (sDoc) serviceNameMap[sid] = sDoc.nameAr || '';
-        }
       }
     }
-    const topServices = Object.entries(serviceCountMap).map(([id, count]) => ({ name: serviceNameMap[id] || '', count })).sort((a, b) => b.count - a.count).slice(0, 5);
+    const topServices = Object.entries(serviceCountMap)
+      .map(([id, count]) => ({ name: serviceNameMap[id] || '', count }))
+      .sort((a, b) => b.count - a.count)
+      .slice(0, 5);
 
-    // Subscription info
-    const clinicDoc = await Clinic.findById(effectiveClinicId).lean();
-    let subscription: null | { status: string; type: string; endDate: string; trialDays?: number } = null;
-    let subscriptionCheck: { valid: boolean; status: string; endDate: string; daysRemaining: number } = { valid: false, status: 'expired', endDate: '', daysRemaining: 0 };
-
-    if (clinicDoc) {
-      const sub = (clinicDoc as any).subscription;
-      if (sub) {
+    // Subscription
+    const clinic = await prisma.clinic.findUnique({ where: { id: effectiveClinicId } });
+    let subscription: any = null;
+    let subscriptionCheck: any = { valid: false, status: 'expired', endDate: '', daysRemaining: 0 };
+    if (clinic) {
+      if (clinic.subEndDate) {
         subscription = {
-          status: sub.status || 'inactive',
-          type: sub.type || 'free',
-          endDate: sub.endDate || '',
-          ...(sub.trialDays !== undefined ? { trialDays: sub.trialDays } : {}),
+          status: clinic.subStatus || 'inactive',
+          type: clinic.subType || 'free',
+          endDate: clinic.subEndDate.toISOString(),
+          ...(clinic.subTrialDays !== undefined ? { trialDays: clinic.subTrialDays } : {}),
         };
-        const endMs = sub.endDate ? new Date(sub.endDate).getTime() : 0;
-        const nowMs = Date.now();
-        const daysRemaining = endMs > nowMs ? Math.ceil((endMs - nowMs) / (1000 * 60 * 60 * 24)) : 0;
+        const daysRemaining = Math.ceil((clinic.subEndDate.getTime() - Date.now()) / (1000 * 60 * 60 * 24));
         subscriptionCheck = {
-          valid: sub.status === 'active' && daysRemaining > 0,
-          status: sub.status || 'expired',
-          endDate: sub.endDate || '',
+          valid: clinic.subStatus === 'active' && daysRemaining > 0,
+          status: clinic.subStatus || 'expired',
+          endDate: clinic.subEndDate.toISOString(),
           daysRemaining,
         };
       }
     }
 
     // Recent emergencies
-    const recentEmergencies = [];
-    const activeEmergencyDocs = emergencies.filter((d) => d.status === 'active').slice(0, 5);
-    for (const doc of activeEmergencyDocs) {
-      const data = toClient(doc) as any;
+    const recentEmergencies: any[] = [];
+    for (const doc of emergencies.filter((d) => d.status === 'active').slice(0, 5)) {
+      const data: any = { ...doc };
       if (data.patientId) {
-        const patientDoc = await Patient.findById(data.patientId).lean();
-        if (patientDoc) data.patient = { id: patientDoc._id.toString(), name: patientDoc.name };
+        const p = await prisma.patient.findUnique({ where: { id: data.patientId }, select: { id: true, name: true } });
+        if (p) data.patient = p;
       }
       if (data.nurseId) {
-        const nurseDoc = await User.findById(data.nurseId).lean();
-        if (nurseDoc) data.nurse = { id: nurseDoc._id.toString(), name: nurseDoc.name };
+        const n = await prisma.user.findUnique({ where: { id: data.nurseId }, select: { id: true, name: true } });
+        if (n) data.nurse = n;
       }
       recentEmergencies.push(data);
     }
 
     return NextResponse.json({
       role: 'admin',
-      totalPatients, totalVisits: visits.length, totalEmergencies: emergencies.length,
-      activeEmergencies, activeServices, activeNurses,
-      totalRevenue, todayRevenue, todayPatients, todayVisits: todayVisitsDocs.length,
-      pendingInvoices, unpaidAmount, servicesByCategory, topServices, recentEmergencies,
-      subscription, subscriptionCheck,
+      totalPatients,
+      totalVisits: visits.length,
+      totalEmergencies: emergencies.length,
+      activeEmergencies,
+      activeServices,
+      activeNurses,
+      totalRevenue,
+      todayRevenue,
+      todayPatients,
+      todayVisits: todayVisitsDocs.length,
+      pendingInvoices,
+      unpaidAmount,
+      servicesByCategory,
+      topServices,
+      recentEmergencies,
+      subscription,
+      subscriptionCheck,
     });
   } catch (error) {
     console.error('Dashboard error:', error);

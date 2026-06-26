@@ -1,33 +1,28 @@
-import dbConnect from '@/lib/mongodb';
-import Notification from '@/models/Notification';
+// ═══════════════════════════════════════════════════════════
+// 🔔 Notifications API (Prisma + PostgreSQL)
+// ═══════════════════════════════════════════════════════════
+
+import prisma from '@/lib/db';
 import { NextRequest, NextResponse } from 'next/server';
 import { extractAuthAndClinicId } from '@/lib/auth';
-import { toClientList } from '@/lib/mongoose-helpers';
 
 // GET: List notifications (filtered by clinicId)
 export async function GET(request: NextRequest) {
   try {
-    await dbConnect();
     const { auth, effectiveClinicId } = extractAuthAndClinicId(request);
     const { searchParams } = new URL(request.url);
     const userId = searchParams.get('userId');
 
-    if (!effectiveClinicId) {
-      return NextResponse.json([]);
-    }
+    if (!effectiveClinicId) return NextResponse.json([]);
 
-    let results;
-    try {
-      const filter: Record<string, unknown> = { clinicId: effectiveClinicId };
-      if (userId) filter.userId = userId;
-      results = await Notification.find(filter).sort({ createdAt: -1 }).lean();
-    } catch {
-      const filter: Record<string, unknown> = { clinicId: effectiveClinicId };
-      if (userId) filter.userId = userId;
-      results = await Notification.find(filter).lean();
-    }
+    const where: any = { clinicId: effectiveClinicId };
+    if (userId) where.userId = userId;
 
-    const notifications = toClientList(results);
+    const notifications = await prisma.notification.findMany({
+      where,
+      orderBy: { createdAt: 'desc' },
+    });
+
     return NextResponse.json(notifications);
   } catch (error) {
     console.error('Notifications list error:', error);

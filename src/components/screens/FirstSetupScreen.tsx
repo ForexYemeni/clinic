@@ -38,7 +38,7 @@ export function FirstSetupScreen() {
 
     setLoading(true);
     try {
-      const data = await apiPost('/api/setup', {
+      const data = await apiPost<any>('/api/setup', {
         adminName: adminName.trim(),
         adminPhone,
         clinicName: clinicNameInput.trim(),

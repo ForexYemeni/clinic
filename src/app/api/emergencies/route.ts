@@ -1,63 +1,46 @@
-import dbConnect from '@/lib/mongodb';
-import User from '@/models/User';
-import Patient from '@/models/Patient';
-import Emergency from '@/models/Emergency';
+// ═══════════════════════════════════════════════════════════
+// 🚨 Emergencies API (Prisma + PostgreSQL)
+// ═══════════════════════════════════════════════════════════
+
+import prisma from '@/lib/db';
 import { NextRequest, NextResponse } from 'next/server';
 import { extractAuthAndClinicId } from '@/lib/auth';
-import { toClient } from '@/lib/mongoose-helpers';
+import { createNotification } from '@/lib/notifications';
 
 // GET: List emergencies (?status=active, filtered by clinicId)
 export async function GET(request: NextRequest) {
   try {
-    await dbConnect();
     const { auth, effectiveClinicId } = extractAuthAndClinicId(request);
     const { searchParams } = new URL(request.url);
     const status = searchParams.get('status');
 
-    if (!effectiveClinicId) {
-      return NextResponse.json([]);
-    }
+    if (!effectiveClinicId) return NextResponse.json([]);
 
-    let results: any[];
+    const where: any = { clinicId: effectiveClinicId };
+    if (status) where.status = status;
 
-    try {
-      const filter: Record<string, unknown> = { clinicId: effectiveClinicId };
-      if (status) filter.status = status;
-      results = await Emergency.find(filter).sort({ createdAt: -1 }).lean();
-    } catch {
-      try {
-        const filter: Record<string, unknown> = { clinicId: effectiveClinicId };
-        if (status) filter.status = status;
-        results = await Emergency.find(filter).lean();
-        // Sort in memory as fallback
-        results.sort((a, b) => {
-          const da = a.createdAt || '';
-          const db = b.createdAt || '';
-          return new Date(db).getTime() - new Date(da).getTime();
-        });
-      } catch {
-        // Last resort - fetch with clinicId filter only and filter status client-side
-        results = await Emergency.find({ clinicId: effectiveClinicId }).lean();
-        if (status) {
-          results = results.filter(doc => doc.status === status);
-        }
-      }
-    }
+    const results = await prisma.emergency.findMany({
+      where,
+      orderBy: { createdAt: 'desc' },
+    });
 
-    const emergencies = [];
+    // Enrich with patient + nurse info
+    const emergencies: any[] = [];
     for (const doc of results) {
-      const data = toClient(doc) as any;
+      const data: any = { ...doc };
       if (data.patientId) {
-        try {
-          const patientDoc = await Patient.findById(data.patientId).lean();
-          if (patientDoc) data.patient = { id: patientDoc._id.toString(), name: patientDoc.name, phone: patientDoc.phone };
-        } catch {}
+        const patient = await prisma.patient.findUnique({
+          where: { id: data.patientId },
+          select: { id: true, name: true, phone: true },
+        });
+        if (patient) data.patient = patient;
       }
       if (data.nurseId) {
-        try {
-          const nurseDoc = await User.findById(data.nurseId).lean();
-          if (nurseDoc) data.nurse = { id: nurseDoc._id.toString(), name: nurseDoc.name };
-        } catch {}
+        const nurse = await prisma.user.findUnique({
+          where: { id: data.nurseId },
+          select: { id: true, name: true },
+        });
+        if (nurse) data.nurse = nurse;
       }
       emergencies.push(data);
     }
@@ -72,42 +55,50 @@ export async function GET(request: NextRequest) {
 // POST: Add new emergency
 export async function POST(request: NextRequest) {
   try {
-    await dbConnect();
     const { auth, effectiveClinicId } = extractAuthAndClinicId(request);
     const body = await request.json();
-    const { patientId, nurseId, severity, notes, actions, procedures } = body;
-
-    if (!patientId) {
-      return NextResponse.json({ error: 'يرجى تحديد المريض' }, { status: 400 });
-    }
+    const { patientId, patientName, nurseId, nurseName, severity, notes, actions, procedures, arrivalTime } = body;
 
     if (!effectiveClinicId) {
       return NextResponse.json({ error: 'لم يتم تحديد العيادة' }, { status: 400 });
     }
 
-    let patientName = '';
-    if (patientId) {
-      const patientDoc = await Patient.findById(patientId).lean();
-      if (patientDoc) patientName = patientDoc.name || '';
-    }
+    const created = await prisma.emergency.create({
+      data: {
+        patientId: patientId || '',
+        patientName: patientName || '',
+        nurseId: nurseId || '',
+        nurseName: nurseName || '',
+        severity: severity || 'moderate',
+        status: 'active',
+        notes: notes || '',
+        actions: actions || '',
+        procedures: procedures || '',
+        arrivalTime: arrivalTime ? new Date(arrivalTime) : new Date(),
+        clinicId: effectiveClinicId,
+      },
+    });
 
-    let nurseName = '';
-    if (nurseId) {
-      const nurseDoc = await User.findById(nurseId).lean();
-      if (nurseDoc) nurseName = nurseDoc.name || '';
-    }
+    // Notify admins of the clinic about the new emergency
+    try {
+      const admins = await prisma.user.findMany({
+        where: { clinicId: effectiveClinicId, role: 'admin', active: true },
+        select: { id: true },
+      });
+      for (const a of admins) {
+        await createNotification({
+          userId: a.id,
+          clinicId: effectiveClinicId,
+          type: 'emergency',
+          title: 'حالة طارئة جديدة',
+          message: `حالة طارئة جديدة: ${patientName || 'مريض'} - ${severity || 'متوسطة'}`,
+          priority: severity === 'critical' || severity === 'high' ? 'urgent' : 'high',
+          relatedId: created.id,
+        });
+      }
+    } catch {}
 
-    const emergencyData = {
-      patientId, patientName, nurseId: nurseId || '', nurseName,
-      severity: severity || 'moderate', status: 'active',
-      notes: notes || '', actions: actions || '', procedures: procedures || '',
-      arrivalTime: new Date(), clinicId: effectiveClinicId,
-    };
-
-    const created = await Emergency.create(emergencyData);
-    const clientResult = toClient(created.toObject());
-
-    return NextResponse.json({ ...clientResult }, { status: 201 });
+    return NextResponse.json(created, { status: 201 });
   } catch (error) {
     console.error('Create emergency error:', error);
     return NextResponse.json({ error: 'خطأ في إضافة الحالة الطارئة' }, { status: 500 });

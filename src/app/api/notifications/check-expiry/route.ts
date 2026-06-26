@@ -1,13 +1,11 @@
 // ═══════════════════════════════════════════════════════════
-// 🔔 Subscription Expiry Check API
+// 🔔 Subscription Expiry Check API (Prisma)
 // Triggers notification checks for expiring subscriptions
-// Called periodically or on dashboard load
 // ═══════════════════════════════════════════════════════════
 
 import { NextRequest, NextResponse } from 'next/server';
 import { checkSubscriptionExpiry } from '@/lib/notifications';
 
-// POST: Trigger subscription expiry check
 export async function POST(request: NextRequest) {
   try {
     await checkSubscriptionExpiry();

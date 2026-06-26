@@ -1,52 +1,49 @@
-import dbConnect from '@/lib/mongodb';
-import Clinic from '@/models/Clinic';
-import User from '@/models/User';
-import Patient from '@/models/Patient';
-import Visit from '@/models/Visit';
-import Invoice from '@/models/Invoice';
-import Emergency from '@/models/Emergency';
-import Service from '@/models/Service';
-import { toClient } from '@/lib/mongoose-helpers';
+// ═══════════════════════════════════════════════════════════
+// 🏥 Clinics API (Prisma + PostgreSQL)
+// Multi-tenant clinics management (super admin)
+// ═══════════════════════════════════════════════════════════
+
+import prisma from '@/lib/db';
 import { NextRequest, NextResponse } from 'next/server';
 
 // GET: List all clinics (with stats for super admin)
 export async function GET(request: NextRequest) {
   try {
-    await dbConnect();
-
     const { searchParams } = new URL(request.url);
     const withStats = searchParams.get('withStats') === 'true';
     const clinicId = searchParams.get('clinicId');
 
     if (clinicId) {
-      // Get single clinic details
-      const clinicDoc = await Clinic.findById(clinicId).lean();
-      if (!clinicDoc) {
+      const clinic = await prisma.clinic.findUnique({ where: { id: clinicId } });
+      if (!clinic) {
         return NextResponse.json({ error: 'العيادة غير موجودة' }, { status: 404 });
       }
 
-      const clinicData = toClient(clinicDoc);
+      const clinicData: any = { ...clinic };
 
-      // Get admin info
-      if (clinicData.adminId) {
-        const adminDoc = await User.findById(clinicData.adminId).lean();
-        if (adminDoc) {
-          clinicData.adminName = adminDoc.name;
-          clinicData.adminPhone = adminDoc.phone;
+      if (clinic.adminId) {
+        const admin = await prisma.user.findUnique({
+          where: { id: clinic.adminId },
+          select: { id: true, name: true, phone: true },
+        });
+        if (admin) {
+          clinicData.adminName = admin.name;
+          clinicData.adminPhone = admin.phone;
         }
       }
 
       if (withStats) {
         const [patientCount, nurseCount, visitCount, emergencyCount, invoiceDocs] = await Promise.all([
-          Patient.countDocuments({ clinicId }),
-          User.countDocuments({ clinicId, role: 'nurse' }),
-          Visit.countDocuments({ clinicId }),
-          Emergency.countDocuments({ clinicId, status: 'active' }),
-          Invoice.find({ clinicId, status: { $in: ['unpaid', 'partial'] } }).lean(),
+          prisma.patient.count({ where: { clinicId } }),
+          prisma.user.count({ where: { clinicId, role: 'nurse' } }),
+          prisma.visit.count({ where: { clinicId } }),
+          prisma.emergency.count({ where: { clinicId, status: 'active' } }),
+          prisma.invoice.findMany({ where: { clinicId, status: { in: ['unpaid', 'partial'] } } }),
         ]);
 
-        const unpaidAmount = invoiceDocs.reduce((sum, doc) => sum + ((doc.remaining) ?? (doc.total - (doc.paid || 0))), 0);
-
+        const unpaidAmount = invoiceDocs.reduce(
+          (sum, d) => sum + (d.remaining ?? (d.total - (d.paid || 0))), 0
+        );
         clinicData.stats = {
           patients: patientCount,
           nurses: nurseCount,
@@ -60,25 +57,27 @@ export async function GET(request: NextRequest) {
     }
 
     // List all clinics
-    const clinics = await Clinic.find().sort({ createdAt: -1 }).lean();
+    const clinics = await prisma.clinic.findMany({ orderBy: { createdAt: 'desc' } });
 
-    const result = [];
-    for (const doc of clinics) {
-      const clinicData: any = toClient(doc);
+    const result: any[] = [];
+    for (const c of clinics) {
+      const clinicData: any = { ...c };
 
-      // Get admin info
-      if (clinicData.adminId) {
-        const adminDoc = await User.findById(clinicData.adminId).lean();
-        if (adminDoc) {
-          clinicData.adminName = adminDoc.name;
-          clinicData.adminPhone = adminDoc.phone;
+      if (c.adminId) {
+        const admin = await prisma.user.findUnique({
+          where: { id: c.adminId },
+          select: { id: true, name: true, phone: true },
+        });
+        if (admin) {
+          clinicData.adminName = admin.name;
+          clinicData.adminPhone = admin.phone;
         }
       }
 
       if (withStats) {
         const [patientCount, nurseCount] = await Promise.all([
-          Patient.countDocuments({ clinicId: doc._id.toString() }),
-          User.countDocuments({ clinicId: doc._id.toString(), role: 'nurse' }),
+          prisma.patient.count({ where: { clinicId: c.id } }),
+          prisma.user.count({ where: { clinicId: c.id, role: 'nurse' } }),
         ]);
         clinicData.stats = { patients: patientCount, nurses: nurseCount };
       }
@@ -93,73 +92,52 @@ export async function GET(request: NextRequest) {
   }
 }
 
-// POST: Create new clinic (super admin)
+// POST: Create new clinic (legacy route, used by FirstSetupScreen fallback)
 export async function POST(request: NextRequest) {
   try {
-    await dbConnect();
-
     const body = await request.json();
-    const { clinicName, adminName, adminPhone, password, address, phone, city } = body;
+    const { clinicName, adminName, adminPhone, phone, address, city, password } = body;
 
-    if (!clinicName || !adminName || !adminPhone || !password) {
-      return NextResponse.json({ error: 'يرجى ملء جميع الحقول المطلوبة' }, { status: 400 });
+    if (!clinicName || !adminPhone) {
+      return NextResponse.json({ error: 'يرجى إدخال اسم العيادة ورقم الهاتف' }, { status: 400 });
     }
 
-    const phoneRegex = /^\d{9}$/;
-    if (!phoneRegex.test(adminPhone)) {
-      return NextResponse.json({ error: 'رقم هاتف المدير يجب أن يكون 9 أرقام' }, { status: 400 });
-    }
+    const clinic = await prisma.clinic.create({
+      data: {
+        name: clinicName,
+        address: address || '',
+        phone: phone || adminPhone,
+        city: city || '',
+        adminPhone,
+        active: true,
+        setupComplete: true,
+        subPlan: 'free',
+        subType: 'trial',
+        subStatus: 'active',
+        subStartDate: new Date(),
+        subTrial: true,
+        subTrialDays: 14,
+      },
+    });
+    const clinicId = clinic.id;
 
-    if (password.length < 4) {
-      return NextResponse.json({ error: 'كلمة المرور يجب أن تكون 4 أحرف على الأقل' }, { status: 400 });
-    }
-
-    const existingUser = await User.findOne({ phone: adminPhone }).lean();
-    if (existingUser) {
-      return NextResponse.json({ error: 'رقم الهاتف مستخدم بالفعل' }, { status: 409 });
-    }
-
-    const clinic = await Clinic.create({
-      name: clinicName,
-      address: address || '',
-      phone: phone || '',
-      city: city || '',
-      adminPhone,
-      active: true,
-      setupComplete: true,
-      subscription: { plan: 'free', startDate: new Date(), endDate: null, status: 'active' },
-      createdAt: new Date(),
+    const adminUser = await prisma.user.create({
+      data: {
+        name: adminName || 'admin',
+        phone: adminPhone,
+        password,
+        role: 'admin',
+        active: true,
+        clinicId,
+      },
     });
 
-    const clinicId = clinic._id.toString();
-
-    const adminUser = await User.create({
-      name: adminName,
-      phone: adminPhone,
-      password,
-      role: 'admin',
-      active: true,
-      clinicId,
-      createdAt: new Date(),
-    });
-
-    await Clinic.findByIdAndUpdate(clinicId, { adminId: adminUser._id.toString() });
-
-    // Default services
-    const { DEFAULT_SERVICES } = await import('@/lib/constants');
-    const servicesToInsert = DEFAULT_SERVICES.map((service: any) => ({
-      ...service,
-      clinicId,
-      active: true,
-      status: 'active',
-      createdAt: new Date(),
-    }));
-    await Service.insertMany(servicesToInsert);
+    await prisma.clinic.update({ where: { id: clinicId }, data: { adminId: adminUser.id } });
 
     return NextResponse.json({
       success: true,
-      clinic: { id: clinicId, name: clinicName, address: address || '', phone: phone || '', city: city || '', active: true },
-      admin: { id: adminUser._id.toString(), name: adminName, phone: adminPhone, role: 'admin' },
+      clinic: { id: clinicId, name: clinicName, address, phone, city, active: true },
+      admin: { id: adminUser.id, name: adminUser.name, phone: adminUser.phone, role: 'admin' },
     }, { status: 201 });
   } catch (error) {
     console.error('Create clinic error:', error);
@@ -170,8 +148,6 @@ export async function POST(request: NextRequest) {
 // PUT: Update clinic
 export async function PUT(request: NextRequest) {
   try {
-    await dbConnect();
-
     const body = await request.json();
     const { id, name, address, phone, city, active } = body;
 
@@ -179,26 +155,25 @@ export async function PUT(request: NextRequest) {
       return NextResponse.json({ error: 'يرجى تحديد العيادة' }, { status: 400 });
     }
 
-    const clinicDoc = await Clinic.findById(id).lean();
-    if (!clinicDoc) {
+    const clinic = await prisma.clinic.findUnique({ where: { id } });
+    if (!clinic) {
       return NextResponse.json({ error: 'العيادة غير موجودة' }, { status: 404 });
     }
 
-    const updateData: Record<string, unknown> = {};
+    const updateData: any = {};
     if (name !== undefined) updateData.name = name;
     if (address !== undefined) updateData.address = address;
     if (phone !== undefined) updateData.phone = phone;
     if (city !== undefined) updateData.city = city;
     if (active !== undefined) updateData.active = active;
 
-    await Clinic.findByIdAndUpdate(id, updateData);
+    await prisma.clinic.update({ where: { id }, data: updateData });
 
     // If clinic is deactivated, deactivate all its users
     if (active === false) {
-      await User.updateMany({ clinicId: id }, { active: false });
-    } else if (active === true) {
-      // Reactivate admin
-      await User.updateOne({ _id: clinicDoc.adminId, role: 'admin' }, { active: true });
+      await prisma.user.updateMany({ where: { clinicId: id }, data: { active: false } });
+    } else if (active === true && clinic.adminId) {
+      await prisma.user.updateMany({ where: { id: clinic.adminId, role: 'admin' }, data: { active: true } });
     }
 
     return NextResponse.json({ success: true, id, ...updateData });
@@ -211,8 +186,6 @@ export async function PUT(request: NextRequest) {
 // DELETE: Delete clinic and all its data
 export async function DELETE(request: NextRequest) {
   try {
-    await dbConnect();
-
     const { searchParams } = new URL(request.url);
     const id = searchParams.get('id');
 
@@ -220,20 +193,24 @@ export async function DELETE(request: NextRequest) {
       return NextResponse.json({ error: 'يرجى تحديد العيادة' }, { status: 400 });
     }
 
-    const clinicDoc = await Clinic.findById(id).lean();
-    if (!clinicDoc) {
+    const clinic = await prisma.clinic.findUnique({ where: { id } });
+    if (!clinic) {
       return NextResponse.json({ error: 'العيادة غير موجودة' }, { status: 404 });
     }
 
-    // Delete all clinic data
-    await Promise.all([
-      User.deleteMany({ clinicId: id }),
-      Patient.deleteMany({ clinicId: id }),
-      Visit.deleteMany({ clinicId: id }),
-      Invoice.deleteMany({ clinicId: id }),
-      Emergency.deleteMany({ clinicId: id }),
-      Service.deleteMany({ clinicId: id }),
-      Clinic.findByIdAndDelete(id),
+    // Delete all related data in a transaction
+    await prisma.$transaction([
+      prisma.user.deleteMany({ where: { clinicId: id } }),
+      prisma.patient.deleteMany({ where: { clinicId: id } }),
+      prisma.visit.deleteMany({ where: { clinicId: id } }),
+      prisma.invoice.deleteMany({ where: { clinicId: id } }),
+      prisma.emergency.deleteMany({ where: { clinicId: id } }),
+      prisma.service.deleteMany({ where: { clinicId: id } }),
+      prisma.notification.deleteMany({ where: { clinicId: id } }),
+      prisma.salaryWithdrawal.deleteMany({ where: { clinicId: id } }),
+      prisma.dataResetRequest.deleteMany({ where: { clinicId: id } }),
+      prisma.auditLog.deleteMany({ where: { clinicId: id } }),
+      prisma.clinic.delete({ where: { id } }),
     ]);
 
     return NextResponse.json({ success: true, id });

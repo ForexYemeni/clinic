@@ -8,18 +8,19 @@ interface PatientCardProps {
   patient: {
     id: string;
     name: string;
-    age: number;
+    age?: number | null;
     ageCategory?: string;
-    gender: string;
+    gender?: string;
     phone?: string | null;
     bloodType?: string | null;
     complaints?: string[];
-    createdAt: string;
+    createdAt?: string;
     _count?: {
       visits?: number;
       emergencies?: number;
       appointments?: number;
     };
+    [key: string]: any;
   };
   onClick?: () => void;
 }

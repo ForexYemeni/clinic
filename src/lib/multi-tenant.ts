@@ -1,14 +1,10 @@
 // ═══════════════════════════════════════════════════════════
-// 🏢 Multi-Tenant System
+// 🏢 Multi-Tenant System (Prisma + PostgreSQL)
 // Clinic context, subscription management, data isolation
-// Converted from Firebase Firestore to MongoDB/Mongoose
 // ═══════════════════════════════════════════════════════════
 
-import dbConnect from '@/lib/mongodb';
-import Clinic from '@/models/Clinic';
-import AuditLog from '@/models/AuditLog';
-import PlatformConfig from '@/models/PlatformConfig';
-import { toClient } from '@/lib/mongoose-helpers';
+import prisma from './db';
+import type { Clinic, AuditLog, PlatformConfig } from '@prisma/client';
 
 // ═══ Subscription Types ═══
 export type SubscriptionStatus = 'active' | 'trial' | 'expired' | 'suspended';
@@ -68,6 +64,36 @@ export const SUBSCRIPTION_STATUS_COLORS: Record<SubscriptionStatus, string> = {
   suspended: 'bg-yellow-100 text-yellow-700 dark:bg-yellow-900/30 dark:text-yellow-400',
 };
 
+// ═══ Helpers: map Prisma Clinic row → ClinicDocument (with embedded subscription) ═══
+function mapClinicToDoc(c: Clinic): ClinicDocument {
+  const endDate = c.subEndDate ? c.subEndDate.toISOString() : '';
+  const startDate = c.subStartDate ? c.subStartDate.toISOString() : '';
+  const type = (c.subType || 'trial') as SubscriptionType;
+  const status = (c.subStatus || 'active') as SubscriptionStatus;
+
+  return {
+    id: c.id,
+    name: c.name,
+    description: c.description || '',
+    phone: c.phone || '',
+    address: c.address || '',
+    logo: c.logo || '',
+    primaryColor: c.primaryColor || 'emerald',
+    subscription: {
+      status,
+      type,
+      startDate,
+      endDate,
+      ...(type === 'trial' ? { trialDays: c.subTrialDays || 0 } : {}),
+    },
+    ownerPhone: c.ownerPhone || c.adminPhone || c.phone || '',
+    active: c.active,
+    setupComplete: c.setupComplete,
+    createdAt: c.createdAt.toISOString(),
+    updatedAt: c.updatedAt.toISOString(),
+  };
+}
+
 // ═══ Subscription Check ═══
 export async function checkClinicSubscription(clinicId: string): Promise<{
   valid: boolean;
@@ -76,44 +102,37 @@ export async function checkClinicSubscription(clinicId: string): Promise<{
   daysRemaining: number;
 }> {
   try {
-    await dbConnect();
-    const clinicDoc = await Clinic.findById(clinicId).lean();
-    if (!clinicDoc) {
+    const clinic = await prisma.clinic.findUnique({ where: { id: clinicId } });
+    if (!clinic) {
       return { valid: false, status: 'expired', endDate: '', daysRemaining: 0 };
     }
 
-    const subscription = clinicDoc.subscription as unknown as ClinicSubscription;
+    const status = (clinic.subStatus || 'active') as SubscriptionStatus;
+    const type = (clinic.subType || 'trial') as SubscriptionType;
 
-    if (!subscription) {
+    if (status === 'suspended') {
+      return { valid: false, status: 'suspended', endDate: clinic.subEndDate?.toISOString() || '', daysRemaining: 0 };
+    }
+
+    if (!clinic.subEndDate) {
       return { valid: false, status: 'expired', endDate: '', daysRemaining: 0 };
     }
 
-    // Suspended is always invalid
-    if (subscription.status === 'suspended') {
-      return { valid: false, status: 'suspended', endDate: subscription.endDate, daysRemaining: 0 };
-    }
-
-    // Check if subscription has expired
-    const endDate = new Date(subscription.endDate);
     const now = new Date();
-    const daysRemaining = Math.ceil((endDate.getTime() - now.getTime()) / (1000 * 60 * 60 * 24));
+    const daysRemaining = Math.ceil((clinic.subEndDate.getTime() - now.getTime()) / (1000 * 60 * 60 * 24));
 
-    if (daysRemaining <= 0 && subscription.type !== 'lifetime') {
-      // Auto-expire the subscription
-      await Clinic.findByIdAndUpdate(clinicId, {
-        $set: {
-          'subscription.status': 'expired',
-          updatedAt: new Date(),
-        },
+    if (daysRemaining <= 0 && type !== 'lifetime') {
+      await prisma.clinic.update({
+        where: { id: clinicId },
+        data: { subStatus: 'expired', updatedAt: new Date() },
       });
-      return { valid: false, status: 'expired', endDate: subscription.endDate, daysRemaining: 0 };
+      return { valid: false, status: 'expired', endDate: clinic.subEndDate.toISOString(), daysRemaining: 0 };
     }
 
-    // Active or trial with time remaining
     return {
       valid: true,
-      status: subscription.status,
-      endDate: subscription.endDate,
+      status,
+      endDate: clinic.subEndDate.toISOString(),
       daysRemaining,
     };
   } catch (error) {
@@ -132,36 +151,19 @@ export async function setClinicSubscription(
     extendFromExisting?: boolean;
   }
 ): Promise<ClinicSubscription> {
-  await dbConnect();
   const now = new Date();
   const days = options.days || 30;
 
-  // Determine start point for calculation
   let startFrom = now;
-  let originalStartDate = now.toISOString();
+  let originalStartDate = now;
 
   if (options.extendFromExisting) {
-    // When extending, add days to the existing end date (if still in the future)
-    try {
-      const clinicDoc = await Clinic.findById(clinicId).lean();
-      if (clinicDoc) {
-        const existingSub = clinicDoc.subscription as unknown as ClinicSubscription;
-        if (existingSub) {
-          // Preserve original start date
-          if (existingSub.startDate) {
-            originalStartDate = existingSub.startDate;
-          }
-          // If existing end date is in the future, extend from there
-          if (existingSub.endDate && existingSub.type !== 'lifetime') {
-            const existingEndDate = new Date(existingSub.endDate);
-            if (existingEndDate > now) {
-              startFrom = existingEndDate;
-            }
-          }
-        }
+    const clinic = await prisma.clinic.findUnique({ where: { id: clinicId } });
+    if (clinic) {
+      if (clinic.subStartDate) originalStartDate = clinic.subStartDate;
+      if (clinic.subEndDate && clinic.subType !== 'lifetime') {
+        if (clinic.subEndDate > now) startFrom = clinic.subEndDate;
       }
-    } catch (error) {
-      console.error('Error reading existing subscription for extension:', error);
     }
   }
 
@@ -170,14 +172,23 @@ export async function setClinicSubscription(
   const subscription: ClinicSubscription = {
     status: options.status || (options.type === 'trial' ? 'trial' : 'active'),
     type: options.type,
-    startDate: options.extendFromExisting ? originalStartDate : now.toISOString(),
+    startDate: options.extendFromExisting ? originalStartDate.toISOString() : now.toISOString(),
     endDate: options.type === 'lifetime' ? '9999-12-31T23:59:59.999Z' : endDate.toISOString(),
     ...(options.type === 'trial' ? { trialDays: days } : {}),
   };
 
-  await Clinic.findByIdAndUpdate(clinicId, {
-    $set: {
-      subscription,
+  await prisma.clinic.update({
+    where: { id: clinicId },
+    data: {
+      subType: subscription.type,
+      subStatus: subscription.status,
+      subStartDate: options.extendFromExisting ? originalStartDate : now,
+      subEndDate: options.type === 'lifetime' ? new Date('9999-12-31T23:59:59.999Z') : endDate,
+      subTrialDays: options.type === 'trial' ? days : 0,
+      subTrial: options.type === 'trial',
+      subMonthly: options.type === 'monthly',
+      subYearly: options.type === 'yearly',
+      subLifetime: options.type === 'lifetime',
       active: subscription.status !== 'suspended',
       updatedAt: now,
     },
@@ -189,10 +200,9 @@ export async function setClinicSubscription(
 // ═══ Get Clinic by ID ═══
 export async function getClinicById(clinicId: string): Promise<ClinicDocument | null> {
   try {
-    await dbConnect();
-    const doc = await Clinic.findById(clinicId).lean();
-    if (!doc) return null;
-    return toClient(doc) as ClinicDocument;
+    const c = await prisma.clinic.findUnique({ where: { id: clinicId } });
+    if (!c) return null;
+    return mapClinicToDoc(c);
   } catch {
     return null;
   }
@@ -201,18 +211,11 @@ export async function getClinicById(clinicId: string): Promise<ClinicDocument | 
 // ═══ Get All Clinics ═══
 export async function getAllClinics(): Promise<ClinicDocument[]> {
   try {
-    await dbConnect();
-    const docs = await Clinic.find({}).sort({ createdAt: -1 }).lean();
-    return docs.map((doc) => toClient(doc) as ClinicDocument);
-  } catch {
-    // Fallback without ordering
-    try {
-      await dbConnect();
-      const docs = await Clinic.find({}).lean();
-      return docs.map((doc) => toClient(doc) as ClinicDocument);
-    } catch {
-      return [];
-    }
+    const docs = await prisma.clinic.findMany({ orderBy: { createdAt: 'desc' } });
+    return docs.map(mapClinicToDoc);
+  } catch (error) {
+    console.error('getAllClinics error:', error);
+    return [];
   }
 }
 
@@ -226,38 +229,37 @@ export async function createClinic(data: {
   description?: string;
   address?: string;
 }): Promise<{ clinicId: string; clinic: ClinicDocument }> {
-  await dbConnect();
   const now = new Date();
   const trialDays = data.trialDays || 14;
   const endDate = new Date(now.getTime() + trialDays * 24 * 60 * 60 * 1000);
 
-  const clinicData = {
-    name: data.name,
-    description: data.description || '',
-    phone: data.phone,
-    address: data.address || '',
-    logo: '',
-    primaryColor: 'emerald',
-    subscription: {
-      status: data.subscriptionType === 'trial' ? 'trial' : 'active',
-      type: data.subscriptionType,
-      startDate: now.toISOString(),
-      endDate: data.subscriptionType === 'lifetime' ? '9999-12-31T23:59:59.999Z' : endDate.toISOString(),
-      ...(data.subscriptionType === 'trial' ? { trialDays: trialDays } : {}),
+  const created = await prisma.clinic.create({
+    data: {
+      name: data.name,
+      description: data.description || '',
+      phone: data.phone,
+      address: data.address || '',
+      logo: '',
+      primaryColor: 'emerald',
+      ownerPhone: data.ownerPhone,
+      active: true,
+      setupComplete: false,
+      subPlan: data.subscriptionType === 'trial' ? 'free' : data.subscriptionType,
+      subType: data.subscriptionType,
+      subTrial: data.subscriptionType === 'trial',
+      subMonthly: data.subscriptionType === 'monthly',
+      subYearly: data.subscriptionType === 'yearly',
+      subLifetime: data.subscriptionType === 'lifetime',
+      subStatus: data.subscriptionType === 'trial' ? 'trial' : 'active',
+      subStartDate: now,
+      subEndDate: data.subscriptionType === 'lifetime' ? new Date('9999-12-31T23:59:59.999Z') : endDate,
+      subTrialDays: data.subscriptionType === 'trial' ? trialDays : 0,
     },
-    ownerPhone: data.ownerPhone,
-    active: true,
-    setupComplete: false,
-    createdAt: now,
-    updatedAt: now,
-  };
-
-  const created = await Clinic.create(clinicData);
-  const clinicId = created._id.toString();
+  });
 
   return {
-    clinicId,
-    clinic: { id: clinicId, ...toClient(created.toObject()) } as ClinicDocument,
+    clinicId: created.id,
+    clinic: mapClinicToDoc(created),
   };
 }
 
@@ -270,14 +272,15 @@ export async function createAuditLog(data: {
   severity?: 'info' | 'warning' | 'critical';
 }): Promise<void> {
   try {
-    await dbConnect();
-    await AuditLog.create({
-      clinicId: data.clinicId || 'platform',
-      userId: data.userId,
-      action: data.action,
-      details: data.details || '',
-      severity: data.severity || 'info',
-      timestamp: new Date(),
+    await prisma.auditLog.create({
+      data: {
+        clinicId: data.clinicId || 'platform',
+        userId: data.userId,
+        action: data.action,
+        details: data.details || '',
+        severity: data.severity || 'info',
+        timestamp: new Date(),
+      },
     });
   } catch (error) {
     console.error('Audit log error:', error);
@@ -285,34 +288,49 @@ export async function createAuditLog(data: {
 }
 
 // ═══ Platform Config ═══
-export interface PlatformConfig {
+export interface PlatformConfigData {
   superAdminCreated: boolean;
   version: string;
-  platformConfig?: Record<string, string>;
+  platformConfig?: Record<string, unknown> | null;
   defaultClinicId?: string;
   jwtSecret?: string;
   supportPhone?: string;
   supportWhatsApp?: string;
 }
 
-export async function getPlatformConfig(): Promise<PlatformConfig | null> {
+export async function getPlatformConfig(): Promise<PlatformConfigData | null> {
   try {
-    await dbConnect();
-    const doc = await PlatformConfig.findOne({ configKey: 'config' }).lean();
+    const doc = await prisma.platformConfig.findFirst({
+      where: { configKey: 'config' },
+    });
     if (!doc) return null;
-    // Remove internal fields and return as PlatformConfig
-    const { configKey, updatedAt, _id, __v, ...config } = doc as any;
-    return config as PlatformConfig;
+    return {
+      superAdminCreated: doc.superAdminCreated,
+      version: doc.version,
+      platformConfig: doc.platformConfig as Record<string, unknown> | null,
+      defaultClinicId: doc.defaultClinicId || undefined,
+      jwtSecret: doc.jwtSecret || undefined,
+      supportPhone: doc.supportPhone || undefined,
+      supportWhatsApp: doc.supportWhatsApp || undefined,
+    };
   } catch {
     return null;
   }
 }
 
-export async function setPlatformConfig(config: Partial<PlatformConfig>): Promise<void> {
-  await dbConnect();
-  await PlatformConfig.findOneAndUpdate(
-    { configKey: 'config' },
-    { ...config, configKey: 'config', updatedAt: new Date() },
-    { upsert: true, new: true }
-  );
+export async function setPlatformConfig(config: Partial<PlatformConfigData>): Promise<void> {
+  const data: any = { updatedAt: new Date() };
+  if (config.superAdminCreated !== undefined) data.superAdminCreated = config.superAdminCreated;
+  if (config.version !== undefined) data.version = config.version;
+  if (config.defaultClinicId !== undefined) data.defaultClinicId = config.defaultClinicId;
+  if (config.platformConfig !== undefined) data.platformConfig = config.platformConfig as any;
+  if (config.jwtSecret !== undefined) data.jwtSecret = config.jwtSecret;
+  if (config.supportPhone !== undefined) data.supportPhone = config.supportPhone;
+  if (config.supportWhatsApp !== undefined) data.supportWhatsApp = config.supportWhatsApp;
+
+  await prisma.platformConfig.upsert({
+    where: { configKey: 'config' },
+    create: { configKey: 'config', ...data },
+    update: data,
+  });
 }

@@ -116,7 +116,7 @@ export function PatientList({ role = 'admin' }: Props) {
                       <p className="font-medium text-sm">{patient.name}</p>
                       <div className="flex items-center gap-2 mt-0.5">
                         <span className="text-xs text-muted-foreground">
-                          {patient.age} سنة - {genderLabels[patient.gender] || patient.gender}
+                          {patient.age} سنة - {genderLabels[patient.gender as string] || patient.gender || ''}
                         </span>
                         {patient.phone && (
                           <span className="text-xs text-muted-foreground flex items-center gap-0.5" dir="ltr">

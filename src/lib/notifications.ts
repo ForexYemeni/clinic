@@ -1,12 +1,8 @@
 // ═══════════════════════════════════════════════════════════
-// 🔔 Notification Helper
-// Create notifications for various events
+// 🔔 Notification Helper (Prisma + PostgreSQL)
 // ═══════════════════════════════════════════════════════════
 
-import dbConnect from '@/lib/mongodb';
-import Notification from '@/models/Notification';
-import User from '@/models/User';
-import Clinic from '@/models/Clinic';
+import prisma from './db';
 
 export type NotificationType = 'patient' | 'visit' | 'emergency' | 'subscription' | 'payment' | 'system' | 'nurse' | 'data_reset';
 export type NotificationPriority = 'low' | 'normal' | 'high' | 'urgent';
@@ -25,54 +21,51 @@ interface CreateNotificationParams {
 // Create a single notification
 export async function createNotification(params: CreateNotificationParams): Promise<string> {
   try {
-    await dbConnect();
-
-    const notifData = {
-      userId: params.userId,
-      clinicId: params.clinicId || '',
-      type: params.type || 'system',
-      title: params.title,
-      message: params.message,
-      read: false,
-      priority: params.priority || 'normal',
-      actionUrl: params.actionUrl || '',
-      relatedId: params.relatedId || '',
-      createdAt: new Date(),
-    };
-
-    const doc = await Notification.create(notifData);
-    return doc._id.toString();
+    const doc = await prisma.notification.create({
+      data: {
+        userId: params.userId,
+        clinicId: params.clinicId || '',
+        type: params.type || 'system',
+        title: params.title,
+        message: params.message,
+        read: false,
+        priority: params.priority || 'normal',
+        actionUrl: params.actionUrl || '',
+        relatedId: params.relatedId || '',
+      },
+    });
+    return doc.id;
   } catch (error) {
     console.error('Create notification error:', error);
     return '';
   }
 }
 
-// Create notification for all users in a clinic (except the trigger user)
+// Notify all active users of a clinic
 export async function notifyClinicUsers(params: {
   clinicId: string;
-  excludeUserId?: string;
   type: NotificationType;
   title: string;
   message: string;
   priority?: NotificationPriority;
   relatedId?: string;
+  excludeUserId?: string;
 }): Promise<void> {
   try {
-    await dbConnect();
+    const users = await prisma.user.findMany({
+      where: {
+        clinicId: params.clinicId,
+        active: true,
+        ...(params.excludeUserId ? { NOT: { id: params.excludeUserId } } : {}),
+      },
+      select: { id: true },
+    });
 
-    const users = await User.find({
-      clinicId: params.clinicId,
-      active: true,
-    }).lean();
+    if (users.length === 0) return;
 
-    const notifDocs = users
-      .filter((doc) => {
-        if (params.excludeUserId && doc._id.toString() === params.excludeUserId) return false;
-        return true;
-      })
-      .map((doc) => ({
-        userId: doc._id.toString(),
+    await prisma.notification.createMany({
+      data: users.map((u) => ({
+        userId: u.id,
         clinicId: params.clinicId,
         type: params.type,
         title: params.title,
@@ -81,12 +74,8 @@ export async function notifyClinicUsers(params: {
         priority: params.priority || 'normal',
         actionUrl: '',
         relatedId: params.relatedId || '',
-        createdAt: new Date(),
-      }));
-
-    if (notifDocs.length > 0) {
-      await Notification.insertMany(notifDocs);
-    }
+      })),
+    });
   } catch (error) {
     console.error('Notify clinic users error:', error);
   }
@@ -101,29 +90,26 @@ export async function notifySuperAdmins(params: {
   relatedId?: string;
 }): Promise<void> {
   try {
-    await dbConnect();
+    const admins = await prisma.user.findMany({
+      where: { role: 'super_admin', active: true },
+      select: { id: true },
+    });
 
-    const admins = await User.find({
-      role: 'super_admin',
-      active: true,
-    }).lean();
+    if (admins.length === 0) return;
 
-    const notifDocs = admins.map((doc) => ({
-      userId: doc._id.toString(),
-      clinicId: 'platform',
-      type: params.type,
-      title: params.title,
-      message: params.message,
-      read: false,
-      priority: params.priority || 'normal',
-      actionUrl: '',
-      relatedId: params.relatedId || '',
-      createdAt: new Date(),
-    }));
-
-    if (notifDocs.length > 0) {
-      await Notification.insertMany(notifDocs);
-    }
+    await prisma.notification.createMany({
+      data: admins.map((a) => ({
+        userId: a.id,
+        clinicId: 'platform',
+        type: params.type,
+        title: params.title,
+        message: params.message,
+        read: false,
+        priority: params.priority || 'normal',
+        actionUrl: '',
+        relatedId: params.relatedId || '',
+      })),
+    });
   } catch (error) {
     console.error('Notify super admins error:', error);
   }
@@ -132,124 +118,103 @@ export async function notifySuperAdmins(params: {
 // Check subscription expiry and create warnings
 export async function checkSubscriptionExpiry(): Promise<void> {
   try {
-    await dbConnect();
-
     const now = new Date();
     const threeDaysFromNow = new Date(now.getTime() + 3 * 24 * 60 * 60 * 1000);
     const oneDayFromNow = new Date(now.getTime() + 1 * 24 * 60 * 60 * 1000);
 
-    // Find all clinics (since subscription may be embedded)
-    const clinics = await Clinic.find().lean();
+    const clinics = await prisma.clinic.findMany({
+      where: { subEndDate: { not: null } },
+    });
 
-    for (const clinicDoc of clinics) {
-      const clinic = clinicDoc as any;
-      const endDate = clinic.subscription?.endDate;
+    for (const clinic of clinics) {
+      if (!clinic.subEndDate) continue;
 
-      if (!endDate) continue;
-
-      const endDateObj = new Date(endDate);
-      const clinicId = clinicDoc._id.toString();
+      const endDateObj = clinic.subEndDate;
+      const clinicId = clinic.id;
       const clinicName = clinic.name || 'عيادة';
 
       // 3 days warning
       if (endDateObj <= threeDaysFromNow && endDateObj > oneDayFromNow) {
-        // Check if we already sent a 3-day warning today
-        const existingWarning = await Notification.findOne({
-          relatedId: clinicId,
-          type: 'subscription',
-          message: `اشتراك ${clinicName} ينتهي خلال 3 أيام`,
-        }).lean();
+        const existingWarning = await prisma.notification.findFirst({
+          where: {
+            relatedId: clinicId,
+            type: 'subscription',
+            message: `اشتراك ${clinicName} ينتهي خلال 3 أيام`,
+          },
+          select: { id: true },
+        });
 
         if (!existingWarning) {
-          // Notify clinic admins
-          const admins = await User.find({
-            clinicId,
-            role: 'admin',
-          }).lean();
+          const admins = await prisma.user.findMany({
+            where: { clinicId, role: 'admin' },
+            select: { id: true },
+          });
+          const superAdmins = await prisma.user.findMany({
+            where: { role: 'super_admin' },
+            select: { id: true },
+          });
 
-          const notifDocs = admins.map((adminDoc) => ({
-            userId: adminDoc._id.toString(),
-            clinicId,
-            type: 'subscription',
-            title: 'تنبيه انتهاء الاشتراك',
-            message: `اشتراك ${clinicName} ينتهي خلال 3 أيام`,
-            read: false,
-            priority: 'high',
-            relatedId: clinicId,
-            createdAt: new Date(),
-          }));
+          const recipients = [
+            ...admins.map((a) => ({ userId: a.id, clinicId })),
+            ...superAdmins.map((a) => ({ userId: a.id, clinicId: 'platform' })),
+          ];
 
-          // Also notify super admins
-          const superAdmins = await User.find({
-            role: 'super_admin',
-          }).lean();
-
-          for (const saDoc of superAdmins) {
-            notifDocs.push({
-              userId: saDoc._id.toString(),
-              clinicId: 'platform',
-              type: 'subscription',
-              title: 'اشتراك ينتهي قريباً',
-              message: `اشتراك ${clinicName} ينتهي خلال 3 أيام`,
-              read: false,
-              priority: 'high',
-              relatedId: clinicId,
-              createdAt: new Date(),
+          if (recipients.length > 0) {
+            await prisma.notification.createMany({
+              data: recipients.map((r) => ({
+                userId: r.userId,
+                clinicId: r.clinicId,
+                type: 'subscription',
+                title: 'تنبيه انتهاء الاشتراك',
+                message: `اشتراك ${clinicName} ينتهي خلال 3 أيام`,
+                read: false,
+                priority: 'high',
+                relatedId: clinicId,
+              })),
             });
-          }
-
-          if (notifDocs.length > 0) {
-            await Notification.insertMany(notifDocs);
           }
         }
       }
 
       // 1 day warning (urgent)
       if (endDateObj <= oneDayFromNow && endDateObj > now) {
-        const existingWarning = await Notification.findOne({
-          relatedId: clinicId,
-          type: 'subscription',
-          message: `اشتراك ${clinicName} ينتهي غداً!`,
-        }).lean();
+        const existingWarning = await prisma.notification.findFirst({
+          where: {
+            relatedId: clinicId,
+            type: 'subscription',
+            message: `اشتراك ${clinicName} ينتهي غداً!`,
+          },
+          select: { id: true },
+        });
 
         if (!existingWarning) {
-          const admins = await User.find({
-            clinicId,
-            role: 'admin',
-          }).lean();
+          const admins = await prisma.user.findMany({
+            where: { clinicId, role: 'admin' },
+            select: { id: true },
+          });
+          const superAdmins = await prisma.user.findMany({
+            where: { role: 'super_admin' },
+            select: { id: true },
+          });
 
-          const notifDocs = admins.map((adminDoc) => ({
-            userId: adminDoc._id.toString(),
-            clinicId,
-            type: 'subscription',
-            title: '⚠️ اشتراك ينتهي غداً!',
-            message: `اشتراك ${clinicName} ينتهي غداً! تواصل مع الإدارة للتجديد`,
-            read: false,
-            priority: 'urgent',
-            relatedId: clinicId,
-            createdAt: new Date(),
-          }));
+          const recipients = [
+            ...admins.map((a) => ({ userId: a.id, clinicId })),
+            ...superAdmins.map((a) => ({ userId: a.id, clinicId: 'platform' })),
+          ];
 
-          const superAdmins = await User.find({
-            role: 'super_admin',
-          }).lean();
-
-          for (const saDoc of superAdmins) {
-            notifDocs.push({
-              userId: saDoc._id.toString(),
-              clinicId: 'platform',
-              type: 'subscription',
-              title: '⚠️ اشتراك ينتهي غداً!',
-              message: `اشتراك ${clinicName} ينتهي غداً!`,
-              read: false,
-              priority: 'urgent',
-              relatedId: clinicId,
-              createdAt: new Date(),
+          if (recipients.length > 0) {
+            await prisma.notification.createMany({
+              data: recipients.map((r) => ({
+                userId: r.userId,
+                clinicId: r.clinicId,
+                type: 'subscription',
+                title: '⚠️ اشتراك ينتهي غداً!',
+                message: `اشتراك ${clinicName} ينتهي غداً! تواصل مع الإدارة للتجديد`,
+                read: false,
+                priority: 'urgent',
+                relatedId: clinicId,
+              })),
             });
-          }
-
-          if (notifDocs.length > 0) {
-            await Notification.insertMany(notifDocs);
           }
         }
       }

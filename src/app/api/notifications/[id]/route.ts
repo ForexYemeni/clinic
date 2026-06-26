@@ -1,5 +1,8 @@
-import dbConnect from '@/lib/mongodb';
-import Notification from '@/models/Notification';
+// ═══════════════════════════════════════════════════════════
+// 🔔 Notification Detail API (Prisma + PostgreSQL)
+// ═══════════════════════════════════════════════════════════
+
+import prisma from '@/lib/db';
 import { NextRequest, NextResponse } from 'next/server';
 import { extractAuthAndClinicId } from '@/lib/auth';
 
@@ -9,37 +12,51 @@ export async function PUT(
   { params }: { params: Promise<{ id: string }> }
 ) {
   try {
-    await dbConnect();
     const { auth, effectiveClinicId } = extractAuthAndClinicId(request);
     const { id } = await params;
     const body = await request.json();
 
-    // Check if notification exists
-    const notifDoc = await Notification.findById(id).lean();
-    if (!notifDoc) {
-      return NextResponse.json(
-        { error: 'الإشعار غير موجود' },
-        { status: 404 }
-      );
+    const notif = await prisma.notification.findUnique({ where: { id } });
+    if (!notif) {
+      return NextResponse.json({ error: 'الإشعار غير موجود' }, { status: 404 });
     }
-
-    // Verify clinic ownership (strict)
-    const notifClinicId = notifDoc.clinicId;
-    if (!effectiveClinicId || (notifClinicId && notifClinicId !== effectiveClinicId)) {
+    if (!effectiveClinicId || (notif.clinicId && notif.clinicId !== effectiveClinicId)) {
       return NextResponse.json({ error: 'غير مصرح' }, { status: 403 });
     }
 
-    const updateData: Record<string, unknown> = {};
+    const updateData: any = {};
     if (body.read !== undefined) updateData.read = body.read;
 
-    await Notification.findByIdAndUpdate(id, { $set: updateData });
+    await prisma.notification.update({ where: { id }, data: updateData });
 
-    return NextResponse.json({ id, ...updateData });
+    return NextResponse.json({ id, ...updateData } as any);
   } catch (error) {
     console.error('Update notification error:', error);
-    return NextResponse.json(
-      { error: 'خطأ في تحديث الإشعار' },
-      { status: 500 }
-    );
+    return NextResponse.json({ error: 'خطأ في تحديث الإشعار' }, { status: 500 });
+  }
+}
+
+// DELETE: Delete notification
+export async function DELETE(
+  request: NextRequest,
+  { params }: { params: Promise<{ id: string }> }
+) {
+  try {
+    const { auth, effectiveClinicId } = extractAuthAndClinicId(request);
+    const { id } = await params;
+
+    const notif = await prisma.notification.findUnique({ where: { id } });
+    if (!notif) {
+      return NextResponse.json({ error: 'الإشعار غير موجود' }, { status: 404 });
+    }
+    if (!effectiveClinicId || (notif.clinicId && notif.clinicId !== effectiveClinicId)) {
+      return NextResponse.json({ error: 'غير مصرح' }, { status: 403 });
+    }
+
+    await prisma.notification.delete({ where: { id } });
+    return NextResponse.json({ success: true, id });
+  } catch (error) {
+    console.error('Delete notification error:', error);
+    return NextResponse.json({ error: 'خطأ في حذف الإشعار' }, { status: 500 });
   }
 }

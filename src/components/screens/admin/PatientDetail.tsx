@@ -137,7 +137,7 @@ export function PatientDetail({ role = 'admin' }: Props) {
             <h2 className="text-lg font-bold">{patient.name}</h2>
             <div className="flex items-center gap-3 mt-1 text-sm opacity-90">
               <span>{(patient as any).ageCategory === 'elderly' || (patient as any).ageCategory === 'infant' ? 'كبير' : (patient as any).ageCategory === 'child' ? 'طفل' : (patient as any).ageCategory === 'adult' ? 'بالغ' : patient.age ? `${patient.age} سنة` : 'بالغ'}</span>
-              <span>{genderLabels[patient.gender]}</span>
+              <span>{genderLabels[patient.gender as string] || genderLabels[(patient as any).gender] || ''}</span>
               {patient.bloodType && (
                 <span className="flex items-center gap-1"><Droplets className="w-3 h-3" />{patient.bloodType}</span>
               )}

@@ -120,7 +120,7 @@ export function SuperAdminSetup() {
       setError('');
 
       try {
-        const data = await apiPost('/api/platform/migrate', {
+        const data = await apiPost<any>('/api/platform/migrate', {
           phone: adminPhone,
           password: adminPassword,
         });
@@ -269,7 +269,7 @@ export function SuperAdminSetup() {
     setError('');
 
     try {
-      const data = await apiPost('/api/platform/setup', {
+      const data = await apiPost<any>('/api/platform/setup', {
         superAdminName: adminName,
         superAdminPhone: adminPhone,
         superAdminPassword: adminPassword,

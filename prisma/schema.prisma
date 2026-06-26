@@ -1,194 +1,313 @@
+// ═══════════════════════════════════════════════════════════
+// 🏥 Clinic SaaS Platform - PostgreSQL Schema (Neon)
+// Multi-tenant: all tables scoped by clinicId
+// Simplified: plain string IDs (no Prisma relations) — matches Mongoose semantics
+// ═══════════════════════════════════════════════════════════
+
 generator client {
   provider = "prisma-client-js"
 }
 
 datasource db {
-  provider = "sqlite"
+  provider = "postgresql"
   url      = env("DATABASE_URL")
 }
 
 model User {
-  id        String   @id @default(cuid())
-  name      String
-  email     String   @unique
-  password  String
-  role      String   @default("nurse") // "admin" or "nurse"
-  phone     String?
-  avatar    String?
-  active    Boolean  @default(true)
+  id           String   @id @default(cuid())
+  name         String
+  phone        String   @unique
+  password     String
+  role         String   @default("nurse") // "super_admin" | "admin" | "nurse"
+  active       Boolean  @default(true)
+  clinicId     String   @default("")
+  salary       Int      @default(0)
+  recoveryCode String?
+
   createdAt DateTime @default(now())
   updatedAt DateTime @updatedAt
 
-  registeredPatients Patient[]    @relation("PatientRegistrar")
-  emergencies        Emergency[]  @relation("EmergencyNurse")
-  appointments       Appointment[] @relation("AppointmentNurse")
-  notifications      Notification[]
-  dailyReports       DailyReport[]
-  patientServices    PatientService[] @relation("ServiceNurse")
+  @@index([clinicId, role])
+  @@index([phone])
+  @@map("users")
+}
+
+model Clinic {
+  id            String   @id @default(cuid())
+  name          String
+  address       String   @default("")
+  phone         String   @default("")
+  city          String   @default("")
+  adminPhone    String   @default("")
+  adminId       String   @default("")
+  active        Boolean  @default(true)
+  setupComplete Boolean  @default(false)
+  description   String   @default("")
+  logo          String   @default("") // base64 or URL
+  primaryColor  String   @default("emerald")
+  ownerPhone    String   @default("")
+
+  // Subscription details (flat columns)
+  subPlan          String   @default("free")
+  subType          String   @default("trial")
+  subTrial         Boolean  @default(false)
+  subMonthly       Boolean  @default(false)
+  subYearly        Boolean  @default(false)
+  subLifetime      Boolean  @default(false)
+  subStatus        String   @default("active")
+  subStartDate     DateTime?
+  subEndDate       DateTime?
+  subGracePeriod   DateTime?
+  subPaymentMethod String   @default("")
+  subTrialDays     Int      @default(0)
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  @@index([active])
+  @@index([subStatus])
+  @@map("clinics")
 }
 
 model Patient {
-  id             String   @id @default(cuid())
-  name           String
-  age            Int
-  gender         String   // "male" or "female"
-  phone          String?
-  emergencyPhone String?
-  address        String?
-  bloodType      String?
-  chronicDiseases String? // comma separated
-  allergies      String?   // comma separated
-  medicalHistory String?
-  notes          String?
-  createdAt      DateTime @default(now())
-  updatedAt      DateTime @updatedAt
+  id              String   @id @default(cuid())
+  name            String
+  age             Int?
+  ageCategory     String   @default("adult")
+  gender          String   @default("")
+  phone           String   @default("")
+  emergencyPhone  String   @default("")
+  address         String   @default("")
+  bloodType       String   @default("")
+  chronicDiseases String   @default("")
+  allergies       String   @default("")
+  medicalHistory  String   @default("")
+  notes           String   @default("")
+  complaints      String[] @default([])
+  registeredBy    String   @default("")
 
-  registeredBy String?
-  registeredByUser User? @relation("PatientRegistrar", fields: [registeredBy], references: [id])
+  clinicId String
 
-  visits       Visit[]
-  services     PatientService[]
-  medications  Medication[]
-  emergencies  Emergency[]
-  appointments Appointment[]
-  payments     Payment[]
-  invoices     Invoice[]
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  @@index([clinicId])
+  @@index([clinicId, name])
+  @@index([phone])
+  @@map("patients")
 }
 
 model Visit {
   id          String   @id @default(cuid())
   patientId   String
-  patient     Patient  @relation(fields: [patientId], references: [id])
+  patientName String   @default("")
+  nurseId     String   @default("")
+  nurseName   String   @default("")
+  reason      String   @default("")
+  diagnosis   String   @default("")
+  status      String   @default("pending")
   visitDate   DateTime @default(now())
-  reason      String?
-  diagnosis   String?
-  notes       String?
-  vitals      String?  // JSON string for vital signs
-  status      String   @default("active") // "active", "completed", "follow-up"
-  createdAt   DateTime @default(now())
-  updatedAt   DateTime @updatedAt
-}
 
-model Service {
-  id          String   @id @default(cuid())
-  name        String
-  nameAr      String
-  description String?
-  price       Float
-  duration    Int      @default(15) // minutes
-  category    String?
-  active      Boolean  @default(true)
-  createdAt   DateTime @default(now())
-  updatedAt   DateTime @updatedAt
+  // Vital signs (flat columns)
+  vsBloodPressure String @default("") @map("vs_blood_pressure")
+  vsHeartRate     String @default("") @map("vs_heart_rate")
+  vsTemperature   String @default("") @map("vs_temperature")
+  vsOxygenLevel   String @default("") @map("vs_oxygen_level")
+  vsSugarLevel    String @default("") @map("vs_sugar_level")
 
-  patientServices PatientService[]
-}
+  medications String[] @default([])
+  serviceIds  String[] @default([])
+  complaints  String[] @default([])
+  totalPrice  Int      @default(0)
 
-model PatientService {
-  id          String   @id @default(cuid())
-  patientId   String
-  patient     Patient  @relation(fields: [patientId], references: [id])
-  serviceId   String
-  service     Service  @relation(fields: [serviceId], references: [id])
-  nurseId     String?
-  nurse       User?    @relation("ServiceNurse", fields: [nurseId], references: [id])
-  status      String   @default("pending") // "pending", "in-progress", "completed"
-  notes       String?
-  performedAt DateTime?
-  createdAt   DateTime @default(now())
-  updatedAt   DateTime @updatedAt
-}
+  clinicId String
 
-model Medication {
-  id          String   @id @default(cuid())
-  patientId   String
-  patient     Patient  @relation(fields: [patientId], references: [id])
-  name        String
-  dosage      String?
-  frequency   String?
-  startDate   DateTime @default(now())
-  endDate     DateTime?
-  notes       String?
-  createdAt   DateTime @default(now())
-  updatedAt   DateTime @updatedAt
-}
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
 
-model Emergency {
-  id              String   @id @default(cuid())
-  patientId       String
-  patient         Patient  @relation(fields: [patientId], references: [id])
-  nurseId         String?
-  nurse           User?    @relation("EmergencyNurse", fields: [nurseId], references: [id])
-  severity        String   @default("moderate") // "low", "moderate", "high", "critical"
-  arrivalTime     DateTime @default(now())
-  treatmentTime   DateTime?
-  actions         String?  // JSON string for actions taken
-  status          String   @default("active") // "active", "treated", "transferred", "archived"
-  notes           String?
-  createdAt       DateTime @default(now())
-  updatedAt       DateTime @updatedAt
-}
-
-model Appointment {
-  id          String   @id @default(cuid())
-  patientId   String
-  patient     Patient  @relation(fields: [patientId], references: [id])
-  nurseId     String?
-  nurse       User?    @relation("AppointmentNurse", fields: [nurseId], references: [id])
-  date        DateTime
-  duration    Int      @default(30) // minutes
-  type        String?  // "checkup", "follow-up", "treatment", "emergency"
-  status      String   @default("scheduled") // "scheduled", "confirmed", "completed", "cancelled"
-  notes       String?
-  createdAt   DateTime @default(now())
-  updatedAt   DateTime @updatedAt
-}
-
-model Payment {
-  id          String   @id @default(cuid())
-  patientId   String
-  patient     Patient  @relation(fields: [patientId], references: [id])
-  amount      Float
-  method      String   @default("cash") // "cash", "card", "insurance"
-  type        String   @default("payment") // "payment", "refund"
-  description String?
-  createdAt   DateTime @default(now())
-  updatedAt   DateTime @updatedAt
+  @@index([clinicId, visitDate])
+  @@index([patientId])
+  @@index([nurseId])
+  @@map("visits")
 }
 
 model Invoice {
+  id            String   @id @default(cuid())
+  patientId     String   @default("")
+  patientName   String   @default("")
+  visitId       String   @default("")
+  total         Int      @default(0)
+  paid          Int      @default(0)
+  remaining     Int      @default(0)
+  status        String   @default("unpaid")
+  paymentMethod String   @default("")
+
+  // Items stored as JSONB (flexible, supports service snapshot)
+  items Json @default("[]")
+
+  clinicId String
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  @@index([clinicId, status])
+  @@index([clinicId, createdAt])
+  @@index([patientId])
+  @@index([visitId])
+  @@map("invoices")
+}
+
+model Service {
+  id          String  @id @default(cuid())
+  nameAr      String
+  price       Int
+  duration    Int
+  category    String
+  description String  @default("")
+  icon        String  @default("")
+  color       String  @default("")
+  active      Boolean @default(true)
+  status      String  @default("active")
+
+  clinicId String
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  @@index([clinicId, status])
+  @@index([clinicId, category])
+  @@map("services")
+}
+
+model Emergency {
   id          String   @id @default(cuid())
-  patientId   String
-  patient     Patient  @relation(fields: [patientId], references: [id])
-  items       String   // JSON string for invoice items
-  total       Float
-  paid        Float    @default(0)
-  status      String   @default("unpaid") // "unpaid", "partial", "paid"
-  dueDate     DateTime?
-  createdAt   DateTime @default(now())
-  updatedAt   DateTime @updatedAt
+  patientId   String   @default("")
+  patientName String   @default("")
+  nurseId     String   @default("")
+  nurseName   String   @default("")
+  severity    String   @default("moderate")
+  status      String   @default("active")
+  notes       String   @default("")
+  actions     String   @default("")
+  procedures  String   @default("")
+  arrivalTime DateTime @default(now())
+
+  clinicId String
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  @@index([clinicId, status])
+  @@index([patientId])
+  @@index([nurseId])
+  @@map("emergencies")
 }
 
 model Notification {
-  id          String   @id @default(cuid())
-  userId      String
-  user        User     @relation(fields: [userId], references: [id])
-  title       String
-  message     String
-  type        String   @default("system") // "system", "emergency", "appointment", "service"
-  read        Boolean  @default(false)
-  createdAt   DateTime @default(now())
+  id        String  @id @default(cuid())
+  userId    String  @default("")
+  type      String  @default("system")
+  title     String  @default("")
+  message   String  @default("")
+  read      Boolean @default(false)
+  priority  String  @default("normal")
+  actionUrl String  @default("")
+  relatedId String  @default("")
+
+  clinicId String
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  @@index([userId, read])
+  @@index([clinicId, createdAt])
+  @@index([relatedId, type])
+  @@map("notifications")
 }
 
-model DailyReport {
-  id          String   @id @default(cuid())
-  nurseId     String
-  nurse       User     @relation(fields: [nurseId], references: [id])
-  date        DateTime
-  patientsCount Int    @default(0)
-  servicesCount Int    @default(0)
-  emergenciesCount Int @default(0)
-  notes       String?
-  createdAt   DateTime @default(now())
-  updatedAt   DateTime @updatedAt
+model SalaryWithdrawal {
+  id               String    @id @default(cuid())
+  nurseId          String    @default("")
+  nurseName        String    @default("")
+  amount           Int
+  type             String    @default("withdrawal")
+  bonusType        String    @default("bonus")
+  description      String    @default("")
+  status           String    @default("approved")
+  withdrawalMethod String    @default("cash")
+  walletName       String    @default("")
+  walletPhone      String    @default("")
+  walletOwner      String    @default("")
+  isDebt           Boolean   @default(false)
+  invoiceId        String    @default("")
+  patientName      String    @default("")
+  requestedBy      String    @default("admin")
+  createdBy        String    @default("")
+  requestedAt      DateTime  @default(now())
+  approvedAt       DateTime?
+  approvedBy       String    @default("")
+  rejectedBy       String    @default("")
+  reviewedBy       String    @default("")
+  reviewedAt       DateTime?
+  rejectionReason  String    @default("")
+  notes            String    @default("")
+
+  clinicId String
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  @@index([clinicId, nurseId])
+  @@index([nurseId, status])
+  @@index([status])
+  @@map("salary_withdrawals")
+}
+
+model AuditLog {
+  id        String   @id @default(cuid())
+  action    String
+  userId    String   @default("")
+  userName  String   @default("")
+  clinicId  String   @default("")
+  details   String   @default("")
+  severity  String   @default("info")
+  timestamp DateTime @default(now())
+
+  @@index([clinicId, timestamp])
+  @@index([action])
+  @@index([severity])
+  @@map("audit_logs")
+}
+
+model DataResetRequest {
+  id            String  @id @default(cuid())
+  requestedBy   String
+  requesterName String  @default("")
+  clinicId      String
+  reason        String  @default("")
+  status        String  @default("pending")
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  @@index([status])
+  @@index([clinicId])
+  @@map("data_reset_requests")
+}
+
+model PlatformConfig {
+  id                String  @id @default(cuid())
+  configKey         String  @unique @default("config")
+  superAdminCreated Boolean @default(false)
+  version           String  @default("")
+  defaultClinicId   String  @default("")
+  platformConfig    Json?
+  jwtSecret         String  @default("")
+  supportPhone      String  @default("")
+  supportWhatsApp   String  @default("")
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  @@map("platform_config")
 }

@@ -3,16 +3,22 @@ import { type LucideIcon, AlertTriangle, Stethoscope, Info } from 'lucide-react'
 // ==================== TYPES ====================
 export interface DashboardData {
   totalPatients: number;
+  totalVisits: number;
   totalEmergencies: number;
   activeEmergencies: number;
+  todayVisits: number;
+  todayPatients: number;
   todayServices: number;
   totalRevenue: number;
   totalServices: number;
   totalNurses: number;
+  activeServices: number;
   todayRevenue: number;
   pendingInvoices: number;
+  unpaidAmount: number;
   monthlyRevenue: number;
   monthlyPatients: number;
+  pendingTasks?: number;
   servicesByCategory: { category: string; count: number }[];
   recentEmergencies: EmergencyItem[];
   recentPayments: PaymentItem[];
@@ -46,7 +52,7 @@ export interface EmergencyItem {
   nurseName?: string;
   patient?: { id?: string; name: string };
   nurse?: { id?: string; name: string };
-  [key: string]: unknown;
+  [key: string]: any;
 }
 
 export interface PaymentItem {
@@ -58,7 +64,7 @@ export interface PaymentItem {
   description?: string;
   createdAt: string;
   patient?: { id?: string; name: string };
-  [key: string]: unknown;
+  [key: string]: any;
 }
 
 export interface InvoiceItem {
@@ -76,7 +82,7 @@ export interface InvoiceItem {
   paymentMethod?: string;
   patient?: { id?: string; name: string; phone?: string };
   createdAt: string;
-  [key: string]: unknown;
+  [key: string]: any;
 }
 
 export interface InvoiceLineItem {
@@ -91,8 +97,9 @@ export interface InvoiceLineItem {
 export interface PatientItem {
   id: string;
   name: string;
-  age: number;
-  gender: string;
+  age?: number | null;
+  ageCategory?: string;
+  gender?: string;
   phone?: string;
   emergencyPhone?: string;
   address?: string;
@@ -107,8 +114,8 @@ export interface PatientItem {
   invoices?: InvoiceItem[];
   payments?: PaymentItem[];
   _count?: { visits?: number; patientServices?: number };
-  createdAt: string;
-  [key: string]: unknown;
+  createdAt?: string;
+  [key: string]: any;
 }
 
 export interface VisitItem {
@@ -128,7 +135,7 @@ export interface VisitItem {
     sugarLevel?: number;
   };
   medications?: string[];
-  [key: string]: unknown;
+  [key: string]: any;
 }
 
 export interface PatientServiceItem {
@@ -141,7 +148,7 @@ export interface PatientServiceItem {
   nurse?: { name: string };
   nurseName?: string;
   createdAt?: string;
-  [key: string]: unknown;
+  [key: string]: any;
 }
 
 export interface MedicationItem {
@@ -150,7 +157,7 @@ export interface MedicationItem {
   dosage: string;
   frequency: string;
   notes?: string;
-  [key: string]: unknown;
+  [key: string]: any;
 }
 
 export interface NotificationItem {
@@ -160,7 +167,7 @@ export interface NotificationItem {
   message: string;
   read: boolean;
   createdAt: string;
-  [key: string]: unknown;
+  [key: string]: any;
 }
 
 export interface NurseItem {
@@ -171,7 +178,7 @@ export interface NurseItem {
   active: boolean;
   role: string;
   salary?: number;
-  [key: string]: unknown;
+  [key: string]: any;
 }
 
 export interface ServiceItem {
@@ -184,7 +191,7 @@ export interface ServiceItem {
   active: boolean;
   status: 'active' | 'paused' | 'deleted';
   createdAt: string;
-  [key: string]: unknown;
+  [key: string]: any;
 }
 
 export interface BillingItem {
@@ -196,7 +203,7 @@ export interface BillingItem {
   remaining: number;
   status: 'paid' | 'unpaid' | 'partial';
   createdAt: string;
-  [key: string]: unknown;
+  [key: string]: any;
 }
 
 export interface DefaultService {
