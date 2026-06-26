@@ -81,3 +81,29 @@ Stage Summary:
 - "إضافة" button (new) = BONUS/raise/transport allowance. ADDED to nurse's balance (+amount green). NOT deducted from salary
 - Remaining balance calculation now correctly: salary - deductions + bonuses
 - Both admin and nurse screens display 4 transaction types consistently with proper +/- color coding and clear Arabic labels
+
+---
+Task ID: 4
+Agent: Main Agent
+Task: Complete MongoDB → PostgreSQL/Prisma (Neon) migration end-to-end
+
+Work Log:
+- Ran `npx prisma db push` against Neon PostgreSQL — all 13 tables created successfully (users, clinics, patients, visits, invoices, services, emergencies, notifications, salary_withdrawals, audit_logs, data_reset_requests, platform_config). Database is in sync with schema.
+- Ran `npx prisma generate` — Prisma Client v6.19.2 generated to ./node_modules/@prisma/client
+- Deleted `src/lib/mongodb.ts` (Mongoose shim — no longer needed; no API route references it anymore)
+- Fixed `NurseProfile.tsx:32`: replaced `user?.email` with `user?.phone` (User model has no email field, only phone)
+- Fixed `SuperAdminDashboard.tsx`: replaced invalid `ScreenType` literals `'super-clinics'` → `'super-admin-clinics'` and `'super-add-clinic'` → `'super-admin-add-clinic'` (matches ScreenType union in store.ts)
+- Fixed `SearchInput.tsx:17`: `useRef<ReturnType<typeof setTimeout>>()` → `useRef<ReturnType<typeof setTimeout>>(undefined)` (React 19 requires explicit initial value for useRef)
+- Fixed `clinic-theme.ts:79`: changed `as [keyof ColorShades, string][]` → `as unknown as [keyof ColorShades, string][]` (TypeScript strict mode double-cast)
+- Fixed `store.ts:132`: rewrote `setClinicName` to use `set((state) => ...)` form instead of inline updater `(prev) => ...` (Zustand v5 typing rejects inline updaters on non-function fields)
+- Updated `tsconfig.json`: excluded `upload/`, `scripts/`, `download/` directories from TypeScript compilation (they contained sample files like `socket.io-client` import that broke the build)
+- Verified: `npx next build` succeeded — all 31 routes generated (1 static page + 30 dynamic API/UI routes)
+- Committed as `7fa6b84` and pushed to `origin/main` (ForexYemeni/clinic)
+
+Stage Summary:
+- Migration from MongoDB/Mongoose to PostgreSQL/Prisma is COMPLETE end-to-end
+- Database: Neon PostgreSQL (ep-odd-block-attxd0im.c-9.us-east-1.aws.neon.tech/neondb)
+- ORM: Prisma Client v6.19.2 with 13 models, JSONB fields, composite indexes, multi-tenant clinicId
+- All 30+ API routes use Prisma exclusively — zero Mongoose references remain in src/
+- Build passes cleanly with TypeScript strict mode (no `ignoreBuildErrors` needed)
+- Repo: https://github.com/ForexYemeni/clinic (branch: main, latest commit: 7fa6b84)
