@@ -29,3 +29,24 @@ Stage Summary:
 - Three user roles: super_admin (manages platform), admin (manages clinic), nurse (works in clinic)
 - All data scoped by clinicId for proper multi-tenancy
 - Build passes successfully with all routes working
+
+---
+Task ID: 2
+Agent: Main Agent
+Task: Fix salary deposit display + add "delete all services" feature
+
+Work Log:
+- Fixed NurseSalary.tsx: deposit-type transactions now display with green color, "+" sign, ArrowUpRight icon, badge "عُكس على حسابك", and a clear details box explaining the money was transferred to nurse's account (with wallet/bank details)
+- Fixed AdminNurseSalary.tsx syntax error (missing `);` closer for .map((w,i) => { ... return (...) })
+- Added DELETE /api/services endpoint: clinic admin can delete ALL services for their clinic in one call (auth-restricted to admin/super_admin only)
+- Added "حذف جميع الخدمات" (Delete All Services) UI card with confirmation modal in ServiceManagement.tsx
+- Existing "تحميل الخدمات" (Load Missing Services) button preserved — admin can still reload defaults at any time
+- Build verified successful (npx next build compiled in 28.3s, all 31 routes generated)
+- Committed (5260d87) and pushed to GitHub main branch
+
+Stage Summary:
+- Salary deposits to nurse accounts now clearly show as "عُكس على حسابك" with green +amount, distinct from red -amount for withdrawals/deductions
+- Clinic admins now have three service management actions:
+  1. تحميل الخدمات (Load missing defaults — only adds services that don't exist)
+  2. إعادة تعيين (Reset — delete all + reload defaults)
+  3. حذف جميع الخدمات (Delete ALL — leaves clinic empty, admin relies on their own custom services, defaults can be reloaded later)
