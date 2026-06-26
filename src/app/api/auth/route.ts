@@ -201,10 +201,14 @@ export async function GET() {
     const isFirstSetup = userCount === 0 && clinicCount === 0 && !platformConfig?.superAdminCreated;
 
     return NextResponse.json({
+      // Canonical fields
       isFirstSetup,
       hasSuperAdmin: platformConfig?.superAdminCreated || false,
       hasClinic: clinicCount > 0,
       hasUser: userCount > 0,
+      // Aliases consumed by SplashScreen.tsx (legacy naming kept for compatibility)
+      setupNeeded: isFirstSetup,
+      platformSetup: platformConfig?.superAdminCreated || false,
     });
   } catch (error) {
     console.error('Auth check error:', error);
