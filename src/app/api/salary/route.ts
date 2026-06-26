@@ -6,7 +6,17 @@ import User from '@/models/User';
 import Notification from '@/models/Notification';
 import { toClient, toClientList } from '@/lib/mongoose-helpers';
 
-// GET: List salary withdrawals (?nurseId=xxx, filtered by clinicId)
+// Helper: determine if a transaction is a deposit (added to nurse account) or a withdrawal
+function isDeposit(tx: any): boolean {
+  return tx.type === 'deposit';
+}
+
+// Helper: determine if a transaction is a debt (invoice paid on behalf of nurse)
+function isDebt(tx: any): boolean {
+  return tx.type === 'debt' || tx.isDebt === true;
+}
+
+// GET: List salary transactions (?nurseId=xxx, filtered by clinicId)
 export async function GET(request: NextRequest) {
   try {
     await dbConnect();
@@ -40,7 +50,7 @@ export async function GET(request: NextRequest) {
       }
     }
 
-    const withdrawals = toClientList(results).sort((a: any, b: any) => {
+    const transactions = toClientList(results).sort((a: any, b: any) => {
       const da = a.createdAt ? new Date(a.createdAt).getTime() : 0;
       const db = b.createdAt ? new Date(b.createdAt).getTime() : 0;
       return db - da;
@@ -63,36 +73,51 @@ export async function GET(request: NextRequest) {
         }
       } catch {}
 
-      // Only count approved withdrawals toward total
-      const approvedWithdrawals = withdrawals.filter((w: any) => w.status === 'approved' || !w.status);
-      const totalWithdrawals = approvedWithdrawals.reduce((sum: number, w: any) => sum + (w.amount || 0), 0);
+      // Approved (or legacy without status) transactions
+      const approved = transactions.filter((t: any) => t.status === 'approved' || !t.status);
 
-      // Separate debts from regular withdrawals
-      const debts = withdrawals.filter((w: any) => w.type === 'debt' && (w.status === 'approved' || !w.status));
-      const totalDebts = debts.reduce((sum: number, w: any) => sum + (w.amount || 0), 0);
+      // Withdrawals = money taken OUT of salary (includes regular withdrawals + debts + deductions)
+      // Does NOT include deposits (which ADD to nurse account but still come from salary)
+      // Note: a "deposit" is still subtracted from the salary pool, but it's labeled as a deposit
+      // to the nurse's personal account. We count both withdrawals and deposits against salary balance.
+      const withdrawals = approved.filter((t: any) => !isDeposit(t) && !isDebt(t));
+      const totalWithdrawals = withdrawals.reduce((sum: number, t: any) => sum + (t.amount || 0), 0);
 
-      // Pending requests count
-      const pendingRequests = withdrawals.filter((w: any) => w.status === 'pending');
+      const debts = approved.filter((t: any) => isDebt(t));
+      const totalDebts = debts.reduce((sum: number, t: any) => sum + (t.amount || 0), 0);
+
+      // Deposits = money transferred/deposited to nurse's account (wallet/cash given to nurse)
+      // These DO count against salary balance (they are paid out from the salary pool)
+      const deposits = approved.filter((t: any) => isDeposit(t));
+      const totalDeposits = deposits.reduce((sum: number, t: any) => sum + (t.amount || 0), 0);
+
+      // Total deducted from salary = withdrawals + debts + deposits
+      const totalDeducted = totalWithdrawals + totalDebts + totalDeposits;
+
+      // Pending requests count (only nurse-initiated withdrawal requests, not deposits)
+      const pendingRequests = transactions.filter((t: any) => t.status === 'pending');
 
       return NextResponse.json({
         nurse: nurseData,
         salary: nurseData.salary || 0,
         totalWithdrawals,
         totalDebts,
-        remainingBalance: (nurseData.salary || 0) - totalWithdrawals,
-        withdrawals,
+        totalDeposits,
+        totalDeducted,
+        remainingBalance: (nurseData.salary || 0) - totalDeducted,
+        withdrawals: transactions,
         pendingCount: pendingRequests.length,
       });
     }
 
-    return NextResponse.json(withdrawals);
+    return NextResponse.json(transactions);
   } catch (error) {
-    console.error('Salary withdrawals list error:', error);
-    return NextResponse.json({ error: 'خطأ في جلب بيانات السحوبات' }, { status: 500 });
+    console.error('Salary transactions list error:', error);
+    return NextResponse.json({ error: 'خطأ في جلب بيانات المعاملات' }, { status: 500 });
   }
 }
 
-// POST: Add a salary withdrawal or request
+// POST: Add a salary transaction (withdrawal, deposit, or debt)
 export async function POST(request: NextRequest) {
   try {
     await dbConnect();
@@ -137,13 +162,32 @@ export async function POST(request: NextRequest) {
     // Nurse requests are pending, admin additions are approved immediately
     const status = requestedBy === 'nurse' ? 'pending' : 'approved';
 
-    // Calculate current balance (only approved withdrawals)
-    const existingWithdrawals = await SalaryWithdrawal.find({
+    // Resolve the transaction type:
+    // - 'deposit'  -> admin transferred money to nurse's account (still deducted from salary)
+    // - 'debt'     -> invoice paid on behalf of nurse
+    // - 'withdrawal' / 'cash' / 'deduction' -> normal salary withdrawal
+    let resolvedType: string = type || 'withdrawal';
+    if (isDebt || type === 'debt') {
+      resolvedType = 'debt';
+    } else if (type === 'deposit') {
+      resolvedType = 'deposit';
+    } else if (!type) {
+      resolvedType = 'withdrawal';
+    }
+
+    // If admin transfers money to nurse's wallet/account, treat as deposit to nurse account
+    // (still deducted from salary balance, but labeled as a deposit)
+    if (requestedBy === 'admin' && withdrawalMethod === 'transfer' && resolvedType !== 'debt') {
+      resolvedType = 'deposit';
+    }
+
+    // Calculate current balance (only approved transactions of all types - they all reduce salary)
+    const existingTransactions = await SalaryWithdrawal.find({
       nurseId: nurseId,
       clinicId: effectiveClinicId,
     }).lean();
 
-    const totalWithdrawn = existingWithdrawals
+    const totalDeducted = existingTransactions
       .filter(doc => {
         const d = toClient(doc);
         return d.status === 'approved' || !d.status;
@@ -151,7 +195,7 @@ export async function POST(request: NextRequest) {
       .reduce((sum, doc) => sum + (toClient(doc).amount || 0), 0);
 
     const salary = nurseData.salary || 0;
-    const remaining = salary - totalWithdrawn;
+    const remaining = salary - totalDeducted;
 
     // Nurse-specific validation: check amount against salary and available balance
     if (requestedBy === 'nurse') {
@@ -163,7 +207,7 @@ export async function POST(request: NextRequest) {
       }
 
       // Calculate available balance accounting for pending requests
-      const pendingAmount = existingWithdrawals
+      const pendingAmount = existingTransactions
         .filter(doc => toClient(doc).status === 'pending')
         .reduce((sum, doc) => sum + (toClient(doc).amount || 0), 0);
       const nurseRemaining = remaining - pendingAmount;
@@ -176,7 +220,7 @@ export async function POST(request: NextRequest) {
       }
     }
 
-    // Only check balance for approved (immediate) withdrawals by admin
+    // Only check balance for approved (immediate) transactions by admin
     // Pending requests by nurses don't immediately deduct
     if (status === 'approved' && Number(amount) > remaining && salary > 0) {
       return NextResponse.json({
@@ -185,38 +229,52 @@ export async function POST(request: NextRequest) {
       }, { status: 400 });
     }
 
-    const withdrawalData: any = {
+    // Build description based on type if not provided
+    let finalDescription = description || '';
+    if (!finalDescription) {
+      if (resolvedType === 'deposit') {
+        finalDescription = withdrawalMethod === 'transfer'
+          ? 'تحويل إلى حساب الممرض'
+          : 'إيداع نقدي في حساب الممرض';
+      } else if (resolvedType === 'debt') {
+        finalDescription = 'مديونية';
+      } else if (resolvedType === 'cash') {
+        finalDescription = 'سحب نقدي';
+      } else if (resolvedType === 'deduction') {
+        finalDescription = 'خصم من الراتب';
+      } else {
+        finalDescription = 'سحب من الراتب';
+      }
+    }
+
+    const txData: any = {
       nurseId,
       nurseName: nurseData.name || '',
       clinicId: effectiveClinicId,
       amount: Number(amount),
-      description: description || (type === 'cash' ? 'سحب نقدي' : type === 'debt' ? 'مديونية' : 'سحب من الراتب'),
-      type: type || 'cash',
+      description: finalDescription,
+      type: resolvedType,
+      withdrawalMethod: withdrawalMethod || 'cash',
       status,
       requestedBy: requestedBy || 'admin',
       createdBy: auth?.userId || '',
     };
 
-    // Add withdrawal method
-    if (withdrawalMethod) {
-      withdrawalData.withdrawalMethod = withdrawalMethod;
-    }
-
     // Add wallet details for transfer
     if (withdrawalMethod === 'transfer') {
-      withdrawalData.walletName = walletName || '';
-      withdrawalData.walletPhone = walletPhone || '';
-      withdrawalData.walletOwner = walletOwner || '';
+      txData.walletName = walletName || '';
+      txData.walletPhone = walletPhone || '';
+      txData.walletOwner = walletOwner || '';
     }
 
     // Add debt assignment details
-    if (isDebt || type === 'debt') {
-      withdrawalData.isDebt = true;
-      withdrawalData.invoiceId = invoiceId || '';
-      withdrawalData.patientName = patientName || '';
+    if (resolvedType === 'debt') {
+      txData.isDebt = true;
+      txData.invoiceId = invoiceId || '';
+      txData.patientName = patientName || '';
     }
 
-    const created = await SalaryWithdrawal.create(withdrawalData);
+    const created = await SalaryWithdrawal.create(txData);
     const createdId = created._id.toString();
 
     // Create notification for admin when nurse requests withdrawal
@@ -240,24 +298,24 @@ export async function POST(request: NextRequest) {
       }
     }
 
-    // Return updated balance info (for approved withdrawals)
-    const newTotalWithdrawn = status === 'approved' ? totalWithdrawn + Number(amount) : totalWithdrawn;
-    const newRemaining = salary - newTotalWithdrawn;
+    // Return updated balance info (for approved transactions)
+    const newTotalDeducted = status === 'approved' ? totalDeducted + Number(amount) : totalDeducted;
+    const newRemaining = salary - newTotalDeducted;
 
     return NextResponse.json({
       id: createdId,
       ...toClient(created.toObject()),
       salary,
-      totalWithdrawn: newTotalWithdrawn,
+      totalWithdrawn: newTotalDeducted,
       remainingBalance: newRemaining,
     }, { status: 201 });
   } catch (error) {
-    console.error('Salary withdrawal create error:', error);
-    return NextResponse.json({ error: 'خطأ في تسجيل السحب' }, { status: 500 });
+    console.error('Salary transaction create error:', error);
+    return NextResponse.json({ error: 'خطأ في تسجيل المعاملة' }, { status: 500 });
   }
 }
 
-// PUT: Approve or reject a withdrawal request
+// PUT: Approve or reject a pending withdrawal request
 export async function PUT(request: NextRequest) {
   try {
     await dbConnect();
@@ -289,12 +347,12 @@ export async function PUT(request: NextRequest) {
 
     // If approving, check if balance is sufficient
     if (action === 'approve') {
-      const existingWithdrawals = await SalaryWithdrawal.find({
+      const existingTransactions = await SalaryWithdrawal.find({
         nurseId: data.nurseId,
         clinicId: effectiveClinicId,
       }).lean();
 
-      const totalWithdrawn = existingWithdrawals
+      const totalDeducted = existingTransactions
         .filter(d => {
           const wd = toClient(d);
           return (wd.status === 'approved' || !wd.status) && wd.id !== id;
@@ -303,7 +361,7 @@ export async function PUT(request: NextRequest) {
 
       const nurseDoc = await User.findById(data.nurseId).lean();
       const salary = nurseDoc !== null ? (toClient(nurseDoc).salary || 0) : 0;
-      const remaining = salary - totalWithdrawn;
+      const remaining = salary - totalDeducted;
 
       if (data.amount > remaining && salary > 0) {
         return NextResponse.json({
@@ -316,8 +374,15 @@ export async function PUT(request: NextRequest) {
     const updateData: any = {
       status: action === 'approve' ? 'approved' : 'rejected',
       reviewedBy: auth?.userId || '',
-      reviewedAt: new Date().toISOString(),
+      reviewedAt: new Date(),
     };
+
+    if (action === 'approve') {
+      updateData.approvedAt = new Date();
+      updateData.approvedBy = auth?.userId || '';
+    } else {
+      updateData.rejectedBy = auth?.userId || '';
+    }
 
     if (rejectionReason) {
       updateData.rejectionReason = rejectionReason;
@@ -349,12 +414,12 @@ export async function PUT(request: NextRequest) {
       status: updateData.status,
     });
   } catch (error) {
-    console.error('Salary withdrawal update error:', error);
+    console.error('Salary transaction update error:', error);
     return NextResponse.json({ error: 'خطأ في تحديث الطلب' }, { status: 500 });
   }
 }
 
-// DELETE: Delete a salary withdrawal
+// DELETE: Delete a salary transaction
 export async function DELETE(request: NextRequest) {
   try {
     await dbConnect();
@@ -363,12 +428,12 @@ export async function DELETE(request: NextRequest) {
     const withdrawalId = searchParams.get('id');
 
     if (!withdrawalId) {
-      return NextResponse.json({ error: 'يرجى تحديد السحب' }, { status: 400 });
+      return NextResponse.json({ error: 'يرجى تحديد المعاملة' }, { status: 400 });
     }
 
     const doc = await SalaryWithdrawal.findById(withdrawalId).lean();
     if (doc === null) {
-      return NextResponse.json({ error: 'السحب غير موجود' }, { status: 404 });
+      return NextResponse.json({ error: 'المعاملة غير موجودة' }, { status: 404 });
     }
 
     const data = toClient(doc);
@@ -380,7 +445,7 @@ export async function DELETE(request: NextRequest) {
 
     return NextResponse.json({ success: true, id: withdrawalId });
   } catch (error) {
-    console.error('Salary withdrawal delete error:', error);
-    return NextResponse.json({ error: 'خطأ في حذف السحب' }, { status: 500 });
+    console.error('Salary transaction delete error:', error);
+    return NextResponse.json({ error: 'خطأ في حذف المعاملة' }, { status: 500 });
   }
 }

@@ -134,6 +134,7 @@ export function ServiceManagement() {
   // Confirm dialogs
   const [showReseedConfirm, setShowReseedConfirm] = useState(false);
   const [showResetConfirm, setShowResetConfirm] = useState(false);
+  const [showDeleteAllConfirm, setShowDeleteAllConfirm] = useState(false);
   const [deleteService, setDeleteService] = useState<ServiceItem | null>(null);
 
   // Ref for tabs scroll container
@@ -354,6 +355,29 @@ export function ServiceManagement() {
         fetchServices();
       } else {
         toast.error(data.error || 'خطأ في إعادة التهيئة');
+      }
+    } catch {
+      toast.error('خطأ في الاتصال');
+    } finally {
+      setSubmitting(false);
+    }
+  };
+
+  // ─── Delete ALL Services (no reseed) ─────────────────
+  // Allows the clinic owner to clear all services and rely only on their own custom services.
+  // Default services can still be reloaded later via the "تحميل الخدمات" button (POST /api/services/reseed).
+  const handleDeleteAllServices = async () => {
+    try {
+      setSubmitting(true);
+      setShowDeleteAllConfirm(false);
+      const res = await fetch('/api/services', { method: 'DELETE' });
+      const data = await res.json();
+      if (res.ok && data.success) {
+        toast.success(data.message || 'تم حذف جميع الخدمات');
+        setLoading(true);
+        fetchServices();
+      } else {
+        toast.error(data.error || 'خطأ في حذف الخدمات');
       }
     } catch {
       toast.error('خطأ في الاتصال');
@@ -589,6 +613,70 @@ export function ServiceManagement() {
                 <p className="text-[11px] text-muted-foreground">حذف جميع الخدمات وإعادة تحميل الافتراضية</p>
               </div>
               <ChevronLeft className="w-4 h-4 text-amber-400" />
+            </motion.button>
+          )}
+        </AnimatePresence>
+
+        {/* Delete All Services Card (without reseeding) */}
+        <AnimatePresence mode="wait">
+          {showDeleteAllConfirm ? (
+            <motion.div
+              key="delete-all-confirm"
+              initial={{ opacity: 0, scale: 0.95 }}
+              animate={{ opacity: 1, scale: 1 }}
+              exit={{ opacity: 0, scale: 0.95 }}
+              className="bg-gradient-to-br from-red-500 to-red-600 rounded-2xl p-4 shadow-lg shadow-red-500/20"
+            >
+              <div className="flex items-center gap-3 mb-3">
+                <div className="w-11 h-11 bg-white/20 rounded-xl flex items-center justify-center backdrop-blur-sm">
+                  <Trash2 className="w-6 h-6 text-white" />
+                </div>
+                <div>
+                  <p className="text-sm font-bold text-white">حذف جميع الخدمات</p>
+                  <p className="text-[10px] text-white/80">سيتم حذف كل الخدمات نهائياً. يمكنك لاحقاً إعادة تحميل الخدمات الافتراضية أو إضافة خدماتك الخاصة</p>
+                </div>
+              </div>
+              <div className="bg-white/10 rounded-xl p-2.5 mb-3">
+                <p className="text-[10px] text-white/80 leading-relaxed">
+                  ⚠️ تنبيه: سيُصبح النظام بدون خدمات نهائياً بعد هذه العملية. ستحتاج لإضافة خدماتك الخاصة أو إعادة تحميل الخدمات الافتراضية لاحقاً.
+                </p>
+              </div>
+              <div className="flex gap-2">
+                <button
+                  onClick={handleDeleteAllServices}
+                  disabled={submitting}
+                  className="flex-1 h-10 bg-white text-red-600 rounded-xl text-sm font-bold active:scale-[0.97] transition-transform shadow-sm disabled:opacity-60 flex items-center justify-center gap-1.5"
+                >
+                  {submitting ? <Loader2 className="w-4 h-4 animate-spin" /> : <Trash2 className="w-4 h-4" />}
+                  نعم، حذف الكل
+                </button>
+                <button
+                  onClick={() => setShowDeleteAllConfirm(false)}
+                  className="flex-1 h-10 bg-white/20 text-white rounded-xl text-sm font-medium backdrop-blur-sm active:scale-[0.97] transition-transform"
+                >
+                  إلغاء
+                </button>
+              </div>
+            </motion.div>
+          ) : (
+            <motion.button
+              key="delete-all-card"
+              initial={{ opacity: 0, y: 8 }}
+              animate={{ opacity: 1, y: 0 }}
+              exit={{ opacity: 0, y: 8 }}
+              transition={{ delay: 0.25 }}
+              onClick={() => setShowDeleteAllConfirm(true)}
+              disabled={submitting || activeServices.length === 0}
+              className="w-full bg-white dark:bg-gray-800 rounded-2xl p-4 border border-red-200 dark:border-red-900/40 flex items-center gap-3 active:scale-[0.98] transition-transform shadow-sm disabled:opacity-60"
+            >
+              <div className="w-12 h-12 bg-red-100 dark:bg-red-900/30 rounded-xl flex items-center justify-center flex-shrink-0">
+                <Trash2 className="w-6 h-6 text-red-600 dark:text-red-400" />
+              </div>
+              <div className="flex-1 text-right">
+                <p className="text-sm font-bold text-red-700 dark:text-red-300">حذف جميع الخدمات</p>
+                <p className="text-[11px] text-muted-foreground">حذف كل الخدمات نهائياً والاعتماد على خدماتك الخاصة فقط</p>
+              </div>
+              <ChevronLeft className="w-4 h-4 text-red-400" />
             </motion.button>
           )}
         </AnimatePresence>

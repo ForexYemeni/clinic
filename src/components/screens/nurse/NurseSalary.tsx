@@ -6,7 +6,7 @@ import {
   DollarSign, Wallet, TrendingUp, TrendingDown, ArrowRight, RefreshCw,
   Clock, Banknote, Plus, X, Send, Phone, User as UserIcon,
   FileText, AlertCircle, CheckCircle2, XCircle, ChevronDown,
-  CreditCard, ArrowDownLeft, Calendar
+  CreditCard, ArrowDownLeft, ArrowUpRight, Calendar
 } from 'lucide-react';
 import { useAppStore } from '@/lib/store';
 import { formatCurrency, formatDate } from '@/lib/constants';
@@ -299,23 +299,44 @@ export function NurseSalary() {
         >
           <h3 className="font-bold text-sm mb-3 flex items-center gap-2">
             <Banknote className="w-4 h-4 text-red-500" />
-            آخر السحوبات
+            آخر المعاملات
           </h3>
           <div className="space-y-2">
-            {approvedWithdrawals.slice(0, 3).map((w) => (
-              <div key={w.id} className="flex items-center justify-between py-2 border-b border-border last:border-0">
-                <div className="flex items-center gap-2">
-                  <div className="w-7 h-7 bg-red-50 dark:bg-red-900/20 rounded-lg flex items-center justify-center">
-                    <Banknote className="w-3.5 h-3.5 text-red-500" />
+            {approvedWithdrawals.slice(0, 3).map((w) => {
+              const isDepositTx = w.type === 'deposit';
+              return (
+                <div key={w.id} className="flex items-center justify-between py-2 border-b border-border last:border-0">
+                  <div className="flex items-center gap-2">
+                    <div className={`w-7 h-7 rounded-lg flex items-center justify-center ${
+                      isDepositTx
+                        ? 'bg-green-50 dark:bg-green-900/20'
+                        : 'bg-red-50 dark:bg-red-900/20'
+                    }`}>
+                      {isDepositTx
+                        ? <ArrowUpRight className="w-3.5 h-3.5 text-green-600" />
+                        : <Banknote className="w-3.5 h-3.5 text-red-500" />
+                      }
+                    </div>
+                    <div>
+                      <p className="text-xs font-medium">
+                        {isDepositTx
+                          ? (w.description || 'عكس على حسابك')
+                          : (w.description || 'سحب من الراتب')
+                        }
+                      </p>
+                      <p className="text-[10px] text-muted-foreground">{formatDate(w.createdAt)}</p>
+                    </div>
                   </div>
-                  <div>
-                    <p className="text-xs font-medium">{w.description || 'سحب من الراتب'}</p>
-                    <p className="text-[10px] text-muted-foreground">{formatDate(w.createdAt)}</p>
-                  </div>
+                  <span className={`text-xs font-bold ${
+                    isDepositTx
+                      ? 'text-green-600 dark:text-green-400'
+                      : 'text-red-600 dark:text-red-400'
+                  }`}>
+                    {isDepositTx ? '+' : '-'}{formatCurrency(w.amount)}
+                  </span>
                 </div>
-                <span className="text-xs font-bold text-red-600 dark:text-red-400">-{formatCurrency(w.amount)}</span>
-              </div>
-            ))}
+              );
+            })}
           </div>
         </motion.div>
       )}
@@ -582,7 +603,10 @@ export function NurseSalary() {
       <div className="space-y-3">
         <AnimatePresence>
           {displayItems.length > 0 ? (
-            displayItems.map((w, i) => (
+            displayItems.map((w, i) => {
+              const isDepositTx = w.type === 'deposit';
+              const isDebtTx = w.isDebt || w.type === 'debt';
+              return (
               <motion.div
                 key={w.id}
                 initial={{ opacity: 0, x: -10 }}
@@ -594,7 +618,9 @@ export function NurseSalary() {
                     ? 'border-amber-200 dark:border-amber-800'
                     : w.status === 'rejected'
                     ? 'border-red-200 dark:border-red-800 opacity-60'
-                    : w.isDebt || w.type === 'debt'
+                    : isDepositTx
+                    ? 'border-green-200 dark:border-green-800'
+                    : isDebtTx
                     ? 'border-amber-200 dark:border-amber-800'
                     : 'border-border'
                 }`}
@@ -607,7 +633,9 @@ export function NurseSalary() {
                           ? 'bg-amber-50 dark:bg-amber-900/20'
                           : w.status === 'rejected'
                           ? 'bg-red-50 dark:bg-red-900/20'
-                          : w.isDebt || w.type === 'debt'
+                          : isDepositTx
+                          ? 'bg-green-50 dark:bg-green-900/20'
+                          : isDebtTx
                           ? 'bg-amber-50 dark:bg-amber-900/20'
                           : 'bg-red-50 dark:bg-red-900/20'
                       }`}>
@@ -615,7 +643,9 @@ export function NurseSalary() {
                           <Clock className="w-5 h-5 text-amber-500" />
                         ) : w.status === 'rejected' ? (
                           <XCircle className="w-5 h-5 text-red-500" />
-                        ) : w.isDebt || w.type === 'debt' ? (
+                        ) : isDepositTx ? (
+                          <ArrowUpRight className="w-5 h-5 text-green-600" />
+                        ) : isDebtTx ? (
                           <FileText className="w-5 h-5 text-amber-500" />
                         ) : (
                           <Banknote className="w-5 h-5 text-red-500" />
@@ -623,9 +653,11 @@ export function NurseSalary() {
                       </div>
                       <div>
                         <p className="text-sm font-bold">
-                          {w.isDebt || w.type === 'debt'
+                          {isDebtTx
                             ? `مديونية - ${w.patientName || 'مريض'}`
-                            : w.description || 'سحب من الراتب'
+                            : isDepositTx
+                            ? (w.description || 'عكس على حسابك')
+                            : (w.description || 'سحب من الراتب')
                           }
                         </p>
                         <div className="flex items-center gap-2 mt-0.5">
@@ -647,14 +679,21 @@ export function NurseSalary() {
                               مرفوض
                             </span>
                           )}
+                          {/* Deposit badge - shows clearly this was credited to nurse's account */}
+                          {isDepositTx && (
+                            <span className="text-[9px] px-1.5 py-0.5 rounded-full bg-green-100 text-green-700 dark:bg-green-900/30 dark:text-green-400 flex items-center gap-0.5">
+                              <ArrowUpRight className="w-2.5 h-2.5" />
+                              عُكس على حسابك
+                            </span>
+                          )}
                           {/* Withdrawal method badge */}
-                          {w.withdrawalMethod === 'transfer' && (
+                          {w.withdrawalMethod === 'transfer' && !isDepositTx && (
                             <span className="text-[9px] px-1.5 py-0.5 rounded-full bg-purple-100 text-purple-700 dark:bg-purple-900/30 dark:text-purple-400 flex items-center gap-0.5">
                               <ArrowDownLeft className="w-2.5 h-2.5" />
                               تحويل
                             </span>
                           )}
-                          {(!w.withdrawalMethod || w.withdrawalMethod === 'cash') && !w.isDebt && w.type !== 'debt' && (
+                          {(!w.withdrawalMethod || w.withdrawalMethod === 'cash') && !isDebtTx && !isDepositTx && (
                             <span className="text-[9px] px-1.5 py-0.5 rounded-full bg-amber-100 text-amber-700 dark:bg-amber-900/30 dark:text-amber-400">
                               نقدي
                             </span>
@@ -663,14 +702,37 @@ export function NurseSalary() {
                       </div>
                     </div>
                     <div className="text-left">
-                      <p className="text-sm font-bold text-red-600 dark:text-red-400">
-                        -{formatCurrency(w.amount)}
+                      <p className={`text-sm font-bold ${
+                        isDepositTx
+                          ? 'text-green-600 dark:text-green-400'
+                          : 'text-red-600 dark:text-red-400'
+                      }`}>
+                        {isDepositTx ? '+' : '-'}{formatCurrency(w.amount)}
                       </p>
                     </div>
                   </div>
 
-                  {/* Transfer details */}
-                  {w.withdrawalMethod === 'transfer' && w.walletName && (
+                  {/* Deposit (transfer to nurse account) details */}
+                  {isDepositTx && w.walletName && (
+                    <div className="mt-2 bg-green-50 dark:bg-green-900/10 rounded-lg p-2.5 text-xs">
+                      <div className="flex items-center gap-1.5 mb-1">
+                        <ArrowUpRight className="w-3 h-3 text-green-600" />
+                        <p className="text-green-700 dark:text-green-300 font-bold">عُكس على حسابك</p>
+                      </div>
+                      <div className="space-y-0.5">
+                        {w.walletName && <p className="text-muted-foreground">المحفظة/البنك: <span className="text-foreground font-medium">{w.walletName}</span></p>}
+                        {w.walletPhone && <p className="text-muted-foreground">رقم الحساب: <span className="text-foreground font-medium" dir="ltr">{w.walletPhone}</span></p>}
+                        {w.walletOwner && <p className="text-muted-foreground">اسم صاحب الحساب: <span className="text-foreground font-medium">{w.walletOwner}</span></p>}
+                        <p className="text-muted-foreground">المبلغ المحول: <span className="text-foreground font-bold">{formatCurrency(w.amount)}</span></p>
+                      </div>
+                      <p className="text-[10px] text-green-600/70 dark:text-green-400/70 mt-1">
+                        تم تحويل المبلغ إلى حسابك وخصمه من رصيد راتبك
+                      </p>
+                    </div>
+                  )}
+
+                  {/* Legacy transfer details (for old records where type wasn't 'deposit') */}
+                  {!isDepositTx && w.withdrawalMethod === 'transfer' && w.walletName && (
                     <div className="mt-2 bg-purple-50 dark:bg-purple-900/10 rounded-lg p-2 text-xs">
                       <p className="text-[10px] font-bold text-purple-600 dark:text-purple-400 mb-1">بيانات التحويل</p>
                       <div className="space-y-0.5">
@@ -682,7 +744,7 @@ export function NurseSalary() {
                   )}
 
                   {/* Debt details */}
-                  {(w.isDebt || w.type === 'debt') && w.patientName && (
+                  {isDebtTx && w.patientName && (
                     <div className="mt-2 bg-amber-50 dark:bg-amber-900/10 rounded-lg p-2.5 text-xs">
                       <div className="flex items-center gap-1.5 mb-1">
                         <FileText className="w-3 h-3 text-amber-600" />
@@ -712,7 +774,8 @@ export function NurseSalary() {
                   )}
                 </div>
               </motion.div>
-            ))
+              );
+            })
           ) : (
             <div className="text-center py-12">
               <Wallet className="w-12 h-12 mx-auto text-muted-foreground/30 mb-3" />
@@ -720,10 +783,10 @@ export function NurseSalary() {
                 {activeTab === 'pending' ? 'لا توجد طلبات قيد المراجعة' :
                  activeTab === 'debts' ? 'لا توجد مديونيات' :
                  activeTab === 'rejected' ? 'لا توجد طلبات مرفوضة' :
-                 'لا توجد سحوبات بعد'}
+                 'لا توجد معاملات بعد'}
               </p>
               <p className="text-xs text-muted-foreground mt-1">
-                {activeTab === 'all' ? 'ستظهر هنا سحوباتك من الراتب' : ''}
+                {activeTab === 'all' ? 'ستظهر هنا معاملات راتبك' : ''}
               </p>
             </div>
           )}

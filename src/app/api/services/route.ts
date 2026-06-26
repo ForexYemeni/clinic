@@ -74,3 +74,37 @@ export async function POST(request: NextRequest) {
     return NextResponse.json({ error: 'خطأ في إضافة الخدمة' }, { status: 500 });
   }
 }
+
+// DELETE: Delete ALL services for this clinic (so admin can rely only on their own custom services)
+// Default services can be reloaded at any time via POST /api/services/reseed
+export async function DELETE(request: NextRequest) {
+  try {
+    await dbConnect();
+    const { auth, effectiveClinicId } = extractAuthAndClinicId(request);
+
+    // Only admins can perform this destructive action
+    if (!auth || (auth.role !== 'admin' && auth.role !== 'super_admin')) {
+      return NextResponse.json({ error: 'غير مصرح. هذه العملية متاحة لمدير العيادة فقط' }, { status: 403 });
+    }
+
+    if (!effectiveClinicId) {
+      return NextResponse.json({ error: 'لم يتم تحديد العيادة' }, { status: 400 });
+    }
+
+    // Count existing services before deletion (for the response message)
+    const countResult = await Service.countDocuments({ clinicId: effectiveClinicId });
+
+    // Permanently delete ALL services for this clinic
+    await Service.deleteMany({ clinicId: effectiveClinicId });
+
+    return NextResponse.json({
+      success: true,
+      message: `تم حذف جميع الخدمات (${countResult})`,
+      deleted: countResult,
+      total: 0,
+    });
+  } catch (error) {
+    console.error('Delete all services error:', error);
+    return NextResponse.json({ error: 'خطأ في حذف جميع الخدمات' }, { status: 500 });
+  }
+}

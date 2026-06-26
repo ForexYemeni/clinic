@@ -5,7 +5,7 @@ import { motion, AnimatePresence } from 'framer-motion';
 import {
   DollarSign, Wallet, TrendingUp, TrendingDown, ArrowRight, RefreshCw, Clock, Banknote,
   Plus, X, Trash2, AlertTriangle, User, CheckCircle2, XCircle, FileText, Send,
-  ArrowDownLeft, Phone, MessageSquare, Copy, Check, Calendar
+  ArrowDownLeft, Phone, MessageSquare, Copy, Check, Calendar, ArrowUpRight
 } from 'lucide-react';
 import { useAppStore } from '@/lib/store';
 import { type NurseItem, formatCurrency, formatDate } from '@/lib/constants';
@@ -35,6 +35,8 @@ interface SalaryData {
   salary: number;
   totalWithdrawals: number;
   totalDebts: number;
+  totalDeposits?: number;
+  totalDeducted?: number;
   remainingBalance: number;
   withdrawals: WithdrawalItem[];
   pendingCount: number;
@@ -52,7 +54,12 @@ export function AdminNurseSalary() {
   const [showAddWithdrawal, setShowAddWithdrawal] = useState(false);
   const [withdrawalAmount, setWithdrawalAmount] = useState('');
   const [withdrawalDesc, setWithdrawalDesc] = useState('');
-  const [withdrawalType, setWithdrawalType] = useState<'cash' | 'deduction'>('cash');
+  // Three transaction types: cash withdrawal, transfer (deposit to nurse account), salary deduction
+  const [withdrawalType, setWithdrawalType] = useState<'cash' | 'transfer' | 'deduction'>('cash');
+  // Transfer fields
+  const [transferWalletName, setTransferWalletName] = useState('');
+  const [transferWalletPhone, setTransferWalletPhone] = useState('');
+  const [transferWalletOwner, setTransferWalletOwner] = useState('');
   const [addingWithdrawal, setAddingWithdrawal] = useState(false);
 
   // Edit salary state
@@ -120,8 +127,22 @@ export function AdminNurseSalary() {
     }
     if (!selectedNurseId) return;
 
+    // Validate transfer fields
+    if (withdrawalType === 'transfer') {
+      if (!transferWalletName.trim()) { toast.error('أدخل اسم المحفظة/البنك'); return; }
+      if (!transferWalletPhone.trim()) { toast.error('أدخل رقم الجوال/الحساب'); return; }
+      if (!transferWalletOwner.trim()) { toast.error('أدخل اسم صاحب الحساب'); return; }
+    }
+
     setAddingWithdrawal(true);
     try {
+      // Determine API type & withdrawalMethod
+      // 'transfer' UI => type 'deposit' + withdrawalMethod 'transfer' (admin deposited to nurse account)
+      // 'cash' UI => type 'withdrawal' + withdrawalMethod 'cash'
+      // 'deduction' UI => type 'deduction' + withdrawalMethod 'cash'
+      const apiType = withdrawalType === 'transfer' ? 'deposit' : withdrawalType;
+      const apiMethod = withdrawalType === 'transfer' ? 'transfer' : 'cash';
+
       const res = await fetch('/api/salary', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
@@ -129,20 +150,33 @@ export function AdminNurseSalary() {
           nurseId: selectedNurseId,
           amount: Number(withdrawalAmount),
           description: withdrawalDesc || undefined,
-          type: withdrawalType,
+          type: apiType,
+          withdrawalMethod: apiMethod,
+          walletName: withdrawalType === 'transfer' ? transferWalletName : undefined,
+          walletPhone: withdrawalType === 'transfer' ? transferWalletPhone : undefined,
+          walletOwner: withdrawalType === 'transfer' ? transferWalletOwner : undefined,
           requestedBy: 'admin',
         }),
       });
 
       if (res.ok) {
-        toast.success('تم تسجيل السحب بنجاح');
+        toast.success(
+          withdrawalType === 'transfer'
+            ? 'تم تحويل المبلغ إلى حساب الممرض بنجاح'
+            : withdrawalType === 'deduction'
+            ? 'تم تسجيل الخصم من الراتب'
+            : 'تم تسجيل السحب النقدي بنجاح'
+        );
         setShowAddWithdrawal(false);
         setWithdrawalAmount('');
         setWithdrawalDesc('');
+        setTransferWalletName('');
+        setTransferWalletPhone('');
+        setTransferWalletOwner('');
         fetchSalaryData(selectedNurseId);
       } else {
         const data = await res.json();
-        toast.error(data.error || 'خطأ في تسجيل السحب');
+        toast.error(data.error || 'خطأ في تسجيل المعاملة');
       }
     } catch {
       toast.error('خطأ في الاتصال');
@@ -627,18 +661,20 @@ export function AdminNurseSalary() {
                   className="bg-blue-50 dark:bg-blue-900/20 rounded-2xl p-4 border border-blue-200 dark:border-blue-800"
                 >
                   <div className="flex items-center justify-between mb-3">
-                    <h3 className="text-sm font-bold text-blue-700 dark:text-blue-300">تسجيل سحب جديد</h3>
+                    <h3 className="text-sm font-bold text-blue-700 dark:text-blue-300">
+                      {withdrawalType === 'transfer' ? 'تحويل إلى حساب الممرض' : 'تسجيل سحب جديد'}
+                    </h3>
                     <button onClick={() => setShowAddWithdrawal(false)} className="w-7 h-7 rounded-full bg-blue-100 dark:bg-blue-900/40 flex items-center justify-center">
                       <X className="w-3.5 h-3.5 text-blue-500" />
                     </button>
                   </div>
 
                   <div className="space-y-3">
-                    {/* Type selector */}
-                    <div className="flex gap-2">
+                    {/* Type selector - 3 options */}
+                    <div className="grid grid-cols-3 gap-2">
                       <button
                         onClick={() => setWithdrawalType('cash')}
-                        className={`flex-1 h-9 rounded-xl text-xs font-bold transition-all flex items-center justify-center gap-1.5 ${
+                        className={`h-9 rounded-xl text-[11px] font-bold transition-all flex items-center justify-center gap-1 ${
                           withdrawalType === 'cash'
                             ? 'bg-blue-600 text-white shadow-sm'
                             : 'bg-white dark:bg-gray-800 text-muted-foreground border border-border'
@@ -648,17 +684,35 @@ export function AdminNurseSalary() {
                         سحب نقدي
                       </button>
                       <button
+                        onClick={() => setWithdrawalType('transfer')}
+                        className={`h-9 rounded-xl text-[11px] font-bold transition-all flex items-center justify-center gap-1 ${
+                          withdrawalType === 'transfer'
+                            ? 'bg-green-600 text-white shadow-sm'
+                            : 'bg-white dark:bg-gray-800 text-muted-foreground border border-border'
+                        }`}
+                      >
+                        <ArrowUpRight className="w-3.5 h-3.5" />
+                        تحويل للحساب
+                      </button>
+                      <button
                         onClick={() => setWithdrawalType('deduction')}
-                        className={`flex-1 h-9 rounded-xl text-xs font-bold transition-all flex items-center justify-center gap-1.5 ${
+                        className={`h-9 rounded-xl text-[11px] font-bold transition-all flex items-center justify-center gap-1 ${
                           withdrawalType === 'deduction'
                             ? 'bg-amber-600 text-white shadow-sm'
                             : 'bg-white dark:bg-gray-800 text-muted-foreground border border-border'
                         }`}
                       >
                         <DollarSign className="w-3.5 h-3.5" />
-                        خصم من الراتب
+                        خصم
                       </button>
                     </div>
+
+                    {/* Helper text for transfer */}
+                    {withdrawalType === 'transfer' && (
+                      <div className="bg-green-50 dark:bg-green-900/20 border border-green-200 dark:border-green-800 rounded-xl p-2.5 text-[11px] text-green-700 dark:text-green-300 leading-relaxed">
+                        سيتم تحويل المبلغ إلى حساب الممرض (محفظة/بنك) وخصمه من رصيد الراتب، وسيظهر في سجل الممرض كإيداع في حسابه.
+                      </div>
+                    )}
 
                     {/* Amount */}
                     <input
@@ -670,12 +724,41 @@ export function AdminNurseSalary() {
                       dir="ltr"
                     />
 
+                    {/* Transfer wallet fields */}
+                    {withdrawalType === 'transfer' && (
+                      <div className="space-y-2 bg-green-50/50 dark:bg-green-900/10 rounded-xl p-2.5 border border-green-100 dark:border-green-900/30">
+                        <p className="text-[10px] font-bold text-green-700 dark:text-green-300">بيانات الحساب المستلم</p>
+                        <input
+                          type="text"
+                          value={transferWalletName}
+                          onChange={(e) => setTransferWalletName(e.target.value)}
+                          placeholder="اسم المحفظة / البنك (مثل: جوالي، فلوسك...)"
+                          className="w-full h-9 px-3 bg-white dark:bg-gray-800 border border-border rounded-lg text-xs focus:outline-none focus:ring-2 focus:ring-green-500"
+                        />
+                        <input
+                          type="tel"
+                          value={transferWalletPhone}
+                          onChange={(e) => setTransferWalletPhone(e.target.value)}
+                          placeholder="رقم الجوال / الحساب"
+                          className="w-full h-9 px-3 bg-white dark:bg-gray-800 border border-border rounded-lg text-xs focus:outline-none focus:ring-2 focus:ring-green-500"
+                          dir="ltr"
+                        />
+                        <input
+                          type="text"
+                          value={transferWalletOwner}
+                          onChange={(e) => setTransferWalletOwner(e.target.value)}
+                          placeholder="اسم صاحب الحساب"
+                          className="w-full h-9 px-3 bg-white dark:bg-gray-800 border border-border rounded-lg text-xs focus:outline-none focus:ring-2 focus:ring-green-500"
+                        />
+                      </div>
+                    )}
+
                     {/* Description */}
                     <input
                       type="text"
                       value={withdrawalDesc}
                       onChange={(e) => setWithdrawalDesc(e.target.value)}
-                      placeholder="الوصف (اختياري)"
+                      placeholder={withdrawalType === 'transfer' ? 'ملاحظات (اختياري)' : 'الوصف (اختياري)'}
                       className="w-full h-10 px-3 bg-white dark:bg-gray-800 border border-border rounded-xl text-sm focus:outline-none focus:ring-2 focus:ring-blue-500"
                     />
 
@@ -683,7 +766,7 @@ export function AdminNurseSalary() {
                     {remaining > 0 && withdrawalAmount && (
                       <div className="bg-white dark:bg-gray-800 rounded-xl p-2.5 text-xs">
                         <div className="flex justify-between mb-1">
-                          <span className="text-muted-foreground">المتبقي بعد السحب</span>
+                          <span className="text-muted-foreground">المتبقي بعد العملية</span>
                           <span className={`font-bold ${remaining - Number(withdrawalAmount) >= 0 ? 'text-green-600' : 'text-red-600'}`}>
                             {formatCurrency(remaining - Number(withdrawalAmount))}
                           </span>
@@ -694,14 +777,16 @@ export function AdminNurseSalary() {
                     <button
                       onClick={handleAddWithdrawal}
                       disabled={addingWithdrawal || !withdrawalAmount}
-                      className="w-full h-10 bg-blue-600 text-white rounded-xl text-sm font-bold active:scale-[0.97] transition-transform disabled:opacity-50 flex items-center justify-center gap-1.5"
+                      className={`w-full h-10 ${withdrawalType === 'transfer' ? 'bg-green-600' : 'bg-blue-600'} text-white rounded-xl text-sm font-bold active:scale-[0.97] transition-transform disabled:opacity-50 flex items-center justify-center gap-1.5`}
                     >
                       {addingWithdrawal ? (
                         <div className="w-4 h-4 border-2 border-white/30 border-t-white rounded-full animate-spin" />
+                      ) : withdrawalType === 'transfer' ? (
+                        <ArrowUpRight className="w-4 h-4" />
                       ) : (
                         <Plus className="w-4 h-4" />
                       )}
-                      تسجيل السحب
+                      {withdrawalType === 'transfer' ? 'تحويل إلى حساب الممرض' : withdrawalType === 'deduction' ? 'تسجيل الخصم' : 'تسجيل السحب'}
                     </button>
                   </div>
                 </motion.div>
@@ -715,7 +800,7 @@ export function AdminNurseSalary() {
                   className="w-full bg-white dark:bg-gray-800 rounded-2xl p-4 border-2 border-dashed border-blue-200 dark:border-blue-900/40 flex items-center justify-center gap-2 text-blue-600 dark:text-blue-400 active:scale-[0.98] transition-transform shadow-sm"
                 >
                   <Plus className="w-5 h-5" />
-                  <span className="text-sm font-bold">تسجيل سحب من راتب {selectedNurse.name}</span>
+                  <span className="text-sm font-bold">معاملة جديدة لـ {selectedNurse.name}</span>
                 </motion.button>
               )}
             </AnimatePresence>
@@ -841,7 +926,7 @@ export function AdminNurseSalary() {
 
           {/* Withdrawal History */}
           <div className="mb-3 flex items-center justify-between">
-            <h3 className="text-sm font-bold">سجل السحوبات</h3>
+            <h3 className="text-sm font-bold">سجل المعاملات</h3>
             {allWithdrawals.length > 0 && (
               <span className="text-[10px] text-muted-foreground bg-gray-100 dark:bg-gray-800 px-2 py-1 rounded-full">
                 {allWithdrawals.length} عملية
@@ -852,7 +937,10 @@ export function AdminNurseSalary() {
           <div className="space-y-3">
             <AnimatePresence>
               {displayItems.length > 0 ? (
-                displayItems.map((w, i) => (
+                displayItems.map((w, i) => {
+                  const isDepositTx = w.type === 'deposit';
+                  const isDebtTx = w.isDebt || w.type === 'debt';
+                  return (
                   <motion.div
                     key={w.id}
                     initial={{ opacity: 0, x: -10 }}
@@ -864,7 +952,9 @@ export function AdminNurseSalary() {
                         ? 'border-amber-200 dark:border-amber-800'
                         : w.status === 'rejected'
                         ? 'border-red-200 dark:border-red-800 opacity-60'
-                        : w.isDebt || w.type === 'debt'
+                        : isDepositTx
+                        ? 'border-green-200 dark:border-green-800'
+                        : isDebtTx
                         ? 'border-amber-200 dark:border-amber-800'
                         : 'border-border'
                     }`}
@@ -877,25 +967,29 @@ export function AdminNurseSalary() {
                               ? 'bg-amber-50 dark:bg-amber-900/20'
                               : w.status === 'rejected'
                               ? 'bg-red-50 dark:bg-red-900/20'
-                              : w.isDebt || w.type === 'debt'
+                              : isDepositTx
+                              ? 'bg-green-50 dark:bg-green-900/20'
+                              : isDebtTx
                               ? 'bg-amber-50 dark:bg-amber-900/20'
-                              : w.type === 'cash'
-                              ? 'bg-red-50 dark:bg-red-900/20'
-                              : 'bg-amber-50 dark:bg-amber-900/20'
+                              : 'bg-red-50 dark:bg-red-900/20'
                           }`}>
                             {w.status === 'pending' ? (
                               <Clock className="w-5 h-5 text-amber-500" />
                             ) : w.status === 'rejected' ? (
                               <XCircle className="w-5 h-5 text-red-500" />
-                            ) : w.isDebt || w.type === 'debt' ? (
+                            ) : isDepositTx ? (
+                              <ArrowUpRight className="w-5 h-5 text-green-600" />
+                            ) : isDebtTx ? (
                               <FileText className="w-5 h-5 text-amber-500" />
                             ) : (
-                              <Banknote className={`w-5 h-5 ${w.type === 'cash' ? 'text-red-500' : 'text-amber-500'}`} />
+                              <Banknote className="w-5 h-5 text-red-500" />
                             )}
                           </div>
                           <div>
                             <p className="text-sm font-bold">
-                              {w.isDebt || w.type === 'debt'
+                              {isDepositTx
+                                ? (w.description || 'إيداع في حساب الممرض')
+                                : isDebtTx
                                 ? `مديونية - ${w.patientName || 'مريض'}`
                                 : w.description || (w.type === 'cash' ? 'سحب نقدي' : 'خصم من الراتب')
                               }
@@ -918,7 +1012,14 @@ export function AdminNurseSalary() {
                                   مرفوض
                                 </span>
                               )}
-                              {!w.status && w.type !== 'debt' && !w.isDebt && (
+                              {/* Transaction type badge */}
+                              {isDepositTx && (
+                                <span className="text-[9px] px-1.5 py-0.5 rounded-full bg-green-100 text-green-700 dark:bg-green-900/30 dark:text-green-400 flex items-center gap-0.5">
+                                  <ArrowUpRight className="w-2.5 h-2.5" />
+                                  إيداع في الحساب
+                                </span>
+                              )}
+                              {!isDepositTx && !isDebtTx && !w.status && (
                                 <span className={`text-[9px] px-1.5 py-0.5 rounded-full ${
                                   w.type === 'cash'
                                     ? 'bg-red-100 text-red-700 dark:bg-red-900/30 dark:text-red-400'
@@ -927,7 +1028,7 @@ export function AdminNurseSalary() {
                                   {w.type === 'cash' ? 'نقدي' : 'خصم'}
                                 </span>
                               )}
-                              {w.withdrawalMethod === 'transfer' && (
+                              {w.withdrawalMethod === 'transfer' && !isDepositTx && (
                                 <span className="text-[9px] px-1.5 py-0.5 rounded-full bg-purple-100 text-purple-700 dark:bg-purple-900/30 dark:text-purple-400 flex items-center gap-0.5">
                                   <ArrowDownLeft className="w-2.5 h-2.5" />
                                   تحويل
@@ -942,8 +1043,8 @@ export function AdminNurseSalary() {
                           </div>
                         </div>
                         <div className="flex items-center gap-2">
-                          <p className="text-sm font-bold text-red-600 dark:text-red-400">
-                            -{formatCurrency(w.amount)}
+                          <p className={`text-sm font-bold ${isDepositTx ? 'text-green-600 dark:text-green-400' : 'text-red-600 dark:text-red-400'}`}>
+                            {isDepositTx ? '+' : '-'}{formatCurrency(w.amount)}
                           </p>
                           <button
                             onClick={() => setDeleteWithdrawalId(w.id)}
@@ -955,8 +1056,41 @@ export function AdminNurseSalary() {
                         </div>
                       </div>
 
-                      {/* Transfer details - copyable in history */}
-                      {w.withdrawalMethod === 'transfer' && w.walletName && (
+                      {/* Deposit/Transfer details - copyable in history */}
+                      {isDepositTx && w.walletName && (
+                        <div className="mt-2 bg-green-50 dark:bg-green-900/10 rounded-lg p-2 text-xs">
+                          <p className="text-[10px] font-bold text-green-600 dark:text-green-400 mb-1">بيانات التحويل إلى حساب الممرض</p>
+                          <div className="space-y-1">
+                            {w.walletName && <p className="text-muted-foreground">المحفظة/البنك: <span className="text-foreground font-medium">{w.walletName}</span></p>}
+                            {w.walletPhone && (
+                              <div className="flex items-center justify-between">
+                                <p className="text-muted-foreground">رقم الحساب: <span className="text-foreground font-medium" dir="ltr">{w.walletPhone}</span></p>
+                                <button
+                                  onClick={() => { navigator.clipboard.writeText(w.walletPhone || ''); toast.success('تم نسخ رقم الحساب'); }}
+                                  className="flex items-center gap-1 px-2 py-0.5 bg-green-100 dark:bg-green-900/30 rounded-md text-green-700 dark:text-green-300 active:scale-95 transition-transform"
+                                >
+                                  <Copy className="w-2.5 h-2.5" />
+                                  نسخ
+                                </button>
+                              </div>
+                            )}
+                            {w.walletOwner && <p className="text-muted-foreground">اسم صاحب الحساب: <span className="text-foreground font-medium">{w.walletOwner}</span></p>}
+                            <div className="flex items-center justify-between pt-1 border-t border-green-100 dark:border-green-900/20">
+                              <p className="text-muted-foreground">المبلغ المحول: <span className="text-foreground font-bold">{formatCurrency(w.amount)}</span></p>
+                              <button
+                                onClick={() => { navigator.clipboard.writeText(String(w.amount)); toast.success('تم نسخ المبلغ'); }}
+                                className="flex items-center gap-1 px-2 py-0.5 bg-green-100 dark:bg-green-900/30 rounded-md text-green-700 dark:text-green-300 active:scale-95 transition-transform"
+                              >
+                                <Copy className="w-2.5 h-2.5" />
+                                نسخ
+                              </button>
+                            </div>
+                          </div>
+                        </div>
+                      )}
+
+                      {/* Legacy transfer details (for old records where type wasn't 'deposit') */}
+                      {!isDepositTx && w.withdrawalMethod === 'transfer' && w.walletName && (
                         <div className="mt-2 bg-purple-50 dark:bg-purple-900/10 rounded-lg p-2 text-xs">
                           <p className="text-[10px] font-bold text-purple-600 dark:text-purple-400 mb-1">بيانات التحويل</p>
                           <div className="space-y-1">
@@ -974,22 +1108,12 @@ export function AdminNurseSalary() {
                               </div>
                             )}
                             {w.walletOwner && <p className="text-muted-foreground">الاسم: <span className="text-foreground font-medium">{w.walletOwner}</span></p>}
-                            <div className="flex items-center justify-between pt-1 border-t border-purple-100 dark:border-purple-900/20">
-                              <p className="text-muted-foreground">المبلغ: <span className="text-foreground font-bold">{formatCurrency(w.amount)}</span></p>
-                              <button
-                                onClick={() => { navigator.clipboard.writeText(String(w.amount)); toast.success('تم نسخ المبلغ'); }}
-                                className="flex items-center gap-1 px-2 py-0.5 bg-purple-100 dark:bg-purple-900/30 rounded-md text-purple-700 dark:text-purple-300 active:scale-95 transition-transform"
-                              >
-                                <Copy className="w-2.5 h-2.5" />
-                                نسخ
-                              </button>
-                            </div>
                           </div>
                         </div>
                       )}
 
                       {/* Debt details */}
-                      {(w.isDebt || w.type === 'debt') && w.patientName && (
+                      {isDebtTx && w.patientName && (
                         <div className="mt-2 bg-amber-50 dark:bg-amber-900/10 rounded-lg p-2.5 text-xs">
                           <div className="flex items-center gap-1.5 mb-1">
                             <FileText className="w-3 h-3 text-amber-600" />
@@ -1014,7 +1138,8 @@ export function AdminNurseSalary() {
                       )}
                     </div>
                   </motion.div>
-                ))
+                  );
+                })
               ) : (
                 <div className="text-center py-12">
                   <Wallet className="w-12 h-12 mx-auto text-muted-foreground/30 mb-3" />
