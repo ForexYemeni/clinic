@@ -50,3 +50,34 @@ Stage Summary:
   1. تحميل الخدمات (Load missing defaults — only adds services that don't exist)
   2. إعادة تعيين (Reset — delete all + reload defaults)
   3. حذف جميع الخدمات (Delete ALL — leaves clinic empty, admin relies on their own custom services, defaults can be reloaded later)
+
+---
+Task ID: 3
+Agent: Main Agent
+Task: Fix salary deposit/transfer logic + add new "إضافة" (bonus) transaction type
+
+Work Log:
+- Updated SalaryWithdrawal model: added 'bonus' to type enum, added new bonusType field ('bonus' | 'raise' | 'transport' | 'other')
+- Updated /api/salary/route.ts GET: totalDeducted now excludes bonuses, totalBonuses added separately, remainingBalance = salary - deductions + bonuses
+- Updated /api/salary/route.ts POST: handles 'bonus' type, skips balance check for bonuses (since they ADD to balance), computes newRemaining with bonuses
+- Updated AdminNurseSalary.tsx:
+  * Added 4th button "إضافة" in transaction type grid (cash/transfer/deduction/bonus)
+  * Added bonus subtype selector (مكافأة/زيادة راتب/بدل مواصلات/أخرى) visible only when bonus selected
+  * Helper text for transfer now says "وخصمه من رصيد الراتب" (clear deduction labeling)
+  * Helper text for bonus says "إضافة المبلغ إلى راتب الممرض" (clear addition labeling)
+  * Display: deposit = -amount red labeled "تحويل إلى حساب الممرض"; bonus = +amount green labeled with subtype
+  * Balance-after preview: shows "+amount" for bonuses (addition), "-amount" for deductions
+  * Submit button color and label dynamically adapt to selected type
+- Updated NurseSalary.tsx:
+  * Added isBonusTx detection and bonusLabel
+  * Recent transactions preview: bonus = +green, deposit = -red labeled "تحويل إلى حسابك"
+  * Transaction history: bonus badge + emerald colors, deposit badge + green colors with "تحويل إلى حسابك" label (deduction, NOT addition)
+  * Bonus details box: shows subtype, amount added, "تمت إضافة المبلغ إلى رصيد راتبك"
+- Build verified successful (npx next build)
+- Committed (99e9481) and pushed to GitHub main branch
+
+Stage Summary:
+- "تحويل للحساب" button = TRANSFER to nurse's bank/wallet account. DEDUCTED from salary (-amount red). Labeled clearly as "تحويل إلى حساب الممرض" (no longer ambiguous)
+- "إضافة" button (new) = BONUS/raise/transport allowance. ADDED to nurse's balance (+amount green). NOT deducted from salary
+- Remaining balance calculation now correctly: salary - deductions + bonuses
+- Both admin and nurse screens display 4 transaction types consistently with proper +/- color coding and clear Arabic labels
