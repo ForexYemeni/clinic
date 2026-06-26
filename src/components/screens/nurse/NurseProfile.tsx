@@ -29,7 +29,7 @@ const NurseProfile = React.memo(function NurseProfile() {
           </Avatar>
           <div className="text-white relative z-10">
             <h3 className="text-lg font-bold">{user?.name}</h3>
-            <p className="text-emerald-100 text-sm" dir="ltr">{user?.email}</p>
+            <p className="text-emerald-100 text-sm" dir="ltr">{user?.phone}</p>
             <Badge className="mt-1 bg-white/20 text-white text-[10px] backdrop-blur-sm border border-white/10">
               <Heart className="w-3 h-3 ml-1" /> ممرض
             </Badge>

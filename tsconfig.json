@@ -41,6 +41,9 @@
     "skills",
     "mini-services",
     "backup",
-    "prisma"
+    "prisma",
+    "upload",
+    "scripts",
+    "download"
   ]
 }

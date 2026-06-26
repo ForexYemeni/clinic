@@ -59,7 +59,7 @@ export function SuperAdminDashboard() {
   }
 
   const stats = [
-    { label: 'إجمالي العيادات', value: data?.totalClinics || 0, icon: Building2, gradient: 'from-purple-500 to-purple-600', onClick: () => setScreen('super-clinics') },
+    { label: 'إجمالي العيادات', value: data?.totalClinics || 0, icon: Building2, gradient: 'from-purple-500 to-purple-600', onClick: () => setScreen('super-admin-clinics') },
     { label: 'المرضى', value: data?.totalPatients || 0, icon: Users, gradient: 'from-emerald-500 to-emerald-600' },
     { label: 'الممرضين', value: data?.totalNurses || 0, icon: Activity, gradient: 'from-teal-500 to-teal-600' },
     { label: 'مدراء العيادات', value: data?.totalAdmins || 0, icon: Shield, gradient: 'from-blue-500 to-blue-600' },
@@ -131,7 +131,7 @@ export function SuperAdminDashboard() {
             العيادات ({data?.clinics.length || 0})
           </h3>
           <button
-            onClick={() => setScreen('super-clinics')}
+            onClick={() => setScreen('super-admin-clinics')}
             className="text-xs text-purple-600 dark:text-purple-400 flex items-center gap-1"
           >
             عرض الكل <ChevronLeft className="w-3 h-3" />
@@ -143,7 +143,7 @@ export function SuperAdminDashboard() {
             <Building2 className="w-12 h-12 mx-auto mb-2 opacity-30" />
             <p className="text-sm">لا توجد عيادات بعد</p>
             <button
-              onClick={() => setScreen('super-add-clinic')}
+              onClick={() => setScreen('super-admin-add-clinic')}
               className="mt-3 text-sm text-purple-600 dark:text-purple-400 font-medium flex items-center gap-1 mx-auto"
             >
               <Plus className="w-4 h-4" /> إضافة عيادة
@@ -178,14 +178,14 @@ export function SuperAdminDashboard() {
         className="grid grid-cols-2 gap-3"
       >
         <button
-          onClick={() => setScreen('super-add-clinic')}
+          onClick={() => setScreen('super-admin-add-clinic')}
           className="bg-white dark:bg-gray-800 rounded-2xl p-4 shadow-sm border border-border text-center active:scale-[0.97] transition-transform"
         >
           <Plus className="w-8 h-8 mx-auto text-purple-500" />
           <p className="text-sm font-medium mt-2">إضافة عيادة</p>
         </button>
         <button
-          onClick={() => setScreen('super-clinics')}
+          onClick={() => setScreen('super-admin-clinics')}
           className="bg-white dark:bg-gray-800 rounded-2xl p-4 shadow-sm border border-border text-center active:scale-[0.97] transition-transform"
         >
           <Building2 className="w-8 h-8 mx-auto text-purple-500" />

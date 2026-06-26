@@ -129,7 +129,7 @@ export const useAppStore = create<AppState>((set) => ({
   }),
   setSplashDone: (done) => set({ isSplashDone: done }),
   setIsFirstSetup: (val) => set({ isFirstSetup: val }),
-  setClinicName: (name) => set({ clinicName: name, clinicSettings: (prev) => ({ ...prev, name }) }),
+  setClinicName: (name) => set((state) => ({ clinicName: name, clinicSettings: { ...state.clinicSettings, name } })),
   setClinicSettings: (settings) => set((state) => {
     const newSettings = { ...state.clinicSettings, ...settings };
     return { clinicSettings: newSettings, clinicName: newSettings.name };

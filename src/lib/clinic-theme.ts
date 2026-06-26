@@ -76,7 +76,7 @@ export function applyClinicTheme(primaryColor: ClinicColorKey) {
   if (!palette || !gradient) return;
 
   // Set all shade CSS variables
-  (Object.entries(palette) as [keyof ColorShades, string][]).forEach(([shade, hex]) => {
+  (Object.entries(palette) as unknown as [keyof ColorShades, string][]).forEach(([shade, hex]) => {
     root.style.setProperty(`--clinic-${shade}`, hex);
   });
 

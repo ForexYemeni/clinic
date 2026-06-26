@@ -14,7 +14,7 @@ interface SearchInputProps {
 const SearchInput = React.memo(function SearchInput({ value, onChange, placeholder = 'بحث...', debounceMs = 300 }: SearchInputProps) {
   const [localValue, setLocalValue] = useState(value);
   const inputRef = useRef<HTMLInputElement>(null);
-  const timerRef = useRef<ReturnType<typeof setTimeout>>();
+  const timerRef = useRef<ReturnType<typeof setTimeout>>(undefined);
 
   // Sync from parent
   useEffect(() => {
