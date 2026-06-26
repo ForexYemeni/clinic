@@ -64,8 +64,11 @@ export function NurseAddCase() {
         patientName={successPatientName}
       />
 
-      <button onClick={() => setScreen('nurse-emergencies')} className="flex items-center gap-1 text-sm text-muted-foreground mb-4">
-        <ArrowRight className="w-4 h-4" /> رجوع
+      <button onClick={() => setScreen('nurse-emergencies')} className="flex items-center gap-2 mb-4 px-3 py-2 bg-white dark:bg-gray-800 rounded-xl border border-border shadow-sm active:scale-[0.97] transition-all">
+        <div className="w-7 h-7 rounded-lg bg-gray-100 dark:bg-gray-700 flex items-center justify-center">
+          <ArrowRight className="w-4 h-4 text-foreground" />
+        </div>
+        <span className="text-sm font-medium">رجوع</span>
       </button>
 
       <h2 className="text-lg font-bold mb-4 flex items-center gap-2">

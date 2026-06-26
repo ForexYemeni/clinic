@@ -1,49 +1,54 @@
-import { adminDb } from '@/lib/firebase-admin';
+import dbConnect from '@/lib/mongodb';
+import User from '@/models/User';
 import { NextRequest, NextResponse } from 'next/server';
+import { hashPassword, extractAuthAndClinicId } from '@/lib/auth';
 
-// PUT: Update nurse (change password, toggle active)
+// PUT: Update user (change password, toggle active) - with bcrypt
 export async function PUT(
   request: NextRequest,
   { params }: { params: Promise<{ id: string }> }
 ) {
   try {
+    await dbConnect();
+    const { auth, effectiveClinicId } = extractAuthAndClinicId(request);
     const { id } = await params;
     const body = await request.json();
 
-    // Check if user exists
-    const userDoc = await adminDb.collection('users').doc(id).get();
-    if (!userDoc.exists) {
-      return NextResponse.json(
-        { error: 'المستخدم غير موجود' },
-        { status: 404 }
-      );
+    const userDoc = await User.findById(id).lean();
+    if (!userDoc) {
+      return NextResponse.json({ error: 'المستخدم غير موجود' }, { status: 404 });
     }
 
-    const userData = userDoc.data();
+    const userData = userDoc;
 
-    // Only allow updating nurses (not admin)
-    if (userData.role === 'admin') {
-      return NextResponse.json(
-        { error: 'لا يمكن تعديل بيانات المدير من هنا' },
-        { status: 403 }
-      );
+    // Verify clinic ownership (strict: unless super_admin)
+    if (auth?.role !== 'super_admin') {
+      if (!effectiveClinicId || (userData.clinicId && userData.clinicId !== effectiveClinicId)) {
+        return NextResponse.json({ error: 'غير مصرح' }, { status: 403 });
+      }
+    }
+
+    // Only allow updating nurses or self (not other admins)
+    if (userData.role === 'admin' && auth?.role !== 'super_admin' && auth?.userId !== id) {
+      return NextResponse.json({ error: 'لا يمكن تعديل بيانات المدير من هنا' }, { status: 403 });
     }
 
     const updateData: Record<string, unknown> = {};
     if (body.name !== undefined) updateData.name = body.name;
     if (body.phone !== undefined) updateData.phone = body.phone;
-    if (body.password !== undefined) updateData.password = body.password;
+    if (body.password !== undefined) {
+      // Hash the new password with bcrypt
+      updateData.password = await hashPassword(body.password);
+    }
     if (body.active !== undefined) updateData.active = body.active;
+    if (body.salary !== undefined) updateData.salary = Number(body.salary) || 0;
 
-    await adminDb.collection('users').doc(id).update(updateData);
+    await User.findByIdAndUpdate(id, { $set: updateData });
 
-    return NextResponse.json({ id, ...updateData });
+    return NextResponse.json({ id, ...updateData, password: undefined });
   } catch (error) {
-    console.error('Update nurse error:', error);
-    return NextResponse.json(
-      { error: 'خطأ في تحديث بيانات الممرض' },
-      { status: 500 }
-    );
+    console.error('Update user error:', error);
+    return NextResponse.json({ error: 'خطأ في تحديث بيانات المستخدم' }, { status: 500 });
   }
 }
 
@@ -53,35 +58,34 @@ export async function DELETE(
   { params }: { params: Promise<{ id: string }> }
 ) {
   try {
+    await dbConnect();
+    const { auth, effectiveClinicId } = extractAuthAndClinicId(request);
     const { id } = await params;
 
-    // Check if user exists
-    const userDoc = await adminDb.collection('users').doc(id).get();
-    if (!userDoc.exists) {
-      return NextResponse.json(
-        { error: 'المستخدم غير موجود' },
-        { status: 404 }
-      );
+    const userDoc = await User.findById(id).lean();
+    if (!userDoc) {
+      return NextResponse.json({ error: 'المستخدم غير موجود' }, { status: 404 });
     }
 
-    const userData = userDoc.data();
+    const userData = userDoc;
 
-    // Prevent deleting admin
-    if (userData.role === 'admin') {
-      return NextResponse.json(
-        { error: 'لا يمكن حذف المدير' },
-        { status: 403 }
-      );
+    // Verify clinic ownership (strict: unless super_admin)
+    if (auth?.role !== 'super_admin') {
+      if (!effectiveClinicId || (userData.clinicId && userData.clinicId !== effectiveClinicId)) {
+        return NextResponse.json({ error: 'غير مصرح' }, { status: 403 });
+      }
     }
 
-    await adminDb.collection('users').doc(id).delete();
+    // Prevent deleting admin or super_admin
+    if (userData.role === 'admin' || userData.role === 'super_admin') {
+      return NextResponse.json({ error: 'لا يمكن حذف المدير' }, { status: 403 });
+    }
+
+    await User.findByIdAndDelete(id);
 
     return NextResponse.json({ success: true, id });
   } catch (error) {
-    console.error('Delete nurse error:', error);
-    return NextResponse.json(
-      { error: 'خطأ في حذف الممرض' },
-      { status: 500 }
-    );
+    console.error('Delete user error:', error);
+    return NextResponse.json({ error: 'خطأ في حذف المستخدم' }, { status: 500 });
   }
 }

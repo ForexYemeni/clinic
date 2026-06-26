@@ -1,26 +1,21 @@
-import { adminDb } from '@/lib/firebase-admin';
+// ═══════════════════════════════════════════════════════════
+// 🏗️ Clinic Setup API
+// First-time clinic admin setup (creates clinic in new multi-tenant system)
+// ═══════════════════════════════════════════════════════════
+
+import dbConnect from '@/lib/mongodb';
+import User from '@/models/User';
+import Clinic from '@/models/Clinic';
+import Service from '@/models/Service';
 import { NextRequest, NextResponse } from 'next/server';
+import { hashPassword, generateToken, generateRecoveryCode } from '@/lib/auth';
+import { createClinic, setPlatformConfig, getPlatformConfig } from '@/lib/multi-tenant';
+import { DEFAULT_SERVICES } from '@/lib/services-data';
 
-const DEFAULT_SERVICES = [
-  { nameAr: 'قياس الضغط', price: 500, duration: 10, category: 'قياسات', description: 'قياس ضغط الدم', active: true, status: 'active' },
-  { nameAr: 'قياس السكر', price: 500, duration: 10, category: 'قياسات', description: 'قياس مستوى السكر في الدم', active: true, status: 'active' },
-  { nameAr: 'قياس الحرارة', price: 300, duration: 5, category: 'قياسات', description: 'قياس درجة حرارة الجسم', active: true, status: 'active' },
-  { nameAr: 'قياس الأكسجين', price: 500, duration: 10, category: 'قياسات', description: 'قياس مستوى الأكسجين في الدم', active: true, status: 'active' },
-  { nameAr: 'تضميد الجروح', price: 1500, duration: 20, category: 'إسعافات', description: 'تنظيف وتضميد الجروح', active: true, status: 'active' },
-  { nameAr: 'الحروق', price: 2000, duration: 25, category: 'إسعافات', description: 'علاج الحروق البسيطة والمتوسطة', active: true, status: 'active' },
-  { nameAr: 'الكسور البسيطة', price: 3000, duration: 30, category: 'إسعافات', description: 'تثبيت وعلاج الكسور البسيطة', active: true, status: 'active' },
-  { nameAr: 'الأكسجين العلاجي', price: 1500, duration: 30, category: 'علاج', description: 'إعطاء الأكسجين العلاجي', active: true, status: 'active' },
-  { nameAr: 'الحقن', price: 800, duration: 15, category: 'علاج', description: 'إعطاء الحقن العضلية والوريدية', active: true, status: 'active' },
-  { nameAr: 'المحاليل', price: 1500, duration: 45, category: 'علاج', description: 'إعطاء المحاليل الوريدية', active: true, status: 'active' },
-  { nameAr: 'الأدوية', price: 500, duration: 10, category: 'علاج', description: 'صرف وتقديم الأدوية', active: true, status: 'active' },
-  { nameAr: 'الرذاذ الاستنشاقي', price: 800, duration: 15, category: 'علاج', description: 'علاج بالرذاذ والاستنشاق', active: true, status: 'active' },
-  { nameAr: 'تغيير الضمادات', price: 1000, duration: 15, category: 'رعاية', description: 'تغيير وتجديد الضمادات', active: true, status: 'active' },
-  { nameAr: 'الإسعافات الأولية العامة', price: 3000, duration: 30, category: 'إسعافات', description: 'إسعافات أولية شاملة', active: true, status: 'active' },
-];
-
-// POST: First-time admin setup
+// POST: First-time clinic admin setup
 export async function POST(request: NextRequest) {
   try {
+    await dbConnect();
     const body = await request.json();
     const { adminName, adminPhone, clinicName, password } = body;
 
@@ -47,71 +42,81 @@ export async function POST(request: NextRequest) {
       );
     }
 
-    // Delete all seed/default data first
-    const collectionsToDelete = [
-      'users',
-      'patients',
-      'services',
-      'visits',
-      'invoices',
-      'emergencies',
-      'notifications',
-      'clinic',
-    ];
+    // Hash password
+    const hashedPassword = await hashPassword(password);
+    const recoveryCode = generateRecoveryCode();
 
-    for (const col of collectionsToDelete) {
-      const snapshot = await adminDb.collection(col).get();
-      if (!snapshot.empty) {
-        const batch = adminDb.batch();
-        snapshot.docs.forEach((doc) => batch.delete(doc.ref));
-        await batch.commit();
-      }
-    }
-
-    // Create clinic document
-    const clinicRef = await adminDb.collection('clinic').add({
+    // Create clinic using multi-tenant system
+    const result = await createClinic({
       name: clinicName,
-      adminPhone,
-      setupComplete: true,
-      createdAt: new Date().toISOString(),
+      phone: adminPhone,
+      ownerPhone: adminPhone,
+      subscriptionType: 'trial',
+      trialDays: 30,
     });
 
-    // Create admin user
-    const adminRef = await adminDb.collection('users').add({
+    const clinicId = result.clinicId;
+
+    // Create admin user linked to the clinic
+    const adminDoc = await User.create({
       name: adminName,
       phone: adminPhone,
-      password,
+      password: hashedPassword,
       role: 'admin',
+      clinicId,
       active: true,
-      createdAt: new Date().toISOString(),
+      recoveryCode,
+    });
+    const adminId = adminDoc._id.toString();
+
+    // Mark clinic as setup complete
+    await Clinic.findByIdAndUpdate(clinicId, {
+      $set: { setupComplete: true },
     });
 
-    // Create default 14 services
-    const batch = adminDb.batch();
-    DEFAULT_SERVICES.forEach((service) => {
-      const ref = adminDb.collection('services').doc();
-      batch.set(ref, {
-        ...service,
-        createdAt: new Date().toISOString(),
+    // Seed default services for the clinic
+    const servicesWithClinicId = DEFAULT_SERVICES.map(s => ({
+      ...s,
+      clinicId,
+      active: true,
+      status: 'active',
+    }));
+    await Service.create(servicesWithClinicId);
+
+    // Ensure platform config is set up
+    const platformConfig = await getPlatformConfig();
+    if (!platformConfig?.superAdminCreated) {
+      await setPlatformConfig({
+        superAdminCreated: true,
+        version: '2.0.0',
+        defaultClinicId: clinicId,
       });
-    });
-    await batch.commit();
+    } else if (!platformConfig.defaultClinicId) {
+      await setPlatformConfig({ defaultClinicId: clinicId });
+    }
 
-    // Generate token
-    const token = Buffer.from(`${adminRef.id}:${Date.now()}`).toString('base64');
+    // Generate JWT token
+    const token = generateToken({
+      userId: adminId,
+      role: 'admin',
+      clinicId,
+      clinicName,
+    });
 
     return NextResponse.json({
       success: true,
       user: {
-        id: adminRef.id,
+        id: adminId,
         name: adminName,
         phone: adminPhone,
         role: 'admin',
         active: true,
+        clinicId,
       },
       token,
+      recoveryCode,
       clinic: {
-        id: clinicRef.id,
+        id: clinicId,
         name: clinicName,
       },
     });

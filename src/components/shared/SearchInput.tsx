@@ -52,7 +52,7 @@ const SearchInput = React.memo(function SearchInput({ value, onChange, placehold
         value={localValue}
         onChange={(e) => handleChange(e.target.value)}
         placeholder={placeholder}
-        className="h-11 pr-10 pl-10 rounded-xl bg-muted/50 border-0 focus-visible:ring-1 focus-visible:ring-emerald-500"
+        className="h-11 pr-10 pl-10 rounded-xl bg-muted/50 border-0 focus-visible:ring-1 focus-visible:ring-clinic-500"
       />
       {localValue && (
         <button

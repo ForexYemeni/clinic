@@ -1,5 +1,8 @@
-import { adminDb } from '@/lib/firebase-admin';
+import dbConnect from '@/lib/mongodb';
+import User from '@/models/User';
+import Emergency from '@/models/Emergency';
 import { NextRequest, NextResponse } from 'next/server';
+import { extractAuthAndClinicId } from '@/lib/auth';
 
 // PUT: Update emergency (change status, add actions/procedures)
 export async function PUT(
@@ -7,16 +10,24 @@ export async function PUT(
   { params }: { params: Promise<{ id: string }> }
 ) {
   try {
+    await dbConnect();
+    const { auth, effectiveClinicId } = extractAuthAndClinicId(request);
     const { id } = await params;
     const body = await request.json();
 
     // Check if emergency exists
-    const emergencyDoc = await adminDb.collection('emergencies').doc(id).get();
-    if (!emergencyDoc.exists) {
+    const emergencyDoc = await Emergency.findById(id).lean();
+    if (!emergencyDoc) {
       return NextResponse.json(
         { error: 'الحالة الطارئة غير موجودة' },
         { status: 404 }
       );
+    }
+
+    // Verify clinic ownership (strict)
+    const emergencyClinicId = emergencyDoc.clinicId;
+    if (!effectiveClinicId || (emergencyClinicId && emergencyClinicId !== effectiveClinicId)) {
+      return NextResponse.json({ error: 'غير مصرح' }, { status: 403 });
     }
 
     const updateData: Record<string, unknown> = {};
@@ -30,13 +41,13 @@ export async function PUT(
 
     // If nurseId is being updated, fetch nurse name
     if (body.nurseId) {
-      const nurseDoc = await adminDb.collection('users').doc(body.nurseId).get();
-      if (nurseDoc.exists) {
-        updateData.nurseName = nurseDoc.data()?.name || '';
+      const nurseDoc = await User.findById(body.nurseId).lean();
+      if (nurseDoc) {
+        updateData.nurseName = nurseDoc.name || '';
       }
     }
 
-    await adminDb.collection('emergencies').doc(id).update(updateData);
+    await Emergency.findByIdAndUpdate(id, { $set: updateData });
 
     return NextResponse.json({ id, ...updateData });
   } catch (error) {

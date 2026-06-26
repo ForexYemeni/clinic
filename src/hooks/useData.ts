@@ -1,6 +1,7 @@
 'use client';
 
 import { useState, useEffect, useCallback, useRef } from 'react';
+import { useAppStore } from '@/lib/store';
 
 interface CacheEntry<T> {
   data: T;
@@ -18,6 +19,7 @@ export function useData<T>(url: string | null, options?: { refreshInterval?: num
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
   const refreshTimerRef = useRef<ReturnType<typeof setInterval> | null>(null);
+  const token = useAppStore(state => state.token);
 
   const fetchData = useCallback(async (urlKey: string, showLoading = false) => {
     // Check cache first
@@ -50,7 +52,14 @@ export function useData<T>(url: string | null, options?: { refreshInterval?: num
       return;
     }
 
-    const fetchPromise = fetch(urlKey)
+    // Build headers with JWT token
+    const headers: Record<string, string> = {};
+    const currentToken = useAppStore.getState().token || token;
+    if (currentToken) {
+      headers['Authorization'] = `Bearer ${currentToken}`;
+    }
+
+    const fetchPromise = fetch(urlKey, { headers })
       .then(async (res) => {
         if (!res.ok) throw new Error('Fetch failed');
         const json = await res.json();
@@ -72,17 +81,15 @@ export function useData<T>(url: string | null, options?: { refreshInterval?: num
       pendingRequests.delete(urlKey);
       setLoading(false);
     }
-  }, []);
+  }, [token]);
 
   const refresh = useCallback(async () => {
     if (!url) return;
-    // Force fresh fetch by invalidating cache
     cache.delete(url);
     setLoading(true);
     await fetchData(url, true);
   }, [url, fetchData]);
 
-  // Invalidate cache for a specific URL (useful after mutations)
   const invalidate = useCallback((urlKey: string) => {
     cache.delete(urlKey);
   }, []);
@@ -96,7 +103,6 @@ export function useData<T>(url: string | null, options?: { refreshInterval?: num
 
     fetchData(url, true);
 
-    // Auto refresh
     if (options?.refreshInterval) {
       refreshTimerRef.current = setInterval(() => {
         fetchData(url, false);

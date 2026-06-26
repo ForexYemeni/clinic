@@ -1,5 +1,7 @@
-import { adminDb } from '@/lib/firebase-admin';
+import dbConnect from '@/lib/mongodb';
+import Notification from '@/models/Notification';
 import { NextRequest, NextResponse } from 'next/server';
+import { extractAuthAndClinicId } from '@/lib/auth';
 
 // PUT: Update notification (mark as read)
 export async function PUT(
@@ -7,22 +9,30 @@ export async function PUT(
   { params }: { params: Promise<{ id: string }> }
 ) {
   try {
+    await dbConnect();
+    const { auth, effectiveClinicId } = extractAuthAndClinicId(request);
     const { id } = await params;
     const body = await request.json();
 
     // Check if notification exists
-    const notifDoc = await adminDb.collection('notifications').doc(id).get();
-    if (!notifDoc.exists) {
+    const notifDoc = await Notification.findById(id).lean();
+    if (!notifDoc) {
       return NextResponse.json(
         { error: 'الإشعار غير موجود' },
         { status: 404 }
       );
     }
 
+    // Verify clinic ownership (strict)
+    const notifClinicId = notifDoc.clinicId;
+    if (!effectiveClinicId || (notifClinicId && notifClinicId !== effectiveClinicId)) {
+      return NextResponse.json({ error: 'غير مصرح' }, { status: 403 });
+    }
+
     const updateData: Record<string, unknown> = {};
     if (body.read !== undefined) updateData.read = body.read;
 
-    await adminDb.collection('notifications').doc(id).update(updateData);
+    await Notification.findByIdAndUpdate(id, { $set: updateData });
 
     return NextResponse.json({ id, ...updateData });
   } catch (error) {

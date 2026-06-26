@@ -58,9 +58,12 @@ export function PatientDetail({ role = 'admin' }: Props) {
       <div className="p-4 pb-24">
         <button
           onClick={() => setScreen(role === 'admin' ? 'admin-patients' : 'nurse-patients')}
-          className="flex items-center gap-1 text-sm text-muted-foreground mb-6"
+          className="flex items-center gap-2 mb-6 px-3 py-2 bg-white dark:bg-gray-800 rounded-xl border border-border shadow-sm active:scale-[0.97] transition-all"
         >
-          <ArrowRight className="w-4 h-4" /> رجوع
+          <div className="w-7 h-7 rounded-lg bg-gray-100 dark:bg-gray-700 flex items-center justify-center">
+            <ArrowRight className="w-4 h-4 text-foreground" />
+          </div>
+          <span className="text-sm font-medium">رجوع</span>
         </button>
         <div className="text-center py-16">
           <div className="w-20 h-20 bg-red-50 dark:bg-red-900/20 rounded-full flex items-center justify-center mx-auto mb-4">
@@ -70,7 +73,7 @@ export function PatientDetail({ role = 'admin' }: Props) {
           <p className="text-sm text-muted-foreground mb-6">قد يكون المريض محذوفاً أو حدث خطأ في الاتصال</p>
           <button
             onClick={fetchPatient}
-            className="inline-flex items-center gap-2 bg-emerald-600 text-white px-6 py-2.5 rounded-xl text-sm font-medium active:scale-[0.97] transition-transform"
+            className="inline-flex items-center gap-2 bg-clinic-600 text-white px-6 py-2.5 rounded-xl text-sm font-medium active:scale-[0.97] transition-transform"
           >
             <RefreshCw className="w-4 h-4" /> إعادة المحاولة
           </button>
@@ -104,20 +107,27 @@ export function PatientDetail({ role = 'admin' }: Props) {
   return (
     <div className="pb-24">
       {/* Patient Header */}
-      <div className="bg-gradient-to-l from-emerald-600 to-teal-600 text-white p-4 pb-6">
+      <div className="bg-gradient-to-l from-clinic-600 to-teal-600 text-white p-4 pb-6 relative overflow-hidden">
+        {/* Animated background pattern */}
+        <div className="absolute inset-0 opacity-[0.04]">
+          <div className="absolute top-2 right-8 w-20 h-20 border-2 border-white rounded-full" />
+          <div className="absolute -bottom-4 -left-4 w-32 h-32 border-2 border-white rounded-full" />
+          <div className="absolute top-1/2 right-1/3 w-16 h-16 border border-white rounded-full" />
+        </div>
         <div className="flex items-center justify-between mb-3">
-          <button onClick={() => setScreen(role === 'admin' ? 'admin-patients' : 'nurse-patients')} className="flex items-center gap-1 text-white/80 text-sm">
-            <ArrowRight className="w-4 h-4" /> رجوع
+          <button onClick={() => setScreen(role === 'admin' ? 'admin-patients' : 'nurse-patients')} className="flex items-center gap-2 px-3 py-2 bg-white/10 backdrop-blur-sm rounded-xl border border-white/20 text-white/80 text-sm font-medium active:scale-[0.97] transition-all">
+            <div className="w-7 h-7 rounded-lg bg-white/10 flex items-center justify-center">
+              <ArrowRight className="w-4 h-4" />
+            </div>
+            <span>رجوع</span>
           </button>
-          {role === 'nurse' && (
-            <button
-              onClick={() => setScreen('nurse-add-visit')}
-              className="flex items-center gap-1.5 bg-white/20 backdrop-blur-sm px-3 py-1.5 rounded-xl text-sm font-medium active:scale-[0.97] transition-transform"
-            >
-              <ClipboardPlus className="w-4 h-4" />
-              إضافة زيارة
-            </button>
-          )}
+          <button
+            onClick={() => setScreen('nurse-add-visit')}
+            className="flex items-center gap-1.5 bg-white/20 backdrop-blur-sm px-3 py-1.5 rounded-xl text-sm font-medium active:scale-[0.97] transition-transform"
+          >
+            <ClipboardPlus className="w-4 h-4" />
+            إضافة زيارة
+          </button>
         </div>
         <div className="flex items-center gap-3">
           <div className="w-14 h-14 bg-white/20 rounded-2xl flex items-center justify-center">
@@ -126,12 +136,19 @@ export function PatientDetail({ role = 'admin' }: Props) {
           <div className="flex-1">
             <h2 className="text-lg font-bold">{patient.name}</h2>
             <div className="flex items-center gap-3 mt-1 text-sm opacity-90">
-              <span>{patient.age} سنة</span>
+              <span>{(patient as any).ageCategory === 'elderly' || (patient as any).ageCategory === 'infant' ? 'كبير' : (patient as any).ageCategory === 'child' ? 'طفل' : (patient as any).ageCategory === 'adult' ? 'بالغ' : patient.age ? `${patient.age} سنة` : 'بالغ'}</span>
               <span>{genderLabels[patient.gender]}</span>
               {patient.bloodType && (
                 <span className="flex items-center gap-1"><Droplets className="w-3 h-3" />{patient.bloodType}</span>
               )}
             </div>
+            {(patient as any).complaints && (patient as any).complaints.length > 0 && (
+              <div className="flex flex-wrap gap-1 mt-2">
+                {(patient as any).complaints.map((c: string, i: number) => (
+                  <span key={i} className="text-[10px] bg-white/20 px-1.5 py-0.5 rounded-full">{c}</span>
+                ))}
+              </div>
+            )}
             {patient.phone && (
               <p className="text-xs opacity-80 mt-0.5 flex items-center gap-1" dir="ltr">
                 <Phone className="w-3 h-3" />{patient.phone}
@@ -156,16 +173,23 @@ export function PatientDetail({ role = 'admin' }: Props) {
         </div>
       </div>
 
-      {/* Tabs */}
+      {/* Tabs with sliding indicator */}
       <div className="px-4 -mt-4">
-        <div className="bg-white dark:bg-gray-800 rounded-2xl p-1 flex shadow-sm border border-border">
+        <div className="bg-white dark:bg-gray-800 rounded-2xl p-1 flex shadow-sm border border-border relative">
+          {/* Sliding indicator */}
+          <motion.div
+            layoutId="tab-indicator"
+            className="absolute top-1 bottom-1 rounded-xl bg-clinic-600 shadow-sm"
+            style={{ width: `${100 / tabs.length}%`, left: `${(tabs.findIndex(t => t.id === activeTab) / tabs.length) * 100}%` }}
+            transition={{ type: 'spring', stiffness: 300, damping: 30 }}
+          />
           {tabs.map(tab => (
             <button
               key={tab.id}
               onClick={() => setActiveTab(tab.id)}
-              className={`flex-1 flex items-center justify-center gap-1 py-2.5 rounded-xl text-xs font-medium transition-all ${
+              className={`relative z-10 flex-1 flex items-center justify-center gap-1 py-2.5 rounded-xl text-xs font-medium transition-colors ${
                 activeTab === tab.id
-                  ? 'bg-emerald-600 text-white shadow-sm'
+                  ? 'text-white'
                   : 'text-muted-foreground hover:text-foreground'
               }`}
             >
@@ -185,7 +209,7 @@ export function PatientDetail({ role = 'admin' }: Props) {
       <div className="p-4">
         <AnimatePresence mode="wait">
           {activeTab === 'visits' && (
-            <motion.div key="visits" initial={{ opacity: 0 }} animate={{ opacity: 1 }} exit={{ opacity: 0 }} className="space-y-3">
+            <motion.div key="visits" initial={{ opacity: 0, x: -10 }} animate={{ opacity: 1, x: 0 }} exit={{ opacity: 0, x: 10 }} transition={{ duration: 0.2 }} className="space-y-3">
               {visits.length === 0 ? (
                 <div className="text-center py-8 text-muted-foreground">
                   <Calendar className="w-10 h-10 mx-auto mb-2 opacity-30" />
@@ -202,6 +226,13 @@ export function PatientDetail({ role = 'admin' }: Props) {
                           {statusLabels[visit.status] || visit.status}
                         </span>
                       </div>
+                      {(visit as any).complaints && (visit as any).complaints.length > 0 && (
+                        <div className="flex flex-wrap gap-1 mb-2">
+                          {(visit as any).complaints.map((c: string, i: number) => (
+                            <span key={i} className="text-[10px] bg-clinic-50 dark:bg-clinic-900/20 text-clinic-700 dark:text-clinic-400 px-2 py-0.5 rounded-full">{c}</span>
+                          ))}
+                        </div>
+                      )}
                       {visit.diagnosis && (
                         <div className="bg-blue-50 dark:bg-blue-900/20 rounded-lg p-2 mb-2">
                           <p className="text-xs text-blue-700 dark:text-blue-300 font-medium">التشخيص: {visit.diagnosis}</p>
@@ -239,7 +270,7 @@ export function PatientDetail({ role = 'admin' }: Props) {
                       {visit.medications && visit.medications.length > 0 && (
                         <div className="mt-2 flex flex-wrap gap-1">
                           {visit.medications.map((med: string, i: number) => (
-                            <span key={i} className="text-[10px] bg-emerald-50 dark:bg-emerald-900/20 text-emerald-700 dark:text-emerald-400 px-2 py-0.5 rounded-full">{med}</span>
+                            <span key={i} className="text-[10px] bg-clinic-50 dark:bg-clinic-900/20 text-clinic-700 dark:text-clinic-400 px-2 py-0.5 rounded-full">{med}</span>
                           ))}
                         </div>
                       )}
@@ -251,7 +282,7 @@ export function PatientDetail({ role = 'admin' }: Props) {
           )}
 
           {activeTab === 'services' && (
-            <motion.div key="services" initial={{ opacity: 0 }} animate={{ opacity: 1 }} exit={{ opacity: 0 }} className="space-y-3">
+            <motion.div key="services" initial={{ opacity: 0, x: -10 }} animate={{ opacity: 1, x: 0 }} exit={{ opacity: 0, x: 10 }} transition={{ duration: 0.2 }} className="space-y-3">
               {services.length === 0 ? (
                 <div className="text-center py-8 text-muted-foreground">
                   <Stethoscope className="w-10 h-10 mx-auto mb-2 opacity-30" />
@@ -262,8 +293,8 @@ export function PatientDetail({ role = 'admin' }: Props) {
                   <div key={svc.id} className="bg-white dark:bg-gray-800 rounded-xl p-3 border border-border">
                     <div className="flex items-center justify-between">
                       <div className="flex items-center gap-3">
-                        <div className="w-10 h-10 bg-emerald-50 dark:bg-emerald-900/20 rounded-xl flex items-center justify-center">
-                          <Stethoscope className="w-5 h-5 text-emerald-600 dark:text-emerald-400" />
+                        <div className="w-10 h-10 bg-clinic-50 dark:bg-clinic-900/20 rounded-xl flex items-center justify-center">
+                          <Stethoscope className="w-5 h-5 text-clinic-600 dark:text-clinic-400" />
                         </div>
                         <div>
                           <p className="text-sm font-bold">{svc.nameAr || svc.serviceName || 'خدمة'}</p>
@@ -274,7 +305,7 @@ export function PatientDetail({ role = 'admin' }: Props) {
                           </div>
                         </div>
                       </div>
-                      <span className="text-sm font-bold text-emerald-600 dark:text-emerald-400 bg-emerald-50 dark:bg-emerald-900/20 px-2 py-1 rounded-lg">
+                      <span className="text-sm font-bold text-clinic-600 dark:text-clinic-400 bg-clinic-50 dark:bg-clinic-900/20 px-2 py-1 rounded-lg">
                         {formatCurrency(svc.price || svc.service?.price || 0)}
                       </span>
                     </div>
@@ -285,7 +316,7 @@ export function PatientDetail({ role = 'admin' }: Props) {
           )}
 
           {activeTab === 'invoices' && (
-            <motion.div key="invoices" initial={{ opacity: 0 }} animate={{ opacity: 1 }} exit={{ opacity: 0 }} className="space-y-3">
+            <motion.div key="invoices" initial={{ opacity: 0, x: -10 }} animate={{ opacity: 1, x: 0 }} exit={{ opacity: 0, x: 10 }} transition={{ duration: 0.2 }} className="space-y-3">
               {invoices.length === 0 ? (
                 <div className="text-center py-8 text-muted-foreground">
                   <CreditCard className="w-10 h-10 mx-auto mb-2 opacity-30" />
@@ -325,7 +356,7 @@ export function PatientDetail({ role = 'admin' }: Props) {
                         <span>الإجمالي</span>
                         <span className="font-bold">{formatCurrency(inv.total)}</span>
                       </div>
-                      <div className="flex justify-between text-xs text-emerald-600 dark:text-emerald-400">
+                      <div className="flex justify-between text-xs text-clinic-600 dark:text-clinic-400">
                         <span>المدفوع</span>
                         <span className="font-medium">{formatCurrency(inv.paid)}</span>
                       </div>
@@ -341,11 +372,11 @@ export function PatientDetail({ role = 'admin' }: Props) {
           )}
 
           {activeTab === 'medical' && (
-            <motion.div key="medical" initial={{ opacity: 0 }} animate={{ opacity: 1 }} exit={{ opacity: 0 }} className="space-y-4">
+            <motion.div key="medical" initial={{ opacity: 0, x: -10 }} animate={{ opacity: 1, x: 0 }} exit={{ opacity: 0, x: 10 }} transition={{ duration: 0.2 }} className="space-y-4">
               {/* Medical Info */}
               <div className="bg-white dark:bg-gray-800 rounded-xl p-3 border border-border">
                 <h3 className="font-bold text-sm mb-3 flex items-center gap-2">
-                  <Activity className="w-4 h-4 text-emerald-500" />
+                  <Activity className="w-4 h-4 text-clinic-500" />
                   المعلومات الطبية
                 </h3>
                 <div className="space-y-2">

@@ -41,7 +41,7 @@ export function NotificationsScreen() {
       ) : (
         <div className="space-y-2">
           {notifications.map(n => (
-            <div key={n.id} className={`bg-white dark:bg-gray-800 rounded-xl p-3 border border-border ${!n.read ? 'border-r-4 border-r-emerald-500' : ''}`}>
+            <div key={n.id} className={`bg-white dark:bg-gray-800 rounded-xl p-3 border border-border ${!n.read ? 'border-r-4 border-r-clinic-500' : ''}`}>
               <div className="flex items-start justify-between">
                 <div className="flex-1">
                   <p className="text-sm font-medium">{n.title}</p>
@@ -49,7 +49,7 @@ export function NotificationsScreen() {
                   <p className="text-[10px] text-muted-foreground mt-1">{formatRelativeTime(n.createdAt)}</p>
                 </div>
                 {!n.read && (
-                  <button onClick={() => handleMarkRead(n.id)} className="p-1.5 text-emerald-600">
+                  <button onClick={() => handleMarkRead(n.id)} className="p-1.5 text-clinic-600">
                     <Check className="w-4 h-4" />
                   </button>
                 )}

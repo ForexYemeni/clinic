@@ -1,5 +1,11 @@
-import { adminDb } from '@/lib/firebase-admin';
+import dbConnect from '@/lib/mongodb';
 import { NextRequest, NextResponse } from 'next/server';
+import { extractAuthAndClinicId } from '@/lib/auth';
+import Patient from '@/models/Patient';
+import Visit from '@/models/Visit';
+import Invoice from '@/models/Invoice';
+import Service from '@/models/Service';
+import { toClient } from '@/lib/mongoose-helpers';
 
 // GET: Get patient detail with visits, services, invoices
 export async function GET(
@@ -7,66 +13,85 @@ export async function GET(
   { params }: { params: Promise<{ id: string }> }
 ) {
   try {
+    await dbConnect();
+    const { auth, effectiveClinicId } = extractAuthAndClinicId(request);
     const { id } = await params;
-    const doc = await adminDb.collection('patients').doc(id).get();
+    const result = await Patient.findById(id).lean();
 
-    if (!doc.exists) {
+    if (result === null) {
       return NextResponse.json(
         { error: 'المريض غير موجود' },
         { status: 404 }
       );
     }
 
-    const patientData = { id: doc.id, ...doc.data() };
+    // Verify clinic ownership (strict: reject if clinicId mismatch or missing)
+    const patientClinicId = result.clinicId;
+    if (!effectiveClinicId || (patientClinicId && patientClinicId !== effectiveClinicId)) {
+      return NextResponse.json({ error: 'غير مصرح' }, { status: 403 });
+    }
 
-    // Get related visits (resilient to missing indexes)
+    const patientData = toClient(result);
+
+    // Get related visits (filtered by clinicId)
     let visits: any[] = [];
     try {
-      const visitsSnap = await adminDb
-        .collection('visits')
-        .where('patientId', '==', id)
-        .orderBy('visitDate', 'desc')
-        .get();
-      visits = visitsSnap.docs.map((d) => ({ id: d.id, ...d.data() }));
+      visits = await Visit.find({
+        patientId: id,
+        clinicId: effectiveClinicId || patientClinicId,
+      })
+        .sort({ visitDate: -1 })
+        .lean();
+      visits = visits.map((v: any) => toClient(v));
     } catch (visitErr) {
-      console.warn('Visits query failed, trying without orderBy:', visitErr);
+      console.warn('Visits query failed, trying without sort:', visitErr);
       try {
-        const visitsSnap = await adminDb
-          .collection('visits')
-          .where('patientId', '==', id)
-          .get();
-        visits = visitsSnap.docs.map((d) => ({ id: d.id, ...d.data() }))
-          .sort((a: any, b: any) => (b.visitDate || '').localeCompare(a.visitDate || ''));
+        visits = await Visit.find({
+          patientId: id,
+          clinicId: effectiveClinicId || patientClinicId,
+        }).lean();
+        visits = visits
+          .map((v: any) => toClient(v))
+          .sort((a: any, b: any) => {
+            const da = a.visitDate ? new Date(a.visitDate).getTime() : 0;
+            const db = b.visitDate ? new Date(b.visitDate).getTime() : 0;
+            return db - da;
+          });
       } catch (e2) {
         console.error('Visits query fallback also failed:', e2);
       }
     }
 
-    // Get related invoices (resilient to missing indexes)
+    // Get related invoices (filtered by clinicId)
     let invoices: any[] = [];
     try {
-      const invoicesSnap = await adminDb
-        .collection('invoices')
-        .where('patientId', '==', id)
-        .orderBy('createdAt', 'desc')
-        .get();
-      invoices = invoicesSnap.docs.map((d) => {
-        const data = { id: d.id, ...d.data() } as any;
+      const invoiceResults = await Invoice.find({
+        patientId: id,
+        clinicId: effectiveClinicId || patientClinicId,
+      })
+        .sort({ createdAt: -1 })
+        .lean();
+      invoices = invoiceResults.map((d: any) => {
+        const data = toClient(d) as any;
         data.remaining = data.remaining ?? (data.total - (data.paid || 0));
         return data;
       });
     } catch (invErr) {
-      console.warn('Invoices query failed, trying without orderBy:', invErr);
+      console.warn('Invoices query failed, trying without sort:', invErr);
       try {
-        const invoicesSnap = await adminDb
-          .collection('invoices')
-          .where('patientId', '==', id)
-          .get();
-        invoices = invoicesSnap.docs.map((d) => {
-          const data = { id: d.id, ...d.data() } as any;
+        const invoiceResults = await Invoice.find({
+          patientId: id,
+          clinicId: effectiveClinicId || patientClinicId,
+        }).lean();
+        invoices = invoiceResults.map((d: any) => {
+          const data = toClient(d) as any;
           data.remaining = data.remaining ?? (data.total - (data.paid || 0));
           return data;
-        }).sort((a: any, b: any) => (b.createdAt || '').localeCompare(a.createdAt || ''));
+        }).sort((a: any, b: any) => {
+          const da = a.createdAt ? new Date(a.createdAt).getTime() : 0;
+          const db = b.createdAt ? new Date(b.createdAt).getTime() : 0;
+          return db - da;
+        });
       } catch (e2) {
         console.error('Invoices query fallback also failed:', e2);
       }
@@ -84,9 +109,9 @@ export async function GET(
     const services: any[] = [];
     for (const serviceId of serviceIds) {
       try {
-        const serviceDoc = await adminDb.collection('services').doc(serviceId).get();
-        if (serviceDoc.exists) {
-          services.push({ id: serviceDoc.id, ...serviceDoc.data() });
+        const serviceDoc = await Service.findById(serviceId).lean();
+        if (serviceDoc !== null) {
+          services.push(toClient(serviceDoc));
         }
       } catch {}
     }
@@ -112,16 +137,24 @@ export async function PUT(
   { params }: { params: Promise<{ id: string }> }
 ) {
   try {
+    await dbConnect();
+    const { auth, effectiveClinicId } = extractAuthAndClinicId(request);
     const { id } = await params;
     const body = await request.json();
 
     // Check if patient exists
-    const patientDoc = await adminDb.collection('patients').doc(id).get();
-    if (!patientDoc.exists) {
+    const patientDoc = await Patient.findById(id).lean();
+    if (patientDoc === null) {
       return NextResponse.json(
         { error: 'المريض غير موجود' },
         { status: 404 }
       );
+    }
+
+    // Verify clinic ownership (strict: reject if clinicId mismatch or missing)
+    const patientClinicId = patientDoc.clinicId;
+    if (!effectiveClinicId || (patientClinicId && patientClinicId !== effectiveClinicId)) {
+      return NextResponse.json({ error: 'غير مصرح' }, { status: 403 });
     }
 
     const updateData: Record<string, unknown> = {};
@@ -137,7 +170,7 @@ export async function PUT(
     if (body.medicalHistory !== undefined) updateData.medicalHistory = body.medicalHistory;
     if (body.notes !== undefined) updateData.notes = body.notes;
 
-    await adminDb.collection('patients').doc(id).update(updateData);
+    await Patient.findByIdAndUpdate(id, { $set: updateData });
 
     return NextResponse.json({ id, ...updateData });
   } catch (error) {
@@ -155,28 +188,36 @@ export async function DELETE(
   { params }: { params: Promise<{ id: string }> }
 ) {
   try {
+    await dbConnect();
+    const { auth, effectiveClinicId } = extractAuthAndClinicId(request);
     const { id } = await params;
 
     // Check if patient exists
-    const patientDoc = await adminDb.collection('patients').doc(id).get();
-    if (!patientDoc.exists) {
+    const patientDoc = await Patient.findById(id).lean();
+    if (patientDoc === null) {
       return NextResponse.json(
         { error: 'المريض غير موجود' },
         { status: 404 }
       );
     }
 
-    // Delete related visits, invoices
-    const [visitsSnap, invoicesSnap] = await Promise.all([
-      adminDb.collection('visits').where('patientId', '==', id).get(),
-      adminDb.collection('invoices').where('patientId', '==', id).get(),
-    ]);
+    // Verify clinic ownership (strict: reject if clinicId mismatch or missing)
+    const patientClinicId = patientDoc.clinicId;
+    if (!effectiveClinicId || (patientClinicId && patientClinicId !== effectiveClinicId)) {
+      return NextResponse.json({ error: 'غير مصرح' }, { status: 403 });
+    }
 
-    const batch = adminDb.batch();
-    visitsSnap.docs.forEach((doc) => batch.delete(doc.ref));
-    invoicesSnap.docs.forEach((doc) => batch.delete(doc.ref));
-    batch.delete(adminDb.collection('patients').doc(id));
-    await batch.commit();
+    // Delete related visits, invoices (strict: require clinicId)
+    const clinicFilter = effectiveClinicId || patientClinicId;
+    if (!clinicFilter) {
+      return NextResponse.json({ error: 'لم يتم تحديد العيادة' }, { status: 400 });
+    }
+
+    await Promise.all([
+      Visit.deleteMany({ patientId: id, clinicId: clinicFilter }),
+      Invoice.deleteMany({ patientId: id, clinicId: clinicFilter }),
+      Patient.findByIdAndDelete(id),
+    ]);
 
     return NextResponse.json({ success: true, id });
   } catch (error) {

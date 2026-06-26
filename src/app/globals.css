@@ -47,6 +47,19 @@
   --radius-md: calc(var(--radius) - 2px);
   --radius-lg: var(--radius);
   --radius-xl: calc(var(--radius) + 4px);
+
+  /* ═══ Dynamic Clinic Brand Colors ═══ */
+  --color-clinic-50: var(--clinic-50);
+  --color-clinic-100: var(--clinic-100);
+  --color-clinic-200: var(--clinic-200);
+  --color-clinic-300: var(--clinic-300);
+  --color-clinic-400: var(--clinic-400);
+  --color-clinic-500: var(--clinic-500);
+  --color-clinic-600: var(--clinic-600);
+  --color-clinic-700: var(--clinic-700);
+  --color-clinic-800: var(--clinic-800);
+  --color-clinic-900: var(--clinic-900);
+  --color-clinic-950: var(--clinic-950);
 }
 
 :root {
@@ -88,6 +101,21 @@
   --emergency: oklch(0.577 0.245 27.325);
   --warning: oklch(0.75 0.18 80);
   --success: oklch(0.65 0.18 145);
+
+  /* ═══ Dynamic Clinic Brand (defaults = emerald, updated by ThemeUpdater) ═══ */
+  --clinic-50: #ecfdf5;
+  --clinic-100: #d1fae5;
+  --clinic-200: #a7f3d0;
+  --clinic-300: #6ee7b7;
+  --clinic-400: #34d399;
+  --clinic-500: #10b981;
+  --clinic-600: #059669;
+  --clinic-700: #047857;
+  --clinic-800: #065f46;
+  --clinic-900: #064e3b;
+  --clinic-950: #022c22;
+  --clinic-gradient-from: #059669;
+  --clinic-gradient-to: #0d9488;
 
   /* 8px spacing grid */
   --space-1: 8px;
@@ -355,10 +383,10 @@ input, textarea, select {
 
 input:focus, textarea:focus, select:focus {
   outline: none;
-  box-shadow: 0 0 0 3px rgba(5, 150, 105, 0.15);
+  box-shadow: 0 0 0 3px color-mix(in srgb, var(--clinic-600) 15%, transparent);
 }
 
-/* ==================== GRADIENT BORDERS ==================== */
+/* ==================== GRADIENT BORDERS (dynamic) ==================== */
 .gradient-border {
   position: relative;
 }
@@ -368,23 +396,23 @@ input:focus, textarea:focus, select:focus {
   inset: 0;
   padding: 1px;
   border-radius: inherit;
-  background: linear-gradient(135deg, #059669, #0d9488);
+  background: linear-gradient(135deg, var(--clinic-gradient-from), var(--clinic-gradient-to));
   -webkit-mask: linear-gradient(#fff 0 0) content-box, linear-gradient(#fff 0 0);
   mask: linear-gradient(#fff 0 0) content-box, linear-gradient(#fff 0 0);
   -webkit-mask-composite: xor;
   mask-composite: exclude;
 }
 
-/* ==================== MEDICAL THEME ACCENTS ==================== */
+/* ==================== MEDICAL THEME ACCENTS (dynamic) ==================== */
 .medical-gradient {
-  background: linear-gradient(135deg, #059669, #0d9488);
+  background: linear-gradient(135deg, var(--clinic-gradient-from), var(--clinic-gradient-to));
 }
 
 .medical-gradient-subtle {
-  background: linear-gradient(135deg, rgba(5, 150, 105, 0.08), rgba(13, 148, 136, 0.08));
+  background: linear-gradient(135deg, color-mix(in srgb, var(--clinic-gradient-from) 8%, transparent), color-mix(in srgb, var(--clinic-gradient-to) 8%, transparent));
 }
 .dark .medical-gradient-subtle {
-  background: linear-gradient(135deg, rgba(5, 150, 105, 0.15), rgba(13, 148, 136, 0.15));
+  background: linear-gradient(135deg, color-mix(in srgb, var(--clinic-gradient-from) 15%, transparent), color-mix(in srgb, var(--clinic-gradient-to) 15%, transparent));
 }
 
 /* ==================== TABULAR NUMS ==================== */

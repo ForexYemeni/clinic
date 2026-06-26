@@ -1,14 +1,112 @@
 'use client';
 
-import React, { useEffect, useState } from 'react';
-import { ArrowRight, Plus, Search, User as UserIcon, Stethoscope, Check, AlertCircle } from 'lucide-react';
+import React, { useEffect, useState, useCallback } from 'react';
+import { motion, AnimatePresence } from 'framer-motion';
+import {
+  ArrowRight, Plus, Search, User as UserIcon, Stethoscope, Check, AlertCircle,
+  Heart, X, CreditCard, Banknote, Receipt, Loader2, Baby, UserCheck, Sparkles, Syringe,
+  ChevronUp, Trash2, Wallet
+} from 'lucide-react';
 import { useAppStore } from '@/lib/store';
-import { formatCurrency, type PatientItem, type ServiceItem } from '@/lib/constants';
+import { formatCurrency, type PatientItem, type ServiceItem, BLOOD_TYPES } from '@/lib/constants';
 import { toast } from 'sonner';
 import { SuccessCard } from '@/components/shared/SuccessCard';
 
+// ═══ Complaint Tags ═══
+const COMPLAINT_CATEGORIES = [
+  {
+    name: 'أعراض عامة', icon: '🤒',
+    color: 'bg-red-50 text-red-700 border-red-200 dark:bg-red-900/20 dark:text-red-300 dark:border-red-800',
+    activeColor: 'bg-red-500 text-white border-red-500',
+    items: ['حمى', 'صداع', 'دوخة', 'إرهاق', 'ألم عام', 'فقدان شهية', 'تعرق'],
+  },
+  {
+    name: 'الجهاز الهضمي', icon: '🤢',
+    color: 'bg-orange-50 text-orange-700 border-orange-200 dark:bg-orange-900/20 dark:text-orange-300 dark:border-orange-800',
+    activeColor: 'bg-orange-500 text-white border-orange-500',
+    items: ['طرش', 'إسهال', 'ألم بطن', 'إمساك', 'انتفاخ', 'حرقة معدة', 'غثيان'],
+  },
+  {
+    name: 'الجهاز التنفسي', icon: '🫁',
+    color: 'bg-blue-50 text-blue-700 border-blue-200 dark:bg-blue-900/20 dark:text-blue-300 dark:border-blue-800',
+    activeColor: 'bg-blue-500 text-white border-blue-500',
+    items: ['سعال', 'ضيق تنفس', 'سيلان أنف', 'احتقان', 'عطس', 'ألم صدر', 'بلغم'],
+  },
+  {
+    name: 'الجلد والأنسجة', icon: '🩹',
+    color: 'bg-pink-50 text-pink-700 border-pink-200 dark:bg-pink-900/20 dark:text-pink-300 dark:border-pink-800',
+    activeColor: 'bg-pink-500 text-white border-pink-500',
+    items: ['نزيف', 'حروق', 'طفح جلدي', 'حكة', 'تورم', 'جروح', 'كدمات'],
+  },
+  {
+    name: 'العظام والمفاصل', icon: '🦴',
+    color: 'bg-purple-50 text-purple-700 border-purple-200 dark:bg-purple-900/20 dark:text-purple-300 dark:border-purple-800',
+    activeColor: 'bg-purple-500 text-white border-purple-500',
+    items: ['ألم مفاصل', 'ألم ظهر', 'كسور', 'تواء', 'تشنج', 'ألم عضلات'],
+  },
+  {
+    name: 'الأذن والأنف والحنجرة', icon: '👂',
+    color: 'bg-teal-50 text-teal-700 border-teal-200 dark:bg-teal-900/20 dark:text-teal-300 dark:border-teal-800',
+    activeColor: 'bg-teal-500 text-white border-teal-500',
+    items: ['ألم أذن', 'التهاب حلق', 'نزيف أنف', 'طنين أذن', 'صعوبة بلع'],
+  },
+  {
+    name: 'العين', icon: '👁️',
+    color: 'bg-indigo-50 text-indigo-700 border-indigo-200 dark:bg-indigo-900/20 dark:text-indigo-300 dark:border-indigo-800',
+    activeColor: 'bg-indigo-500 text-white border-indigo-500',
+    items: ['ألم عين', 'احمرار', 'رؤية ضبابية', 'دموع', 'حكة عين'],
+  },
+  {
+    name: 'القلب والأوعية', icon: '❤️',
+    color: 'bg-rose-50 text-rose-700 border-rose-200 dark:bg-rose-900/20 dark:text-rose-300 dark:border-rose-800',
+    activeColor: 'bg-rose-500 text-white border-rose-500',
+    items: ['خفقان', 'ألم صدر', 'ضغط مرتفع', 'ضغط منخفض', 'وخز'],
+  },
+];
+
+// ═══ Medication Tags ═══
+const MEDICATION_CATEGORIES = [
+  {
+    name: 'المحاليل الوريدية', icon: '💉',
+    color: 'bg-cyan-50 text-cyan-700 border-cyan-200 dark:bg-cyan-900/20 dark:text-cyan-300 dark:border-cyan-800',
+    activeColor: 'bg-cyan-500 text-white border-cyan-500',
+    items: ['نورمال سلاين', 'دكستروز 5%', 'دكستروز 10%', 'رنجر لاكتات', 'هارتمن', 'محلول جلوكوز'],
+  },
+  {
+    name: 'المهدئات', icon: '💤',
+    color: 'bg-violet-50 text-violet-700 border-violet-200 dark:bg-violet-900/20 dark:text-violet-300 dark:border-violet-800',
+    activeColor: 'bg-violet-500 text-white border-violet-500',
+    items: ['ديازيبام', 'ميدازولام', 'لورازيبام', 'بروميثازين', 'كلوربرومازين'],
+  },
+  {
+    name: 'المضادات الحيوية', icon: '🦠',
+    color: 'bg-amber-50 text-amber-700 border-amber-200 dark:bg-amber-900/20 dark:text-amber-300 dark:border-amber-800',
+    activeColor: 'bg-amber-500 text-white border-amber-500',
+    items: ['أموكسيسيلين', 'أزيثرومايسين', 'سيبروفلوكساسين', 'سيفترياكسون', 'ميترونيدازول', 'سيفيكسيم', 'كلاريثرومايسين', 'دوكسيسايكلين'],
+  },
+  {
+    name: 'الفيتمينات', icon: '💊',
+    color: 'bg-lime-50 text-lime-700 border-lime-200 dark:bg-lime-900/20 dark:text-lime-300 dark:border-lime-800',
+    activeColor: 'bg-lime-500 text-white border-lime-500',
+    items: ['فيتامين C', 'فيتامين D', 'فيتامين B12', 'فيتامين B-complex', 'حديد', 'كالسيوم', 'فوليك أسيد', 'أوميغا 3'],
+  },
+  {
+    name: 'مسكنات الألم', icon: '🩹',
+    color: 'bg-rose-50 text-rose-700 border-rose-200 dark:bg-rose-900/20 dark:text-rose-300 dark:border-rose-800',
+    activeColor: 'bg-rose-500 text-white border-rose-500',
+    items: ['باراسيتامول', 'إيبوبروفين', 'ديكلوفيناك', 'كيتورولاك', 'ترامادول', 'أسبرين'],
+  },
+];
+
+const PAYMENT_METHODS = [
+  { value: 'cash', label: 'نقدي', icon: Banknote },
+  { value: 'card', label: 'بطاقة', icon: CreditCard },
+  { value: 'transfer', label: 'تحويل', icon: Receipt },
+];
+
 export function NurseAddVisit() {
   const { setScreen, user, selectedPatientId: preselectedPatientId } = useAppStore();
+  const isAdmin = user?.role === 'admin';
   const [step, setStep] = useState<'select-patient' | 'add-visit'>(
     preselectedPatientId ? 'add-visit' : 'select-patient'
   );
@@ -28,13 +126,18 @@ export function NurseAddVisit() {
     patientName: string;
     services: { name: string; price: number }[];
     total: number;
+    paid: number;
+    remaining: number;
     invoiceId: string;
-  }>({ patientName: '', services: [], total: 0, invoiceId: '' });
+  }>({ patientName: '', services: [], total: 0, paid: 0, remaining: 0, invoiceId: '' });
 
   // Visit form
   const [selectedServices, setSelectedServices] = useState<string[]>([]);
+  const [selectedComplaints, setSelectedComplaints] = useState<string[]>([]);
+  const [customComplaint, setCustomComplaint] = useState('');
+  const [selectedMedications, setSelectedMedications] = useState<string[]>([]);
+  const [customMedication, setCustomMedication] = useState('');
   const [visitForm, setVisitForm] = useState({
-    reason: '',
     diagnosis: '',
     notes: '',
     bloodPressure: '',
@@ -45,14 +148,26 @@ export function NurseAddVisit() {
     medications: '',
   });
 
+  // Payment
+  const [paidAmount, setPaidAmount] = useState('');
+  const [paymentMethod, setPaymentMethod] = useState('cash');
+
+  // Payment panel
+  const [showPaymentPanel, setShowPaymentPanel] = useState(false);
+
+  // Sub-step in add-visit
+  const [visitSubStep, setVisitSubStep] = useState<'complaints' | 'services' | 'medications' | 'vitals'>('complaints');
+
   useEffect(() => {
     const fetchData = async () => {
       try {
-        const pRes = await fetch('/api/patients');
+        const token = useAppStore.getState().token;
+        const pRes = await fetch('/api/patients', {
+          headers: { ...(token ? { 'Authorization': `Bearer ${token}` } : {}) },
+        });
         if (pRes.ok) {
           const pData = await pRes.json();
           setPatients(pData);
-          // If we have a pre-selected patient, get its name
           if (preselectedPatientId || activePatientId) {
             const pid = activePatientId || preselectedPatientId;
             const found = pData.find((p: PatientItem) => p.id === pid);
@@ -69,13 +184,16 @@ export function NurseAddVisit() {
     const fetchServices = async () => {
       try {
         setServicesError('');
-        const sRes = await fetch('/api/services');
+        const token = useAppStore.getState().token;
+        const sRes = await fetch('/api/services', {
+          headers: { ...(token ? { 'Authorization': `Bearer ${token}` } : {}) },
+        });
         if (sRes.ok) {
           const sData = await sRes.json();
           const activeServices = sData.filter((s: any) => s.status === 'active' || s.active === true);
           setServices(activeServices);
           if (activeServices.length === 0) {
-            setServicesError('لا توجد خدمات نشطة. يجب على الإدارة إضافة خدمات أولاً.');
+            setServicesError('لا توجد خدمات نشطة. يجب إضافة خدمات أولاً.');
           }
         } else {
           const errData = await sRes.json().catch(() => ({}));
@@ -101,11 +219,40 @@ export function NurseAddVisit() {
     return sum + (svc?.price || 0);
   }, 0);
 
-  const toggleService = (id: string) => {
+  const paidNum = Number(paidAmount) || 0;
+  const remainingAmount = totalAmount - paidNum;
+
+  const toggleService = useCallback((id: string) => {
     setSelectedServices(prev =>
       prev.includes(id) ? prev.filter(s => s !== id) : [...prev, id]
     );
-  };
+  }, []);
+
+  const toggleComplaint = useCallback((complaint: string) => {
+    setSelectedComplaints(prev =>
+      prev.includes(complaint) ? prev.filter(c => c !== complaint) : [...prev, complaint]
+    );
+  }, []);
+
+  const addCustomComplaint = useCallback(() => {
+    if (customComplaint.trim() && !selectedComplaints.includes(customComplaint.trim())) {
+      setSelectedComplaints(prev => [...prev, customComplaint.trim()]);
+      setCustomComplaint('');
+    }
+  }, [customComplaint, selectedComplaints]);
+
+  const toggleMedication = useCallback((medication: string) => {
+    setSelectedMedications(prev =>
+      prev.includes(medication) ? prev.filter(m => m !== medication) : [...prev, medication]
+    );
+  }, []);
+
+  const addCustomMedication = useCallback(() => {
+    if (customMedication.trim() && !selectedMedications.includes(customMedication.trim())) {
+      setSelectedMedications(prev => [...prev, customMedication.trim()]);
+      setCustomMedication('');
+    }
+  }, [customMedication, selectedMedications]);
 
   const handleSelectPatient = (id: string, name: string) => {
     setActivePatientId(id);
@@ -115,18 +262,28 @@ export function NurseAddVisit() {
 
   const handleSubmit = async () => {
     if (!activePatientId) { toast.error('اختر المريض'); return; }
-    if (selectedServices.length === 0) { toast.error('اختر خدمة واحدة على الأقل'); return; }
 
     setSubmitting(true);
     try {
+      const token = useAppStore.getState().token;
+      // Combine selected medications with the text field medications
+      const allMedications = [
+        ...selectedMedications,
+        ...(visitForm.medications ? visitForm.medications.split('،').map(m => m.trim()).filter(Boolean) : []),
+      ];
+
       const res = await fetch('/api/visits', {
         method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
+        headers: {
+          'Content-Type': 'application/json',
+          ...(token ? { 'Authorization': `Bearer ${token}` } : {}),
+        },
         body: JSON.stringify({
           patientId: activePatientId || preselectedPatientId,
           nurseId: user?.id,
           nurseName: user?.name,
-          reason: visitForm.reason || 'زيارة عامة',
+          reason: selectedComplaints.length > 0 ? selectedComplaints.join('، ') : 'زيارة عامة',
+          complaints: selectedComplaints,
           diagnosis: visitForm.diagnosis,
           notes: visitForm.notes,
           vitalSigns: {
@@ -136,14 +293,15 @@ export function NurseAddVisit() {
             oxygenLevel: visitForm.oxygenLevel ? Number(visitForm.oxygenLevel) : undefined,
             sugarLevel: visitForm.sugarLevel ? Number(visitForm.sugarLevel) : undefined,
           },
-          medications: visitForm.medications ? visitForm.medications.split('،').map(m => m.trim()).filter(Boolean) : [],
+          medications: allMedications,
           serviceIds: selectedServices,
+          paidAmount: paidNum,
+          paymentMethod,
         }),
       });
 
       if (res.ok) {
         const data = await res.json();
-        // Prepare success card data
         const visitServices = selectedServices.map(id => {
           const svc = services.find(s => s.id === id);
           return { name: svc?.nameAr || 'خدمة', price: svc?.price || 0 };
@@ -153,6 +311,8 @@ export function NurseAddVisit() {
           patientName: selectedPatientName,
           services: visitServices,
           total: totalAmount,
+          paid: paidNum,
+          remaining: remainingAmount,
           invoiceId: data.invoice?.id?.slice(-6) || '',
         });
         setShowSuccess(true);
@@ -169,11 +329,19 @@ export function NurseAddVisit() {
 
   const handleSuccessClose = () => {
     setShowSuccess(false);
-    setScreen('nurse-patients');
+    setScreen(isAdmin ? 'admin-patients' : 'nurse-patients');
   };
 
+  // Sub-steps for visit
+  const visitSubSteps = [
+    { key: 'complaints', label: 'الشكوى', icon: Heart },
+    { key: 'services', label: 'الخدمات', icon: Stethoscope },
+    { key: 'medications', label: 'الأدوية', icon: Syringe },
+    { key: 'vitals', label: 'القراءات', icon: UserIcon },
+  ] as const;
+
   return (
-    <div className="p-4 pb-24">
+    <div className="p-4 pb-28">
       {/* Success Card Overlay */}
       <SuccessCard
         visible={showSuccess}
@@ -184,8 +352,8 @@ export function NurseAddVisit() {
         patientName={successData.patientName}
         services={successData.services}
         total={successData.total}
-        paid={0}
-        remaining={successData.total}
+        paid={successData.paid}
+        remaining={successData.remaining}
         invoiceId={successData.invoiceId}
       />
 
@@ -194,12 +362,15 @@ export function NurseAddVisit() {
           if (step === 'add-visit' && !preselectedPatientId) {
             setStep('select-patient');
           } else {
-            setScreen('nurse-patients');
+            setScreen(isAdmin ? 'admin-patients' : 'nurse-patients');
           }
         }}
-        className="flex items-center gap-1 text-sm text-muted-foreground mb-4"
+        className="flex items-center gap-2 mb-4 px-3 py-2 bg-white dark:bg-gray-800 rounded-xl border border-border shadow-sm active:scale-[0.97] transition-all"
       >
-        <ArrowRight className="w-4 h-4" /> رجوع
+        <div className="w-7 h-7 rounded-lg bg-gray-100 dark:bg-gray-700 flex items-center justify-center">
+          <ArrowRight className="w-4 h-4 text-foreground" />
+        </div>
+        <span className="text-sm font-medium">رجوع</span>
       </button>
 
       {step === 'select-patient' ? (
@@ -214,7 +385,7 @@ export function NurseAddVisit() {
               value={search}
               onChange={(e) => setSearch(e.target.value)}
               placeholder="بحث بالاسم أو رقم الهاتف..."
-              className="w-full h-10 pr-9 pl-4 bg-white dark:bg-gray-800 border border-border rounded-xl text-sm focus:outline-none focus:ring-2 focus:ring-emerald-500"
+              className="w-full h-10 pr-9 pl-4 bg-white dark:bg-gray-800 border border-border rounded-xl text-sm focus:outline-none focus:ring-2 focus:ring-clinic-500"
             />
           </div>
 
@@ -226,9 +397,9 @@ export function NurseAddVisit() {
               <p className="text-muted-foreground text-sm">لا يوجد مرضى</p>
               <button
                 onClick={() => setScreen('admin-add-patient')}
-                className="mt-3 text-emerald-600 text-sm font-medium"
+                className="mt-3 flex items-center gap-2 px-4 py-2.5 bg-clinic-50 dark:bg-clinic-900/20 text-clinic-700 dark:text-clinic-300 rounded-xl border border-clinic-200 dark:border-clinic-800 text-sm font-bold active:scale-[0.97] transition-all"
               >
-                إضافة مريض جديد
+                <Plus className="w-4 h-4" /> إضافة مريض جديد
               </button>
             </div>
           ) : (
@@ -239,12 +410,16 @@ export function NurseAddVisit() {
                   onClick={() => handleSelectPatient(patient.id, patient.name)}
                   className="w-full bg-white dark:bg-gray-800 rounded-xl p-3 border border-border text-right active:scale-[0.98] transition-transform flex items-center gap-3"
                 >
-                  <div className="w-10 h-10 bg-emerald-100 dark:bg-emerald-900/30 rounded-xl flex items-center justify-center">
-                    <UserIcon className="w-5 h-5 text-emerald-600" />
+                  <div className="w-10 h-10 bg-clinic-100 dark:bg-clinic-900/30 rounded-xl flex items-center justify-center">
+                    <UserIcon className="w-5 h-5 text-clinic-600" />
                   </div>
                   <div>
                     <p className="font-medium text-sm">{patient.name}</p>
-                    <p className="text-xs text-muted-foreground">{patient.age} سنة - {patient.gender === 'male' ? 'ذكر' : 'أنثى'}</p>
+                    <p className="text-xs text-muted-foreground">
+                      {patient.ageCategory === 'elderly' ? 'كبير' : patient.ageCategory === 'infant' ? 'كبير' : patient.ageCategory === 'child' ? 'طفل' : 'بالغ'}
+                      {patient.gender ? ` - ${patient.gender === 'male' ? 'ذكر' : 'أنثى'}` : ''}
+                      {patient.phone ? ` - ${patient.phone}` : ''}
+                    </p>
                   </div>
                 </button>
               ))}
@@ -254,7 +429,7 @@ export function NurseAddVisit() {
           {/* Add new patient */}
           <button
             onClick={() => setScreen('admin-add-patient')}
-            className="w-full mt-4 flex items-center justify-center gap-2 h-12 border-2 border-dashed border-emerald-300 dark:border-emerald-700 rounded-xl text-emerald-600 text-sm font-medium active:scale-[0.98] transition-transform"
+            className="w-full mt-4 flex items-center justify-center gap-2 h-12 border-2 border-dashed border-clinic-300 dark:border-clinic-700 rounded-xl text-clinic-600 text-sm font-medium active:scale-[0.98] transition-transform"
           >
             <Plus className="w-4 h-4" />
             إضافة مريض جديد
@@ -265,186 +440,469 @@ export function NurseAddVisit() {
           <h2 className="text-lg font-bold mb-2">تسجيل زيارة</h2>
 
           {/* Selected Patient */}
-          <div className="bg-emerald-50 dark:bg-emerald-900/20 rounded-xl p-3 mb-4 flex items-center justify-between">
+          <div className="bg-clinic-50 dark:bg-clinic-900/20 rounded-xl p-3 mb-4 flex items-center justify-between">
             <div className="flex items-center gap-2">
-              <UserIcon className="w-5 h-5 text-emerald-600" />
-              <span className="text-sm font-medium text-emerald-800 dark:text-emerald-300">{selectedPatientName}</span>
+              <UserIcon className="w-5 h-5 text-clinic-600" />
+              <span className="text-sm font-medium text-clinic-800 dark:text-clinic-300">{selectedPatientName}</span>
             </div>
             {!preselectedPatientId && (
-              <button
-                onClick={() => setStep('select-patient')}
-                className="text-xs text-emerald-600 font-medium"
-              >
+              <button onClick={() => setStep('select-patient')} className="text-xs text-clinic-600 font-medium">
                 تغيير
               </button>
             )}
           </div>
 
-          {/* Services Selection */}
-          <div className="mb-4">
-            <h3 className="font-bold text-sm mb-2 flex items-center gap-2">
-              <Stethoscope className="w-4 h-4 text-emerald-500" />
-              الخدمات المقدمة *
-            </h3>
+          {/* Sub-step tabs */}
+          <div className="flex gap-1.5 mb-4">
+            {visitSubSteps.map(s => {
+              const Icon = s.icon;
+              const isActive = visitSubStep === s.key;
+              return (
+                <button
+                  key={s.key}
+                  onClick={() => setVisitSubStep(s.key)}
+                  className={`flex-1 flex items-center justify-center gap-1 py-2 rounded-xl text-[11px] font-bold transition-all ${
+                    isActive
+                      ? 'bg-clinic-500 text-white shadow-sm'
+                      : 'bg-gray-100 dark:bg-gray-800 text-muted-foreground'
+                  }`}
+                >
+                  <Icon className="w-3.5 h-3.5" />
+                  {s.label}
+                  {s.key === 'complaints' && selectedComplaints.length > 0 && (
+                    <span className="w-4 h-4 rounded-full bg-white/30 text-[10px] flex items-center justify-center">{selectedComplaints.length}</span>
+                  )}
+                  {s.key === 'services' && selectedServices.length > 0 && (
+                    <span className="w-4 h-4 rounded-full bg-white/30 text-[10px] flex items-center justify-center">{selectedServices.length}</span>
+                  )}
+                  {s.key === 'medications' && selectedMedications.length > 0 && (
+                    <span className="w-4 h-4 rounded-full bg-white/30 text-[10px] flex items-center justify-center">{selectedMedications.length}</span>
+                  )}
+                </button>
+              );
+            })}
+          </div>
 
-            {servicesLoading ? (
-              <div className="space-y-2">{[1,2,3,4].map(i => <div key={i} className="h-14 bg-gray-100 dark:bg-gray-800 rounded-xl animate-pulse" />)}</div>
-            ) : servicesError ? (
-              <div className="bg-red-50 dark:bg-red-900/20 rounded-xl p-4 text-center">
-                <AlertCircle className="w-8 h-8 mx-auto text-red-400 mb-2" />
-                <p className="text-sm text-red-600 dark:text-red-400">{servicesError}</p>
-              </div>
-            ) : services.length === 0 ? (
-              <div className="bg-yellow-50 dark:bg-yellow-900/20 rounded-xl p-4 text-center">
-                <Stethoscope className="w-8 h-8 mx-auto text-yellow-400 mb-2" />
-                <p className="text-sm text-yellow-700 dark:text-yellow-400">لا توجد خدمات متاحة</p>
-                <p className="text-xs text-muted-foreground mt-1">يجب على الإدارة إضافة خدمات أولاً</p>
-              </div>
-            ) : (
-              <div className="space-y-2">
-                {/* Group by category */}
-                {Array.from(new Set(services.map(s => s.category || 'أخرى'))).map(category => (
-                  <div key={category}>
-                    <p className="text-xs font-medium text-muted-foreground mb-1.5 mt-2">{category}</p>
-                    {services.filter(s => (s.category || 'أخرى') === category).map(svc => (
-                      <button
-                        key={svc.id}
-                        onClick={() => toggleService(svc.id)}
-                        className={`w-full flex items-center justify-between p-3 rounded-xl border transition-all mb-1.5 ${
-                          selectedServices.includes(svc.id)
-                            ? 'border-emerald-500 bg-emerald-50 dark:bg-emerald-900/20 shadow-sm'
-                            : 'border-border bg-white dark:bg-gray-800'
-                        }`}
-                      >
-                        <div className="flex items-center gap-2">
-                          <div className={`w-7 h-7 rounded-lg flex items-center justify-center transition-all ${
-                            selectedServices.includes(svc.id) ? 'bg-emerald-500 text-white shadow-sm' : 'bg-gray-100 dark:bg-gray-700'
-                          }`}>
-                            {selectedServices.includes(svc.id) ? <Check className="w-4 h-4" /> : <span className="text-[10px]">{services.indexOf(svc) + 1}</span>}
-                          </div>
-                          <div className="text-right">
-                            <p className="text-sm font-medium">{svc.nameAr}</p>
-                            <p className="text-[10px] text-muted-foreground">{svc.duration} دقيقة</p>
-                          </div>
-                        </div>
-                        <span className="text-sm font-bold text-emerald-600 dark:text-emerald-400">{formatCurrency(svc.price)}</span>
-                      </button>
-                    ))}
+          <AnimatePresence mode="wait">
+            {/* ═══ COMPLAINTS SUB-STEP ═══ */}
+            {visitSubStep === 'complaints' && (
+              <motion.div key="complaints" initial={{ opacity: 0 }} animate={{ opacity: 1 }} exit={{ opacity: 0 }} className="space-y-4">
+                {/* Selected complaints */}
+                {selectedComplaints.length > 0 && (
+                  <div className="bg-clinic-50 dark:bg-clinic-900/20 rounded-xl p-3">
+                    <div className="flex items-center justify-between mb-2">
+                      <span className="text-xs font-bold text-clinic-700 dark:text-clinic-300">الشكوى ({selectedComplaints.length})</span>
+                      <button onClick={() => setSelectedComplaints([])} className="text-xs text-red-500">مسح</button>
+                    </div>
+                    <div className="flex flex-wrap gap-1.5">
+                      {selectedComplaints.map((c, i) => (
+                        <span key={i} className="inline-flex items-center gap-1 px-2.5 py-1 bg-clinic-500 text-white rounded-lg text-xs font-medium">
+                          {c}
+                          <button onClick={() => toggleComplaint(c)}><X className="w-3 h-3" /></button>
+                        </span>
+                      ))}
+                    </div>
+                  </div>
+                )}
+
+                {COMPLAINT_CATEGORIES.map((cat, catIdx) => (
+                  <div key={catIdx} className="space-y-1.5">
+                    <h4 className="text-xs font-bold text-muted-foreground flex items-center gap-1.5">
+                      <span>{cat.icon}</span> {cat.name}
+                    </h4>
+                    <div className="flex flex-wrap gap-1.5">
+                      {cat.items.map(complaint => {
+                        const isActive = selectedComplaints.includes(complaint);
+                        return (
+                          <button key={complaint} type="button" onClick={() => toggleComplaint(complaint)}
+                            className={`px-2.5 py-1 rounded-lg text-[11px] font-bold border transition-all active:scale-95 ${isActive ? cat.activeColor : cat.color}`}
+                          >
+                            {complaint}
+                          </button>
+                        );
+                      })}
+                    </div>
                   </div>
                 ))}
-              </div>
-            )}
-          </div>
 
-          {/* Total */}
-          {selectedServices.length > 0 && (
-            <div className="bg-gradient-to-l from-emerald-600 to-teal-600 text-white rounded-2xl p-4 mb-4 shadow-lg shadow-emerald-500/20">
-              <div className="flex items-center justify-between">
-                <div>
-                  <p className="text-xs opacity-80">الإجمالي</p>
-                  <p className="text-xl font-bold">{formatCurrency(totalAmount)}</p>
+                {/* Custom */}
+                <div className="flex gap-2">
+                  <input type="text" value={customComplaint} onChange={e => setCustomComplaint(e.target.value)}
+                    onKeyDown={e => { if (e.key === 'Enter') { e.preventDefault(); addCustomComplaint(); }}}
+                    placeholder="شكوى أخرى..." className="flex-1 h-10 px-3 bg-white dark:bg-gray-800 border border-border rounded-xl text-sm focus:outline-none focus:ring-2 focus:ring-clinic-500" />
+                  <button onClick={addCustomComplaint} disabled={!customComplaint.trim()}
+                    className="h-10 px-3 bg-clinic-500 text-white rounded-xl text-xs font-bold disabled:opacity-40">+</button>
                 </div>
-                <div className="bg-white/20 rounded-xl px-3 py-1.5 text-sm font-medium backdrop-blur-sm">
-                  {selectedServices.length} خدمات
+
+                {/* Diagnosis */}
+                <div className="space-y-1.5">
+                  <label className="text-sm font-medium">التشخيص</label>
+                  <input type="text" value={visitForm.diagnosis} onChange={e => setVisitForm(p => ({ ...p, diagnosis: e.target.value }))}
+                    placeholder="التشخيص" className="w-full h-10 px-3 bg-white dark:bg-gray-800 border border-border rounded-xl text-sm focus:outline-none focus:ring-2 focus:ring-clinic-500" />
+                </div>
+
+                <button onClick={() => setVisitSubStep('services')}
+                  className="w-full h-10 bg-gradient-to-l from-clinic-500 to-clinic-600 text-white font-bold rounded-xl text-sm active:scale-[0.98] transition-transform flex items-center justify-center gap-2">
+                  التالي: الخدمات <ArrowRight className="w-4 h-4 rotate-180" />
+                </button>
+              </motion.div>
+            )}
+
+            {/* ═══ SERVICES SUB-STEP ═══ */}
+            {visitSubStep === 'services' && (
+              <motion.div key="services" initial={{ opacity: 0 }} animate={{ opacity: 1 }} exit={{ opacity: 0 }} className="space-y-3">
+                {servicesLoading ? (
+                  <div className="space-y-2">{[1,2,3,4].map(i => <div key={i} className="h-14 bg-gray-100 dark:bg-gray-800 rounded-xl animate-pulse" />)}</div>
+                ) : servicesError ? (
+                  <div className="bg-red-50 dark:bg-red-900/20 rounded-xl p-4 text-center">
+                    <AlertCircle className="w-8 h-8 mx-auto text-red-400 mb-2" />
+                    <p className="text-sm text-red-600 dark:text-red-400">{servicesError}</p>
+                  </div>
+                ) : (
+                  <div className="max-h-[45vh] overflow-y-auto overscroll-contain space-y-2 pr-1 scrollbar-thin">
+                    {Array.from(new Set(services.map(s => s.category || 'أخرى'))).map(category => (
+                      <div key={category}>
+                        <p className="text-xs font-medium text-muted-foreground mb-1 mt-2">{category}</p>
+                        {services.filter(s => (s.category || 'أخرى') === category).map(svc => (
+                          <button
+                            key={svc.id}
+                            onClick={() => toggleService(svc.id)}
+                            className={`w-full flex items-center justify-between p-3 rounded-xl border-2 transition-all mb-1.5 active:scale-[0.99] ${
+                              selectedServices.includes(svc.id)
+                                ? 'border-clinic-500 bg-clinic-50 dark:bg-clinic-900/20'
+                                : 'border-transparent bg-white dark:bg-gray-800'
+                            }`}
+                          >
+                            <div className="flex items-center gap-2">
+                              <div className={`w-7 h-7 rounded-lg flex items-center justify-center transition-all ${
+                                selectedServices.includes(svc.id) ? 'bg-clinic-500 text-white shadow-sm' : 'bg-gray-100 dark:bg-gray-700'
+                              }`}>
+                                {selectedServices.includes(svc.id) ? <Check className="w-4 h-4" /> : <span className="text-[10px]">{services.indexOf(svc) + 1}</span>}
+                              </div>
+                              <div className="text-right">
+                                <p className="text-sm font-medium">{svc.nameAr}</p>
+                                <p className="text-[10px] text-muted-foreground">{svc.duration} دقيقة</p>
+                              </div>
+                            </div>
+                            <span className="text-sm font-bold text-clinic-600 dark:text-clinic-400">{formatCurrency(svc.price)}</span>
+                          </button>
+                        ))}
+                      </div>
+                    ))}
+                  </div>
+                )}
+
+                <div className="flex gap-2">
+                  <button onClick={() => setVisitSubStep('complaints')} className="h-10 px-4 bg-gray-100 dark:bg-gray-800 font-bold rounded-xl text-xs">رجوع</button>
+                  <button onClick={() => setVisitSubStep('medications')} disabled={selectedServices.length === 0}
+                    className="flex-1 h-10 bg-gradient-to-l from-clinic-500 to-clinic-600 text-white font-bold rounded-xl text-xs active:scale-[0.98] transition-transform flex items-center justify-center gap-1 disabled:opacity-60">
+                    التالي: الأدوية <ArrowRight className="w-3 h-3 rotate-180" />
+                  </button>
+                </div>
+              </motion.div>
+            )}
+
+            {/* ═══ MEDICATIONS SUB-STEP ═══ */}
+            {visitSubStep === 'medications' && (
+              <motion.div key="medications" initial={{ opacity: 0 }} animate={{ opacity: 1 }} exit={{ opacity: 0 }} className="space-y-4">
+                {/* Selected medications */}
+                {selectedMedications.length > 0 && (
+                  <div className="bg-cyan-50 dark:bg-cyan-900/20 rounded-xl p-3">
+                    <div className="flex items-center justify-between mb-2">
+                      <span className="text-xs font-bold text-cyan-700 dark:text-cyan-300">الأدوية المختارة ({selectedMedications.length})</span>
+                      <button onClick={() => setSelectedMedications([])} className="text-xs text-red-500">مسح</button>
+                    </div>
+                    <div className="flex flex-wrap gap-1.5">
+                      {selectedMedications.map((m, i) => (
+                        <span key={i} className="inline-flex items-center gap-1 px-2.5 py-1 bg-cyan-500 text-white rounded-lg text-xs font-medium">
+                          {m}
+                          <button onClick={() => toggleMedication(m)}><X className="w-3 h-3" /></button>
+                        </span>
+                      ))}
+                    </div>
+                  </div>
+                )}
+
+                {MEDICATION_CATEGORIES.map((cat, catIdx) => (
+                  <div key={catIdx} className="space-y-1.5">
+                    <h4 className="text-xs font-bold text-muted-foreground flex items-center gap-1.5">
+                      <span>{cat.icon}</span> {cat.name}
+                    </h4>
+                    <div className="flex flex-wrap gap-1.5">
+                      {cat.items.map(medication => {
+                        const isActive = selectedMedications.includes(medication);
+                        return (
+                          <button key={medication} type="button" onClick={() => toggleMedication(medication)}
+                            className={`px-2.5 py-1 rounded-lg text-[11px] font-bold border transition-all active:scale-95 ${isActive ? cat.activeColor : cat.color}`}
+                          >
+                            {medication}
+                          </button>
+                        );
+                      })}
+                    </div>
+                  </div>
+                ))}
+
+                {/* Custom medication input */}
+                <div className="flex gap-2">
+                  <input type="text" value={customMedication} onChange={e => setCustomMedication(e.target.value)}
+                    onKeyDown={e => { if (e.key === 'Enter') { e.preventDefault(); addCustomMedication(); }}}
+                    placeholder="دواء آخر..." className="flex-1 h-10 px-3 bg-white dark:bg-gray-800 border border-border rounded-xl text-sm focus:outline-none focus:ring-2 focus:ring-cyan-500" />
+                  <button onClick={addCustomMedication} disabled={!customMedication.trim()}
+                    className="h-10 px-3 bg-cyan-500 text-white rounded-xl text-xs font-bold disabled:opacity-40">+</button>
+                </div>
+
+                {/* Additional medications text field */}
+                <div className="space-y-1.5">
+                  <label className="text-sm font-medium">أدوية إضافية</label>
+                  <input type="text" value={visitForm.medications} onChange={e => setVisitForm(p => ({ ...p, medications: e.target.value }))}
+                    placeholder="مفصولة بفاصلة (،)" className="w-full h-10 px-3 bg-white dark:bg-gray-800 border border-border rounded-xl text-sm focus:outline-none focus:ring-2 focus:ring-clinic-500" />
+                </div>
+
+                <div className="flex gap-2">
+                  <button onClick={() => setVisitSubStep('services')} className="h-10 px-4 bg-gray-100 dark:bg-gray-800 font-bold rounded-xl text-xs">رجوع</button>
+                  <button onClick={() => setVisitSubStep('vitals')} className="flex-1 h-10 bg-gradient-to-l from-clinic-500 to-clinic-600 text-white font-bold rounded-xl text-xs active:scale-[0.98] transition-transform flex items-center justify-center gap-1">
+                    التالي: القراءات <ArrowRight className="w-3 h-3 rotate-180" />
+                  </button>
+                </div>
+              </motion.div>
+            )}
+
+            {/* ═══ VITALS SUB-STEP ═══ */}
+            {visitSubStep === 'vitals' && (
+              <motion.div key="vitals" initial={{ opacity: 0 }} animate={{ opacity: 1 }} exit={{ opacity: 0 }} className="space-y-3">
+                <div className="space-y-1.5">
+                  <label className="text-sm font-medium">القراءات الحيوية</label>
+                  <div className="grid grid-cols-2 gap-3">
+                    <input type="text" value={visitForm.bloodPressure} onChange={e => setVisitForm(p => ({ ...p, bloodPressure: e.target.value }))}
+                      placeholder="الضغط (120/80)" className="h-10 px-3 bg-white dark:bg-gray-800 border border-border rounded-xl text-sm focus:outline-none focus:ring-2 focus:ring-clinic-500" dir="ltr" />
+                    <input type="number" value={visitForm.heartRate} onChange={e => setVisitForm(p => ({ ...p, heartRate: e.target.value }))}
+                      placeholder="النبض" className="h-10 px-3 bg-white dark:bg-gray-800 border border-border rounded-xl text-sm focus:outline-none focus:ring-2 focus:ring-clinic-500" dir="ltr" />
+                    <input type="number" value={visitForm.temperature} onChange={e => setVisitForm(p => ({ ...p, temperature: e.target.value }))}
+                      placeholder="الحرارة °C" className="h-10 px-3 bg-white dark:bg-gray-800 border border-border rounded-xl text-sm focus:outline-none focus:ring-2 focus:ring-clinic-500" dir="ltr" />
+                    <input type="number" value={visitForm.oxygenLevel} onChange={e => setVisitForm(p => ({ ...p, oxygenLevel: e.target.value }))}
+                      placeholder="الأكسجين %" className="h-10 px-3 bg-white dark:bg-gray-800 border border-border rounded-xl text-sm focus:outline-none focus:ring-2 focus:ring-clinic-500" dir="ltr" />
+                    <input type="number" value={visitForm.sugarLevel} onChange={e => setVisitForm(p => ({ ...p, sugarLevel: e.target.value }))}
+                      placeholder="السكر" className="h-10 px-3 bg-white dark:bg-gray-800 border border-border rounded-xl text-sm focus:outline-none focus:ring-2 focus:ring-clinic-500" dir="ltr" />
+                  </div>
+                </div>
+                <div className="space-y-1.5">
+                  <label className="text-sm font-medium">ملاحظات</label>
+                  <textarea value={visitForm.notes} onChange={e => setVisitForm(p => ({ ...p, notes: e.target.value }))}
+                    placeholder="ملاحظات" rows={2} className="w-full px-3 py-2 bg-white dark:bg-gray-800 border border-border rounded-xl text-sm focus:outline-none focus:ring-2 focus:ring-clinic-500 resize-none" />
+                </div>
+
+                <div className="flex gap-2">
+                  <button onClick={() => setVisitSubStep('medications')} className="h-10 px-4 bg-gray-100 dark:bg-gray-800 font-bold rounded-xl text-xs">رجوع</button>
+                  <button onClick={handleSubmit} disabled={submitting || (selectedServices.length === 0)}
+                    className="flex-1 h-12 bg-gradient-to-l from-clinic-500 to-clinic-600 text-white font-bold rounded-xl shadow-lg disabled:opacity-60 active:scale-[0.98] transition-transform flex items-center justify-center gap-2">
+                    {submitting ? (
+                      <Loader2 className="w-5 h-5 animate-spin" />
+                    ) : selectedServices.length > 0 ? (
+                      `تسجيل الزيارة - ${formatCurrency(totalAmount)}`
+                    ) : (
+                      'اختر الخدمات أولاً'
+                    )}
+                  </button>
+                </div>
+              </motion.div>
+            )}
+          </AnimatePresence>
+        </>
+      )}
+
+      {/* ═══ Professional Floating Services & Payment Card ═══ */}
+      {visitSubStep === 'services' && selectedServices.length > 0 && (
+        <>
+          {/* Backdrop overlay when expanded */}
+          <AnimatePresence>
+            {showPaymentPanel && (
+              <motion.div
+                initial={{ opacity: 0 }}
+                animate={{ opacity: 1 }}
+                exit={{ opacity: 0 }}
+                className="fixed inset-0 z-40 bg-black/50 backdrop-blur-sm"
+                onClick={() => setShowPaymentPanel(false)}
+              />
+            )}
+          </AnimatePresence>
+
+          {/* Professional Bottom Sheet */}
+          <AnimatePresence>
+            {showPaymentPanel && (
+              <motion.div
+                initial={{ y: '100%' }}
+                animate={{ y: 0 }}
+                exit={{ y: '100%' }}
+                transition={{ type: 'spring', damping: 28, stiffness: 300 }}
+                className="fixed bottom-0 left-0 right-0 z-50 max-w-lg mx-auto"
+              >
+                <div className="bg-white dark:bg-gray-900 rounded-t-3xl max-h-[80vh] overflow-hidden shadow-2xl border-t border-clinic-200 dark:border-clinic-800">
+                  {/* Handle bar */}
+                  <div className="flex justify-center pt-2.5 pb-1 cursor-pointer" onClick={() => setShowPaymentPanel(false)}>
+                    <div className="w-10 h-1.5 bg-gray-300 dark:bg-gray-600 rounded-full" />
+                  </div>
+
+                  {/* Sheet Header with gradient */}
+                  <div className="px-5 py-3 bg-gradient-to-l from-clinic-500 to-clinic-600 text-white flex items-center justify-between">
+                    <div className="flex items-center gap-2">
+                      <Wallet className="w-5 h-5" />
+                      <div>
+                        <h3 className="text-sm font-bold">ملخص الخدمات والسداد</h3>
+                        <p className="text-[10px] text-white/70">{selectedServices.length} خدمة محددة</p>
+                      </div>
+                    </div>
+                    <button onClick={() => setSelectedServices([])} className="text-[10px] bg-white/20 hover:bg-white/30 px-2.5 py-1 rounded-lg flex items-center gap-1 transition-colors">
+                      <Trash2 className="w-3 h-3" /> مسح الكل
+                    </button>
+                  </div>
+
+                  {/* Scrollable content */}
+                  <div className="overflow-y-auto max-h-[55vh]">
+                    {/* Selected services list */}
+                    <div className="p-4 space-y-2">
+                      {selectedServices.map(id => {
+                        const svc = services.find(s => s.id === id);
+                        return (
+                          <div key={id} className="flex items-center justify-between py-2 px-3 bg-gray-50 dark:bg-gray-800 rounded-xl border border-gray-100 dark:border-gray-700">
+                            <div className="flex items-center gap-2">
+                              <div className="w-7 h-7 rounded-lg bg-clinic-100 dark:bg-clinic-900/30 flex items-center justify-center">
+                                <Check className="w-3.5 h-3.5 text-clinic-600" />
+                              </div>
+                              <span className="text-sm font-medium">{svc?.nameAr || 'خدمة'}</span>
+                            </div>
+                            <div className="flex items-center gap-2">
+                              <span className="text-sm font-bold text-clinic-600">{formatCurrency(svc?.price || 0)}</span>
+                              <button onClick={() => toggleService(id)} className="w-6 h-6 rounded-full flex items-center justify-center bg-red-50 dark:bg-red-900/20 text-red-500 active:scale-90 transition-transform">
+                                <X className="w-3 h-3" />
+                              </button>
+                            </div>
+                          </div>
+                        );
+                      })}
+                    </div>
+
+                    {/* Total section */}
+                    <div className="mx-4 mb-4 p-4 bg-gradient-to-l from-clinic-50 to-clinic-100 dark:from-clinic-900/30 dark:to-clinic-800/20 rounded-2xl border border-clinic-200 dark:border-clinic-700">
+                      <div className="flex items-center justify-between mb-1">
+                        <span className="text-sm text-clinic-700 dark:text-clinic-300">الإجمالي المطلوب</span>
+                        <span className="text-2xl font-bold text-clinic-600 dark:text-clinic-400">{formatCurrency(totalAmount)}</span>
+                      </div>
+                      {paidNum > 0 && (
+                        <div className="flex items-center justify-between mt-2 pt-2 border-t border-clinic-200 dark:border-clinic-700">
+                          <span className="text-xs text-clinic-600 dark:text-clinic-400">المدفوع</span>
+                          <span className="text-sm font-bold text-green-600">{formatCurrency(paidNum)}</span>
+                        </div>
+                      )}
+                      {paidNum > 0 && remainingAmount > 0 && (
+                        <div className="flex items-center justify-between mt-1">
+                          <span className="text-xs text-clinic-600 dark:text-clinic-400">المتبقي</span>
+                          <span className="text-sm font-bold text-amber-600">{formatCurrency(remainingAmount)}</span>
+                        </div>
+                      )}
+                      {paidNum > 0 && remainingAmount <= 0 && (
+                        <div className="mt-2 pt-2 border-t border-clinic-200 dark:border-clinic-700 text-center">
+                          <span className="text-xs font-bold text-green-600 bg-green-50 dark:bg-green-900/20 px-3 py-1 rounded-full">تم الدفع بالكامل</span>
+                        </div>
+                      )}
+                    </div>
+
+                    {/* Payment section */}
+                    <div className="px-4 pb-4 space-y-3">
+                      <div className="flex items-center gap-2 mb-1">
+                        <CreditCard className="w-4 h-4 text-clinic-600" />
+                        <h4 className="text-sm font-bold">طريقة الدفع</h4>
+                      </div>
+                      <div className="grid grid-cols-3 gap-2">
+                        {PAYMENT_METHODS.map(m => {
+                          const Icon = m.icon;
+                          const isActive = paymentMethod === m.value;
+                          return (
+                            <button key={m.value} type="button" onClick={() => setPaymentMethod(m.value)}
+                              className={`p-3 rounded-xl flex flex-col items-center gap-1.5 border-2 transition-all active:scale-95 ${
+                                isActive
+                                  ? 'border-clinic-500 bg-clinic-50 dark:bg-clinic-900/20 shadow-sm'
+                                  : 'border-gray-200 dark:border-gray-700 bg-gray-50 dark:bg-gray-800'
+                              }`}>
+                              <div className={`w-8 h-8 rounded-lg flex items-center justify-center ${isActive ? 'bg-clinic-500 text-white' : 'bg-gray-200 dark:bg-gray-700 text-muted-foreground'}`}>
+                                <Icon className="w-4 h-4" />
+                              </div>
+                              <span className={`text-[10px] font-bold ${isActive ? 'text-clinic-600' : 'text-muted-foreground'}`}>{m.label}</span>
+                            </button>
+                          );
+                        })}
+                      </div>
+                      <div className="space-y-1.5">
+                        <label className="text-xs font-bold text-muted-foreground">المبلغ المدفوع</label>
+                        <input type="number" value={paidAmount} onChange={e => setPaidAmount(e.target.value)}
+                          placeholder="0" max={totalAmount}
+                          className="w-full h-12 px-4 bg-white dark:bg-gray-800 border-2 border-gray-200 dark:border-gray-700 rounded-xl text-lg font-bold text-center focus:outline-none focus:ring-2 focus:ring-clinic-500 focus:border-clinic-500" dir="ltr" inputMode="numeric" />
+                      </div>
+                      <div className="flex gap-2">
+                        <button onClick={() => setPaidAmount(String(totalAmount))} className="flex-1 h-9 text-xs font-bold bg-green-50 dark:bg-green-900/20 text-green-700 rounded-xl border border-green-200 dark:border-green-800 active:scale-[0.97] transition-transform">دفع الكل</button>
+                        <button onClick={() => setPaidAmount('0')} className="flex-1 h-9 text-xs font-bold bg-red-50 dark:bg-red-900/20 text-red-700 rounded-xl border border-red-200 dark:border-red-800 active:scale-[0.97] transition-transform">بدون دفع</button>
+                      </div>
+                    </div>
+                  </div>
+
+                  {/* Action buttons */}
+                  <div className="p-4 pt-0 space-y-2">
+                    <button onClick={() => { setShowPaymentPanel(false); setVisitSubStep('medications'); }} disabled={selectedServices.length === 0}
+                      className="w-full h-12 bg-gradient-to-l from-clinic-500 to-clinic-600 text-white font-bold rounded-xl text-sm active:scale-[0.98] transition-transform flex items-center justify-center gap-2 disabled:opacity-60 shadow-lg shadow-clinic-500/20">
+                      التالي: الأدوية <ArrowRight className="w-4 h-4 rotate-180" />
+                    </button>
+                  </div>
+                </div>
+              </motion.div>
+            )}
+          </AnimatePresence>
+
+          {/* Professional Floating Bottom Bar (always visible when collapsed) */}
+          {!showPaymentPanel && (
+            <motion.div
+              initial={{ y: 100, opacity: 0 }}
+              animate={{ y: 0, opacity: 1 }}
+              exit={{ y: 100, opacity: 0 }}
+              transition={{ type: 'spring', damping: 25, stiffness: 300 }}
+              className="fixed bottom-0 left-0 right-0 z-30"
+            >
+              <div className="max-w-lg mx-auto px-4 pb-4 pt-2">
+                <div className="bg-white dark:bg-gray-900 rounded-2xl shadow-[0_-4px_30px_rgba(0,0,0,0.15)] border border-gray-200 dark:border-gray-700 overflow-hidden">
+                  {/* Mini services preview */}
+                  <div className="px-3 pt-2.5 pb-1 flex items-center gap-1.5 overflow-x-auto scrollbar-hide">
+                    {selectedServices.slice(0, 4).map(id => {
+                      const svc = services.find(s => s.id === id);
+                      return (
+                        <span key={id} className="flex-shrink-0 inline-flex items-center gap-1 px-2 py-0.5 bg-clinic-50 dark:bg-clinic-900/20 text-clinic-700 dark:text-clinic-300 rounded-lg text-[10px] font-medium">
+                          {svc?.nameAr || 'خدمة'}
+                        </span>
+                      );
+                    })}
+                    {selectedServices.length > 4 && (
+                      <span className="flex-shrink-0 text-[10px] text-muted-foreground font-medium">+{selectedServices.length - 4}</span>
+                    )}
+                  </div>
+
+                  {/* Main bar */}
+                  <div className="px-3 pb-2.5 pt-1 flex items-center justify-between">
+                    <div className="flex-1 min-w-0">
+                      <div className="flex items-center gap-2 mb-0.5">
+                        <div className="w-5 h-5 rounded-full bg-gradient-to-br from-clinic-500 to-clinic-600 text-white text-[9px] font-bold flex items-center justify-center">{selectedServices.length}</div>
+                        <span className="text-[10px] text-muted-foreground font-medium">خدمة محددة</span>
+                      </div>
+                      <p className="text-xl font-bold text-clinic-600 dark:text-clinic-400">{formatCurrency(totalAmount)}</p>
+                    </div>
+                    <button onClick={() => setShowPaymentPanel(true)}
+                      className="h-12 px-5 bg-gradient-to-l from-clinic-500 to-clinic-600 text-white font-bold rounded-xl shadow-lg shadow-clinic-500/25 active:scale-[0.97] transition-transform flex items-center gap-2">
+                      <Wallet className="w-4 h-4" />
+                      <span className="text-sm">عرض وتسديد</span>
+                      <ChevronUp className="w-4 h-4" />
+                    </button>
+                  </div>
                 </div>
               </div>
-            </div>
+            </motion.div>
           )}
-
-          {/* Vital Signs */}
-          <div className="mb-4">
-            <h3 className="font-bold text-sm mb-2">القراءات الحيوية</h3>
-            <div className="grid grid-cols-2 gap-3">
-              <input
-                type="text"
-                value={visitForm.bloodPressure}
-                onChange={(e) => setVisitForm(p => ({ ...p, bloodPressure: e.target.value }))}
-                placeholder="الضغط (120/80)"
-                className="h-10 px-3 bg-white dark:bg-gray-800 border border-border rounded-xl text-sm focus:outline-none focus:ring-2 focus:ring-emerald-500"
-                dir="ltr"
-              />
-              <input
-                type="number"
-                value={visitForm.heartRate}
-                onChange={(e) => setVisitForm(p => ({ ...p, heartRate: e.target.value }))}
-                placeholder="معدل النبض"
-                className="h-10 px-3 bg-white dark:bg-gray-800 border border-border rounded-xl text-sm focus:outline-none focus:ring-2 focus:ring-emerald-500"
-                dir="ltr"
-              />
-              <input
-                type="number"
-                value={visitForm.temperature}
-                onChange={(e) => setVisitForm(p => ({ ...p, temperature: e.target.value }))}
-                placeholder="الحرارة (°C)"
-                className="h-10 px-3 bg-white dark:bg-gray-800 border border-border rounded-xl text-sm focus:outline-none focus:ring-2 focus:ring-emerald-500"
-                dir="ltr"
-              />
-              <input
-                type="number"
-                value={visitForm.oxygenLevel}
-                onChange={(e) => setVisitForm(p => ({ ...p, oxygenLevel: e.target.value }))}
-                placeholder="الأكسجين (%)"
-                className="h-10 px-3 bg-white dark:bg-gray-800 border border-border rounded-xl text-sm focus:outline-none focus:ring-2 focus:ring-emerald-500"
-                dir="ltr"
-              />
-              <input
-                type="number"
-                value={visitForm.sugarLevel}
-                onChange={(e) => setVisitForm(p => ({ ...p, sugarLevel: e.target.value }))}
-                placeholder="السكر"
-                className="h-10 px-3 bg-white dark:bg-gray-800 border border-border rounded-xl text-sm focus:outline-none focus:ring-2 focus:ring-emerald-500"
-                dir="ltr"
-              />
-            </div>
-          </div>
-
-          {/* Diagnosis & Notes */}
-          <div className="space-y-3 mb-4">
-            <div className="space-y-1.5">
-              <label className="text-sm font-medium">التشخيص</label>
-              <input
-                type="text"
-                value={visitForm.diagnosis}
-                onChange={(e) => setVisitForm(p => ({ ...p, diagnosis: e.target.value }))}
-                placeholder="التشخيص"
-                className="w-full h-10 px-3 bg-white dark:bg-gray-800 border border-border rounded-xl text-sm focus:outline-none focus:ring-2 focus:ring-emerald-500"
-              />
-            </div>
-            <div className="space-y-1.5">
-              <label className="text-sm font-medium">الأدوية</label>
-              <input
-                type="text"
-                value={visitForm.medications}
-                onChange={(e) => setVisitForm(p => ({ ...p, medications: e.target.value }))}
-                placeholder="الأدوية مفصولة بفاصلة (،)"
-                className="w-full h-10 px-3 bg-white dark:bg-gray-800 border border-border rounded-xl text-sm focus:outline-none focus:ring-2 focus:ring-emerald-500"
-              />
-            </div>
-            <div className="space-y-1.5">
-              <label className="text-sm font-medium">ملاحظات</label>
-              <textarea
-                value={visitForm.notes}
-                onChange={(e) => setVisitForm(p => ({ ...p, notes: e.target.value }))}
-                placeholder="ملاحظات إضافية"
-                rows={2}
-                className="w-full px-3 py-2 bg-white dark:bg-gray-800 border border-border rounded-xl text-sm focus:outline-none focus:ring-2 focus:ring-emerald-500 resize-none"
-              />
-            </div>
-          </div>
-
-          <button
-            onClick={handleSubmit}
-            disabled={submitting || services.length === 0}
-            className="w-full h-12 bg-gradient-to-l from-emerald-600 to-teal-600 text-white font-bold rounded-xl shadow-lg shadow-emerald-500/20 disabled:opacity-60 active:scale-[0.98] transition-transform"
-          >
-            {submitting ? (
-              <div className="w-5 h-5 border-2 border-white/30 border-t-white rounded-full animate-spin mx-auto" />
-            ) : selectedServices.length > 0 ? (
-              `تسجيل الزيارة - ${formatCurrency(totalAmount)}`
-            ) : (
-              'اختر الخدمات أولاً'
-            )}
-          </button>
         </>
       )}
     </div>

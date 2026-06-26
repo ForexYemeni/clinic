@@ -52,3 +52,10 @@ prompt
 server.log
 # Skills directory
 /skills/
+# Backups and archives
+/src_backup/
+/backup/
+/download/*.zip
+/agent-ctx/
+/.zscripts/
+/.next/

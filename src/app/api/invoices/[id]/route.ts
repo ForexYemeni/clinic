@@ -1,5 +1,7 @@
-import { adminDb } from '@/lib/firebase-admin';
+import dbConnect from '@/lib/mongodb';
+import Invoice from '@/models/Invoice';
 import { NextRequest, NextResponse } from 'next/server';
+import { extractAuthAndClinicId } from '@/lib/auth';
 
 // PUT: Update invoice (add payment, change status)
 export async function PUT(
@@ -7,19 +9,27 @@ export async function PUT(
   { params }: { params: Promise<{ id: string }> }
 ) {
   try {
+    await dbConnect();
+    const { auth, effectiveClinicId } = extractAuthAndClinicId(request);
     const { id } = await params;
     const body = await request.json();
 
     // Check if invoice exists
-    const invoiceDoc = await adminDb.collection('invoices').doc(id).get();
-    if (!invoiceDoc.exists) {
+    const invoiceDoc = await Invoice.findById(id).lean();
+    if (!invoiceDoc) {
       return NextResponse.json(
         { error: 'الفاتورة غير موجودة' },
         { status: 404 }
       );
     }
 
-    const currentData = invoiceDoc.data();
+    // Verify clinic ownership (strict)
+    const invoiceClinicId = invoiceDoc.clinicId;
+    if (!effectiveClinicId || (invoiceClinicId && invoiceClinicId !== effectiveClinicId)) {
+      return NextResponse.json({ error: 'غير مصرح' }, { status: 403 });
+    }
+
+    const currentData = invoiceDoc;
     const updateData: Record<string, unknown> = {};
 
     // If adding a payment
@@ -56,7 +66,7 @@ export async function PUT(
       }
     }
 
-    await adminDb.collection('invoices').doc(id).update(updateData);
+    await Invoice.findByIdAndUpdate(id, { $set: updateData });
 
     return NextResponse.json({ id, ...updateData });
   } catch (error) {
