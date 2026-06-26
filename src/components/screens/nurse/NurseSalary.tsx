@@ -28,6 +28,7 @@ interface WithdrawalItem {
   amount: number;
   description: string;
   type: string;
+  bonusType?: 'bonus' | 'raise' | 'transport' | 'other';
   status?: string;
   withdrawalMethod?: string;
   walletName?: string;
@@ -303,24 +304,33 @@ export function NurseSalary() {
           </h3>
           <div className="space-y-2">
             {approvedWithdrawals.slice(0, 3).map((w) => {
+              const isBonusTx = w.type === 'bonus';
               const isDepositTx = w.type === 'deposit';
+              // Only bonuses are positive (+green); deposits (transfers) are deductions (-red) but labeled clearly
+              const isPositiveTx = isBonusTx;
               return (
                 <div key={w.id} className="flex items-center justify-between py-2 border-b border-border last:border-0">
                   <div className="flex items-center gap-2">
                     <div className={`w-7 h-7 rounded-lg flex items-center justify-center ${
-                      isDepositTx
+                      isBonusTx
+                        ? 'bg-emerald-50 dark:bg-emerald-900/20'
+                        : isDepositTx
                         ? 'bg-green-50 dark:bg-green-900/20'
                         : 'bg-red-50 dark:bg-red-900/20'
                     }`}>
-                      {isDepositTx
+                      {isBonusTx
+                        ? <Plus className="w-3.5 h-3.5 text-emerald-600" />
+                        : isDepositTx
                         ? <ArrowUpRight className="w-3.5 h-3.5 text-green-600" />
                         : <Banknote className="w-3.5 h-3.5 text-red-500" />
                       }
                     </div>
                     <div>
                       <p className="text-xs font-medium">
-                        {isDepositTx
-                          ? (w.description || 'عكس على حسابك')
+                        {isBonusTx
+                          ? (w.description || 'إضافة إلى راتبك')
+                          : isDepositTx
+                          ? (w.description || 'تحويل إلى حسابك')
                           : (w.description || 'سحب من الراتب')
                         }
                       </p>
@@ -328,11 +338,11 @@ export function NurseSalary() {
                     </div>
                   </div>
                   <span className={`text-xs font-bold ${
-                    isDepositTx
-                      ? 'text-green-600 dark:text-green-400'
+                    isPositiveTx
+                      ? 'text-emerald-600 dark:text-emerald-400'
                       : 'text-red-600 dark:text-red-400'
                   }`}>
-                    {isDepositTx ? '+' : '-'}{formatCurrency(w.amount)}
+                    {isPositiveTx ? '+' : '-'}{formatCurrency(w.amount)}
                   </span>
                 </div>
               );
@@ -605,7 +615,18 @@ export function NurseSalary() {
           {displayItems.length > 0 ? (
             displayItems.map((w, i) => {
               const isDepositTx = w.type === 'deposit';
+              const isBonusTx = w.type === 'bonus';
               const isDebtTx = w.isDebt || w.type === 'debt';
+              // Only bonuses are positive (+green); deposits (transfers) are deductions (-red) but labeled clearly
+              const isPositiveTx = isBonusTx;
+              // Bonus subtype label
+              const bonusLabel = w.bonusType === 'raise'
+                ? 'زيادة على الراتب'
+                : w.bonusType === 'transport'
+                ? 'بدل مواصلات'
+                : w.bonusType === 'other'
+                ? 'إضافة'
+                : 'مكافأة';
               return (
               <motion.div
                 key={w.id}
@@ -618,6 +639,8 @@ export function NurseSalary() {
                     ? 'border-amber-200 dark:border-amber-800'
                     : w.status === 'rejected'
                     ? 'border-red-200 dark:border-red-800 opacity-60'
+                    : isBonusTx
+                    ? 'border-emerald-200 dark:border-emerald-800'
                     : isDepositTx
                     ? 'border-green-200 dark:border-green-800'
                     : isDebtTx
@@ -633,6 +656,8 @@ export function NurseSalary() {
                           ? 'bg-amber-50 dark:bg-amber-900/20'
                           : w.status === 'rejected'
                           ? 'bg-red-50 dark:bg-red-900/20'
+                          : isBonusTx
+                          ? 'bg-emerald-50 dark:bg-emerald-900/20'
                           : isDepositTx
                           ? 'bg-green-50 dark:bg-green-900/20'
                           : isDebtTx
@@ -643,6 +668,8 @@ export function NurseSalary() {
                           <Clock className="w-5 h-5 text-amber-500" />
                         ) : w.status === 'rejected' ? (
                           <XCircle className="w-5 h-5 text-red-500" />
+                        ) : isBonusTx ? (
+                          <Plus className="w-5 h-5 text-emerald-600" />
                         ) : isDepositTx ? (
                           <ArrowUpRight className="w-5 h-5 text-green-600" />
                         ) : isDebtTx ? (
@@ -653,10 +680,12 @@ export function NurseSalary() {
                       </div>
                       <div>
                         <p className="text-sm font-bold">
-                          {isDebtTx
+                          {isBonusTx
+                            ? (w.description || bonusLabel)
+                            : isDebtTx
                             ? `مديونية - ${w.patientName || 'مريض'}`
                             : isDepositTx
-                            ? (w.description || 'عكس على حسابك')
+                            ? (w.description || 'تحويل إلى حسابك')
                             : (w.description || 'سحب من الراتب')
                           }
                         </p>
@@ -679,21 +708,28 @@ export function NurseSalary() {
                               مرفوض
                             </span>
                           )}
-                          {/* Deposit badge - shows clearly this was credited to nurse's account */}
+                          {/* Bonus badge */}
+                          {isBonusTx && (
+                            <span className="text-[9px] px-1.5 py-0.5 rounded-full bg-emerald-100 text-emerald-700 dark:bg-emerald-900/30 dark:text-emerald-400 flex items-center gap-0.5">
+                              <Plus className="w-2.5 h-2.5" />
+                              {bonusLabel}
+                            </span>
+                          )}
+                          {/* Deposit (transfer to account) badge - clearly labeled as transfer */}
                           {isDepositTx && (
                             <span className="text-[9px] px-1.5 py-0.5 rounded-full bg-green-100 text-green-700 dark:bg-green-900/30 dark:text-green-400 flex items-center gap-0.5">
                               <ArrowUpRight className="w-2.5 h-2.5" />
-                              عُكس على حسابك
+                              تحويل إلى حسابك
                             </span>
                           )}
                           {/* Withdrawal method badge */}
-                          {w.withdrawalMethod === 'transfer' && !isDepositTx && (
+                          {w.withdrawalMethod === 'transfer' && !isDepositTx && !isBonusTx && (
                             <span className="text-[9px] px-1.5 py-0.5 rounded-full bg-purple-100 text-purple-700 dark:bg-purple-900/30 dark:text-purple-400 flex items-center gap-0.5">
                               <ArrowDownLeft className="w-2.5 h-2.5" />
                               تحويل
                             </span>
                           )}
-                          {(!w.withdrawalMethod || w.withdrawalMethod === 'cash') && !isDebtTx && !isDepositTx && (
+                          {(!w.withdrawalMethod || w.withdrawalMethod === 'cash') && !isDebtTx && !isDepositTx && !isBonusTx && (
                             <span className="text-[9px] px-1.5 py-0.5 rounded-full bg-amber-100 text-amber-700 dark:bg-amber-900/30 dark:text-amber-400">
                               نقدي
                             </span>
@@ -703,21 +739,40 @@ export function NurseSalary() {
                     </div>
                     <div className="text-left">
                       <p className={`text-sm font-bold ${
-                        isDepositTx
-                          ? 'text-green-600 dark:text-green-400'
+                        isPositiveTx
+                          ? 'text-emerald-600 dark:text-emerald-400'
                           : 'text-red-600 dark:text-red-400'
                       }`}>
-                        {isDepositTx ? '+' : '-'}{formatCurrency(w.amount)}
+                        {isPositiveTx ? '+' : '-'}{formatCurrency(w.amount)}
                       </p>
                     </div>
                   </div>
+
+                  {/* Bonus details */}
+                  {isBonusTx && (
+                    <div className="mt-2 bg-emerald-50 dark:bg-emerald-900/10 rounded-lg p-2.5 text-xs">
+                      <div className="flex items-center gap-1.5 mb-1">
+                        <Plus className="w-3 h-3 text-emerald-600" />
+                        <p className="text-emerald-700 dark:text-emerald-300 font-bold">{bonusLabel}</p>
+                      </div>
+                      <p className="text-muted-foreground">
+                        المبلغ المضاف: <span className="text-foreground font-bold">+{formatCurrency(w.amount)}</span>
+                      </p>
+                      {w.description && (
+                        <p className="text-muted-foreground mt-0.5">الوصف: <span className="text-foreground">{w.description}</span></p>
+                      )}
+                      <p className="text-[10px] text-emerald-600/70 dark:text-emerald-400/70 mt-1">
+                        تمت إضافة المبلغ إلى رصيد راتبك (لا يُخصم من الراتب)
+                      </p>
+                    </div>
+                  )}
 
                   {/* Deposit (transfer to nurse account) details */}
                   {isDepositTx && w.walletName && (
                     <div className="mt-2 bg-green-50 dark:bg-green-900/10 rounded-lg p-2.5 text-xs">
                       <div className="flex items-center gap-1.5 mb-1">
                         <ArrowUpRight className="w-3 h-3 text-green-600" />
-                        <p className="text-green-700 dark:text-green-300 font-bold">عُكس على حسابك</p>
+                        <p className="text-green-700 dark:text-green-300 font-bold">تحويل إلى حسابك</p>
                       </div>
                       <div className="space-y-0.5">
                         {w.walletName && <p className="text-muted-foreground">المحفظة/البنك: <span className="text-foreground font-medium">{w.walletName}</span></p>}
@@ -732,7 +787,7 @@ export function NurseSalary() {
                   )}
 
                   {/* Legacy transfer details (for old records where type wasn't 'deposit') */}
-                  {!isDepositTx && w.withdrawalMethod === 'transfer' && w.walletName && (
+                  {!isDepositTx && !isBonusTx && w.withdrawalMethod === 'transfer' && w.walletName && (
                     <div className="mt-2 bg-purple-50 dark:bg-purple-900/10 rounded-lg p-2 text-xs">
                       <p className="text-[10px] font-bold text-purple-600 dark:text-purple-400 mb-1">بيانات التحويل</p>
                       <div className="space-y-0.5">

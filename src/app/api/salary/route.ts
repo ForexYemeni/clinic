@@ -6,7 +6,7 @@ import User from '@/models/User';
 import Notification from '@/models/Notification';
 import { toClient, toClientList } from '@/lib/mongoose-helpers';
 
-// Helper: determine if a transaction is a deposit (added to nurse account) or a withdrawal
+// Helper: determine if a transaction is a deposit (transferred to nurse's account, but STILL deducted from salary)
 function isDeposit(tx: any): boolean {
   return tx.type === 'deposit';
 }
@@ -14,6 +14,11 @@ function isDeposit(tx: any): boolean {
 // Helper: determine if a transaction is a debt (invoice paid on behalf of nurse)
 function isDebt(tx: any): boolean {
   return tx.type === 'debt' || tx.isDebt === true;
+}
+
+// Helper: determine if a transaction is a bonus (ADDED to nurse's balance, NOT deducted from salary)
+function isBonus(tx: any): boolean {
+  return tx.type === 'bonus';
 }
 
 // GET: List salary transactions (?nurseId=xxx, filtered by clinicId)
@@ -76,25 +81,30 @@ export async function GET(request: NextRequest) {
       // Approved (or legacy without status) transactions
       const approved = transactions.filter((t: any) => t.status === 'approved' || !t.status);
 
-      // Withdrawals = money taken OUT of salary (includes regular withdrawals + debts + deductions)
-      // Does NOT include deposits (which ADD to nurse account but still come from salary)
-      // Note: a "deposit" is still subtracted from the salary pool, but it's labeled as a deposit
-      // to the nurse's personal account. We count both withdrawals and deposits against salary balance.
-      const withdrawals = approved.filter((t: any) => !isDeposit(t) && !isDebt(t));
+      // Withdrawals = pure cash withdrawals / deductions (excluding deposits, debts, and bonuses)
+      const withdrawals = approved.filter((t: any) => !isDeposit(t) && !isDebt(t) && !isBonus(t));
       const totalWithdrawals = withdrawals.reduce((sum: number, t: any) => sum + (t.amount || 0), 0);
 
       const debts = approved.filter((t: any) => isDebt(t));
       const totalDebts = debts.reduce((sum: number, t: any) => sum + (t.amount || 0), 0);
 
-      // Deposits = money transferred/deposited to nurse's account (wallet/cash given to nurse)
-      // These DO count against salary balance (they are paid out from the salary pool)
+      // Deposits = money transferred to nurse's bank/wallet account
+      // These DO count against salary balance (paid out from the salary pool)
       const deposits = approved.filter((t: any) => isDeposit(t));
       const totalDeposits = deposits.reduce((sum: number, t: any) => sum + (t.amount || 0), 0);
 
-      // Total deducted from salary = withdrawals + debts + deposits
+      // Bonuses = money ADDED to nurse's balance (bonus, raise, transport allowance)
+      // These are NOT deducted from salary — they are additional payments from the clinic
+      const bonuses = approved.filter((t: any) => isBonus(t));
+      const totalBonuses = bonuses.reduce((sum: number, t: any) => sum + (t.amount || 0), 0);
+
+      // Total deducted from salary = withdrawals + debts + deposits (NOT bonuses)
       const totalDeducted = totalWithdrawals + totalDebts + totalDeposits;
 
-      // Pending requests count (only nurse-initiated withdrawal requests, not deposits)
+      // Remaining balance = salary - deductions + bonuses (bonuses increase available balance)
+      const remainingBalance = (nurseData.salary || 0) - totalDeducted + totalBonuses;
+
+      // Pending requests count
       const pendingRequests = transactions.filter((t: any) => t.status === 'pending');
 
       return NextResponse.json({
@@ -103,8 +113,10 @@ export async function GET(request: NextRequest) {
         totalWithdrawals,
         totalDebts,
         totalDeposits,
+        totalBonuses,
         totalDeducted,
-        remainingBalance: (nurseData.salary || 0) - totalDeducted,
+        totalAdditions: totalBonuses,
+        remainingBalance,
         withdrawals: transactions,
         pendingCount: pendingRequests.length,
       });
@@ -117,7 +129,7 @@ export async function GET(request: NextRequest) {
   }
 }
 
-// POST: Add a salary transaction (withdrawal, deposit, or debt)
+// POST: Add a salary transaction (withdrawal, deposit, debt, or bonus)
 export async function POST(request: NextRequest) {
   try {
     await dbConnect();
@@ -133,6 +145,8 @@ export async function POST(request: NextRequest) {
       requestedBy,
       // Debt assignment fields
       invoiceId, patientName, isDebt,
+      // Bonus subtype: 'bonus' | 'raise' | 'transport' | 'other'
+      bonusType,
     } = body;
 
     if (!nurseId) {
@@ -163,39 +177,55 @@ export async function POST(request: NextRequest) {
     const status = requestedBy === 'nurse' ? 'pending' : 'approved';
 
     // Resolve the transaction type:
-    // - 'deposit'  -> admin transferred money to nurse's account (still deducted from salary)
-    // - 'debt'     -> invoice paid on behalf of nurse
+    // - 'deposit'   -> admin transferred money to nurse's bank/wallet (DEDUCTED from salary, but labeled as transfer)
+    // - 'debt'      -> invoice paid on behalf of nurse
+    // - 'bonus'     -> ADDED to nurse's balance (bonus/raise/transport allowance) — NOT deducted from salary
     // - 'withdrawal' / 'cash' / 'deduction' -> normal salary withdrawal
     let resolvedType: string = type || 'withdrawal';
     if (isDebt || type === 'debt') {
       resolvedType = 'debt';
     } else if (type === 'deposit') {
       resolvedType = 'deposit';
+    } else if (type === 'bonus') {
+      resolvedType = 'bonus';
     } else if (!type) {
       resolvedType = 'withdrawal';
     }
 
-    // If admin transfers money to nurse's wallet/account, treat as deposit to nurse account
-    // (still deducted from salary balance, but labeled as a deposit)
-    if (requestedBy === 'admin' && withdrawalMethod === 'transfer' && resolvedType !== 'debt') {
+    // If admin transfers money to nurse's wallet/account, treat as deposit
+    // (deducted from salary balance, labeled as 'transfer to account')
+    if (requestedBy === 'admin' && withdrawalMethod === 'transfer' && resolvedType !== 'debt' && resolvedType !== 'bonus') {
       resolvedType = 'deposit';
     }
 
-    // Calculate current balance (only approved transactions of all types - they all reduce salary)
+    // Resolve bonus subtype (only relevant for 'bonus' type)
+    const resolvedBonusType: string = ['bonus', 'raise', 'transport', 'other'].includes(bonusType)
+      ? bonusType
+      : 'bonus';
+
+    // Calculate current balance
+    // Bonuses are NOT subtracted from salary — they add to the nurse's available balance
+    // All other approved types (withdrawals, deposits, debts, deductions) ARE subtracted
     const existingTransactions = await SalaryWithdrawal.find({
       nurseId: nurseId,
       clinicId: effectiveClinicId,
     }).lean();
 
-    const totalDeducted = existingTransactions
-      .filter(doc => {
-        const d = toClient(doc);
-        return d.status === 'approved' || !d.status;
-      })
+    const approvedExisting = existingTransactions.filter(doc => {
+      const d = toClient(doc);
+      return d.status === 'approved' || !d.status;
+    });
+
+    const totalDeducted = approvedExisting
+      .filter(doc => toClient(doc).type !== 'bonus')
+      .reduce((sum, doc) => sum + (toClient(doc).amount || 0), 0);
+
+    const totalBonuses = approvedExisting
+      .filter(doc => toClient(doc).type === 'bonus')
       .reduce((sum, doc) => sum + (toClient(doc).amount || 0), 0);
 
     const salary = nurseData.salary || 0;
-    const remaining = salary - totalDeducted;
+    const remaining = salary - totalDeducted + totalBonuses;
 
     // Nurse-specific validation: check amount against salary and available balance
     if (requestedBy === 'nurse') {
@@ -220,9 +250,9 @@ export async function POST(request: NextRequest) {
       }
     }
 
-    // Only check balance for approved (immediate) transactions by admin
-    // Pending requests by nurses don't immediately deduct
-    if (status === 'approved' && Number(amount) > remaining && salary > 0) {
+    // Balance check ONLY for non-bonus approved transactions
+    // (bonuses ADD to balance, so they never cause a negative balance)
+    if (status === 'approved' && resolvedType !== 'bonus' && Number(amount) > remaining && salary > 0) {
       return NextResponse.json({
         error: `المبلغ يتجاوز الرصيد المتاح. الرصيد المتبقي: ${remaining.toLocaleString('ar-YE')} ر.ي`,
         remaining,
@@ -242,6 +272,11 @@ export async function POST(request: NextRequest) {
         finalDescription = 'سحب نقدي';
       } else if (resolvedType === 'deduction') {
         finalDescription = 'خصم من الراتب';
+      } else if (resolvedType === 'bonus') {
+        if (resolvedBonusType === 'raise') finalDescription = 'زيادة على الراتب';
+        else if (resolvedBonusType === 'transport') finalDescription = 'بدل مواصلات';
+        else if (resolvedBonusType === 'other') finalDescription = 'إضافة';
+        else finalDescription = 'مكافأة';
       } else {
         finalDescription = 'سحب من الراتب';
       }
@@ -259,6 +294,11 @@ export async function POST(request: NextRequest) {
       requestedBy: requestedBy || 'admin',
       createdBy: auth?.userId || '',
     };
+
+    // Store bonus subtype
+    if (resolvedType === 'bonus') {
+      txData.bonusType = resolvedBonusType;
+    }
 
     // Add wallet details for transfer
     if (withdrawalMethod === 'transfer') {
@@ -299,14 +339,23 @@ export async function POST(request: NextRequest) {
     }
 
     // Return updated balance info (for approved transactions)
-    const newTotalDeducted = status === 'approved' ? totalDeducted + Number(amount) : totalDeducted;
-    const newRemaining = salary - newTotalDeducted;
+    let newTotalDeducted = totalDeducted;
+    let newTotalBonuses = totalBonuses;
+    if (status === 'approved') {
+      if (resolvedType === 'bonus') {
+        newTotalBonuses = totalBonuses + Number(amount);
+      } else {
+        newTotalDeducted = totalDeducted + Number(amount);
+      }
+    }
+    const newRemaining = salary - newTotalDeducted + newTotalBonuses;
 
     return NextResponse.json({
       id: createdId,
       ...toClient(created.toObject()),
       salary,
       totalWithdrawn: newTotalDeducted,
+      totalBonuses: newTotalBonuses,
       remainingBalance: newRemaining,
     }, { status: 201 });
   } catch (error) {

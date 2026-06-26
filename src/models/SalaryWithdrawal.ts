@@ -4,9 +4,15 @@ export interface ISalaryWithdrawal extends Document {
   nurseId: string;
   nurseName: string;
   amount: number;
-  // Type of transaction: 'withdrawal' (default, cash/deduction from salary),
-  // 'deposit' (admin deposited cash to nurse's account), 'debt' (invoice paid on behalf of nurse)
-  type: 'withdrawal' | 'deposit' | 'debt' | 'cash' | 'deduction';
+  // Type of transaction:
+  // 'withdrawal' / 'cash' (cash given to nurse, deducted from salary)
+  // 'deposit' (transferred to nurse's bank/wallet account, DEDUCTED from salary, but clearly labeled as transfer)
+  // 'deduction' (pure salary deduction, no money handed over)
+  // 'debt' (invoice paid on behalf of nurse, counts as owed amount)
+  // 'bonus' (ADDED to nurse's balance — bonus, raise, transportation allowance, etc. NOT deducted from salary)
+  type: 'withdrawal' | 'deposit' | 'debt' | 'cash' | 'deduction' | 'bonus';
+  // Subtype for bonuses: 'bonus' | 'raise' | 'transport' | 'other'
+  bonusType: 'bonus' | 'raise' | 'transport' | 'other';
   description: string;
   status: 'pending' | 'approved' | 'rejected';
   // How the money was delivered to the nurse: 'cash' or 'transfer' (to wallet/bank)
@@ -44,8 +50,13 @@ const SalaryWithdrawalSchema = new Schema<ISalaryWithdrawal>(
     amount: { type: Number, required: true },
     type: {
       type: String,
-      enum: ['withdrawal', 'deposit', 'debt', 'cash', 'deduction'],
+      enum: ['withdrawal', 'deposit', 'debt', 'cash', 'deduction', 'bonus'],
       default: 'withdrawal',
+    },
+    bonusType: {
+      type: String,
+      enum: ['bonus', 'raise', 'transport', 'other'],
+      default: 'bonus',
     },
     description: { type: String, default: '' },
     status: {
